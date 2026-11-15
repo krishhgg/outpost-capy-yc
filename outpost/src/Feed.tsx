@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, Image, KeyboardAvoidingView, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-  cancelAnimation, Easing, FadeInUp, withDelay, FadeOutUp, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming, ZoomIn,
+  cancelAnimation, Easing, FadeInUp, FadeOut, withDelay, FadeOutUp, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming, ZoomIn,
   type SharedValue,
 } from "react-native-reanimated";
 import { createVideoPlayer, VideoPlayer, VideoView } from "expo-video";
@@ -20,12 +20,15 @@ import { usePayoff } from "./Payoff";
 import { Portrait } from "./Portrait";
 import { Flame, localDay, Milestones, MILESTONES, PLAT } from "./You";
 import { Counter, ICON } from "./Hud";
+import { Badge, Button, Chip, COLOR, DemoNote, EmptyState, feel, HONESTY, useToast } from "./ui";
 
 const { width: W } = Dimensions.get("window");
-type Clip = { id: Id<"videos">; url: string; hook: string; durationS: number; remade: { reason: string; label: string } | null; scout: { priceCents: number } | null };
+type Clip = FunctionReturnType<typeof api.feed.next>[number];
+type Mode = "dryRun" | "private" | "public";
 const FIND_EVERY = 3; // videos swiped between Scout cards
 const FRAME = 9; // the gold frame around a video: outline, gold, inner outline
 const OVERHANG = 28; // how far the Post and Remake buttons hang below the card
+const EDIT_ROW = 58; // room under the hanging buttons for the edit chips
 const PEEK = 7; // how much of each card waiting behind the top one shows above it
 type Outcome = "post" | "remake";
 type Box = { w: number; h: number };
@@ -38,6 +41,8 @@ const REASONS: [string, string][] = [
   ["hook", "Hook too slow"], ["visuals", "Boring visuals"], ["voice", "Voice"],
   ["long", "Too long"], ["topic", "Wrong topic"], ["more", "Say more"],
 ];
+// The one-tap edits under the card. Each sends the video back for a remake with the reason it maps to; Note writes one.
+const EDITS: [string, string][] = [["hook", "Punchier hook"], ["long", "Shorter"], ["visuals", "New look"]];
 
 export function useClock(ms: number) {
   const [now, setNow] = useState(Date.now());
@@ -48,7 +53,7 @@ export function useClock(ms: number) {
 const clock = (t: number) => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 
 export function Feed({ device, active, findNow }: { device: string; active: boolean; findNow?: string }) {
-  const rows = useQuery(api.feed.next, { deviceId: device }) as Clip[] | undefined;
+  const rows = useQuery(api.feed.next, { deviceId: device });
   const status = useQuery(api.feed.status, { deviceId: device });
   const swipe = useMutation(api.feed.swipe);
   const find = useQuery(api.scout.next, { deviceId: device });
@@ -59,7 +64,11 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
   const showFind = !!find && find.id !== findGone && sinceFind >= FIND_EVERY;
   useEffect(() => { if (findNow) setSinceFind(FIND_EVERY); }, [findNow]);
   const [gone, setGone] = useState<Set<string>>(new Set());
-  const [asking, setAsking] = useState<Clip | null>(null);
+  // The video whose remake reason is being picked, or whose note is being written from the Note chip.
+  const [asking, setAsking] = useState<{ clip: Clip; note: boolean } | null>(null);
+  // The bounty an approved video is going to, shown over the deck for a moment after the swipe lands.
+  const [sent, setSent] = useState<{ id: string; brand: string; mode: Mode; forecast: number | null } | null>(null);
+  const toast = useToast();
   // This session's swipes, for the segments along the top of the video. A session starts each time the Feed comes into view.
   const [outcomes, setOutcomes] = useState<{ id: Id<"videos">; o: Outcome }[]>([]);
   useEffect(() => { if (active) setOutcomes([]); }, [active]);
@@ -87,15 +96,31 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
       return false;
     });
 
-  const onSwipe = (clip: Clip, dir: 1 | -1, dwellMs: number) => {
-    lastPost.current = dir > 0;
+  const leave = (clip: Clip, o: Outcome) => {
+    lastPost.current = o === "post";
     setGone(g => new Set(g).add(clip.id));
-    setOutcomes(o => [...o, { id: clip.id, o: dir > 0 ? "post" : "remake" }]);
+    setOutcomes(x => [...x, { id: clip.id, o }]);
     setSinceFind(n => n + 1);
-    if (dir > 0) send(clip, "right", dwellMs).then(ok => { if (ok) payoff.post(); });
-    else { dwell.current = dwellMs; setAsking(clip); }
   };
+  const remake = (clip: Clip, dwellMs: number, reason: string, label: string, note?: string) =>
+    send(clip, "left", dwellMs, reason, note).then(ok => { if (ok) payoff.remake(label); });
+  // A swipe, a button or an edit chip. An edit chip names its reason, so it goes straight back without the sheet.
+  const onSwipe = (clip: Clip, dir: 1 | -1, dwellMs: number, edit?: string) => {
+    leave(clip, dir > 0 ? "post" : "remake");
+    if (dir > 0) send(clip, "right", dwellMs).then(ok => {
+      if (!ok) return;
+      payoff.post();
+      if (!clip.bounty || !status) return;
+      feel("success");
+      setSent({ id: clip.id, brand: clip.bounty.brand, mode: status.mode, forecast: clip.predicted ? Math.round(clip.predicted.score) : null });
+    });
+    else if (edit) remake(clip, dwellMs, edit, EDITS.find(([k]) => k === edit)?.[1] ?? edit);
+    else { dwell.current = dwellMs; setAsking({ clip, note: false }); }
+  };
+  // The Note chip keeps the card until the note is sent, so backing out of it changes nothing.
+  const onNote = (clip: Clip, dwellMs: number) => { dwell.current = dwellMs; setAsking({ clip, note: true }); };
   const dwell = useRef(0);
+  const swipedToday = outcomes.length > 0 || (!!you && you.todayCounts.approved + you.todayCounts.remakes > 0);
 
   const offline = !status || now - status.studio.lastSeen > 25_000;
   // Swiping the last card ends the session with a chime, unless the streak banner is sounding or about to: a last post
@@ -133,6 +158,19 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
   const latest = status?.recent[0];
   const sig = latest ? `${latest.videoId}:${latest.posts.map(p => `${p.platform}=${p.status}`).join(",")}` : "";
   const [trayUntil, setTrayUntil] = useState(0);
+  // Once the newest post is live on a bounty, its submission waits for one tap on Whop. That flow lives on the You tab,
+  // so a toast points there.
+  const toSubmit = latest?.submission === "manual";
+  const lastSubmit = useRef<string | null>(null);
+  useEffect(() => {
+    if (!latest) return;
+    const key = `${latest.videoId}:${latest.submission ?? ""}`;
+    const was = lastSubmit.current;
+    lastSubmit.current = key;
+    if (was === null || was === key || !toSubmit || !active) return;
+    toast.show({ title: "Ready to submit on Whop", body: "Your post is live. Submit it from the You tab.", icon: "coin",
+      action: { label: "Submit", onPress: () => router.navigate("/you") }, testID: "submit-toast" });
+  }, [latest?.videoId, latest?.submission]);
   // Platforms seen turning live while the app is open. Each pops in turn with a tick; one already live on open doesn't.
   const lastSig = useRef("");
   // Kept with the state it came from, so a pill never pops for an older change.
@@ -189,12 +227,14 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
       </View>
       <View style={s.deckArea} onLayout={e => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
         {rows === undefined ? <Empty text="Connecting…" />
-          : clips.length === 0 ? (offline ? <Empty text="The studio is offline. Open the laptop to make more." />
+          : clips.length === 0 ? (!swipedToday ? <NoVideos making={status?.studio.making ?? 0} />
             : <CaughtUp approved={you?.todayCounts.approved ?? 0} remakes={you?.todayCounts.remakes ?? 0}
-                streak={you?.todayDone ? you.streak : 0} making={status.studio.making} stages={status.studio.stages}
-                queued={status.studio.queued} onFind={find && find.id !== findGone ? () => setSinceFind(FIND_EVERY) : undefined} />)
-          : box && <Deck clips={clips} done={outcomes.map(x => x.o)} onSwipe={onSwipe} active={active && !asking && !showFind} box={box}
-              behind={!showFind} tucked={!!latest && now < trayUntil} />}
+                streak={you?.todayDone ? you.streak : 0} making={status?.studio.making ?? 0} stages={status?.studio.stages ?? []}
+                queued={status?.studio.queued ?? 0} offline={offline}
+                onFind={find && find.id !== findGone ? () => setSinceFind(FIND_EVERY) : undefined} />)
+          : box && <Deck clips={clips} done={outcomes.map(x => x.o)} onSwipe={onSwipe} onNote={onNote} active={active && !asking && !showFind}
+              box={box} behind={!showFind} tucked={!!latest && now < trayUntil} />}
+        {sent && <Sending key={sent.id} brand={sent.brand} mode={sent.mode} forecast={sent.forecast} onDone={() => setSent(null)} />}
         {showFind && find && (
           <FindCard key={find.id} find={find} onSwipe={dir => {
             setFindGone(find.id);
@@ -205,19 +245,27 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
         {payoff.layer}
       </View>
       <Modal visible={!!asking} transparent animationType="fade"
-        onRequestClose={() => { if (asking) { send(asking, "left", dwell.current).then(ok => { if (ok) payoff.skip(); }); setAsking(null); } }}>
+        onRequestClose={() => {
+          if (asking && !asking.note) send(asking.clip, "left", dwell.current).then(ok => { if (ok) payoff.skip(); });
+          setAsking(null);
+        }}>
         {asking && (
           <ReasonSheet
-            hook={asking.hook}
+            hook={asking.clip.hook}
+            note={asking.note}
             onPick={(reason, note) => {
-              const label = reason === "more" ? "your note" : REASONS.find(([k]) => k === reason)?.[1] ?? reason;
-              send(asking, "left", dwell.current, reason, note).then(ok => { if (ok) payoff.remake(label); });
+              if (asking.note) leave(asking.clip, "remake");
+              remake(asking.clip, dwell.current, reason, reason === "more" ? "your note" : REASONS.find(([k]) => k === reason)?.[1] ?? reason, note);
               setAsking(null);
             }}
-            onSkip={() => { send(asking, "left", dwell.current).then(ok => { if (ok) payoff.skip(); }); setAsking(null); }}
+            onSkip={() => {
+              if (!asking.note) send(asking.clip, "left", dwell.current).then(ok => { if (ok) payoff.skip(); });
+              setAsking(null);
+            }}
           />
         )}
       </Modal>
+      {toast.node}
     </View>
   );
 }
@@ -238,9 +286,9 @@ function ModeChip({ mode }: { mode: "dryRun" | "private" | "public" }) {
 
 // The end of a session, as a streak payoff: the day just kept, what today's swipes added up to, the next day to come
 // back for, and what the studio is doing meanwhile. Every number is real.
-function CaughtUp({ approved, remakes, streak, making, stages, queued, onFind }:
-  { approved: number; remakes: number; streak: number; making: number; stages: string[]; queued: number; onFind?: () => void }) {
-  const studio = making > 0 ? [`Making ${making} now · ${stages[0]}`, queued > 0 ? `${queued} queued` : ""].filter(Boolean).join(" · ")
+function CaughtUp({ approved, remakes, streak, making, stages, queued, offline, onFind }:
+  { approved: number; remakes: number; streak: number; making: number; stages: string[]; queued: number; offline: boolean; onFind?: () => void }) {
+  const studio = offline ? "Studio offline · the laptop is asleep" : making > 0 ? [`Making ${making} now · ${stages[0]}`, queued > 0 ? `${queued} queued` : ""].filter(Boolean).join(" · ")
     : queued > 0 ? `${queued} video${queued === 1 ? "" : "s"} queued at the studio` : "The studio is resting";
   const shown = useCountUp(approved);
   return (
@@ -266,10 +314,61 @@ function CaughtUp({ approved, remakes, streak, making, stages, queued, onFind }:
           <Text style={s.caughtNext}>{studio}</Text>
         </View>
         {onFind && <PixelButton label="See the Scout's find" bevel="teal" size={20} onPress={onFind} testID="caught-find" style={s.caughtBtn} />}
-        <PixelButton label="Back to Base" bevel="gold" size={22} onPress={() => router.navigate("/")} testID="caught-base"
+        <Button label="Find more bounties" bevel="green" size="md" onPress={() => router.navigate("/bounties")} testID="caught-bounties"
           style={onFind ? s.caughtBtn2 : s.caughtBtn} />
+        <PixelButton label="Back to Base" bevel="gold" size={20} onPress={() => router.navigate("/")} testID="caught-base" style={s.caughtBtn2} />
       </Block>
     </Animated.View>
+  );
+}
+
+// Nothing to swipe and nothing swiped today. The Feed fills from bounties, so this points at the board.
+function NoVideos({ making }: { making: number }) {
+  return (
+    <Animated.View entering={ZoomIn.springify().damping(12).mass(1).stiffness(180)} style={s.caughtWrap}>
+      <EmptyState icon="coin" title="Take a paid bounty and its videos land here" testID="feed-empty"
+        body={`Approve the ones worth posting. The brand pays per 1K views on Whop.${making > 0 ? `\nStudio · remaking ${making} for you` : ""}`}
+        action={{ label: "Browse bounties", onPress: () => router.navigate("/bounties"), testID: "empty-bounties" }} />
+      <DemoNote style={s.demoNote} />
+    </Animated.View>
+  );
+}
+
+// The moment after a bounty video is approved: where it's going, in the words the posting mode allows. Only public
+// posts submit to the bounty, so a dry run or a private test says so instead.
+function Sending({ brand, mode, forecast, onDone }: { brand: string; mode: Mode; forecast: number | null; onDone: () => void }) {
+  useEffect(() => { const t = setTimeout(onDone, 2600); return () => clearTimeout(t); }, []);
+  const [line, sub] = mode === "public" ? ["Posting + submitting to", null]
+    : mode === "private" ? ["Posting a private test for", "Private posts aren't submitted"]
+    : ["Approved for", "Dry run · nothing posts or submits"];
+  return (
+    <Animated.View entering={ZoomIn.springify().damping(12).mass(1).stiffness(180)} exiting={FadeOut.duration(200)} style={s.sending}
+      pointerEvents="none" testID="posting-banner" accessible accessibilityLabel={`${line} ${brand}${sub ? `. ${sub}` : ""}`}>
+      <Block bevel="green" depth={3} lift={4} style={s.sendingCard}>
+        <Outlined size={18} width={1.5}>{line}</Outlined>
+        <Outlined size={28} color={COLOR.goldPale}>{brand}</Outlined>
+        {sub || forecast !== null ? (
+          <View style={s.sendingRow}>
+            {sub ? <Text style={s.sendingSub}>{sub}</Text> : null}
+            {forecast !== null ? <Badge label={`FORECAST ${forecast}`} tone="violet" size="sm" dashed /> : null}
+          </View>
+        ) : null}
+        <DemoNote style={s.sendingNote} />
+      </Block>
+    </Animated.View>
+  );
+}
+
+// The studio's 0-100 guess at how well the video meets its bounty's brief, labeled as a guess. Tap for the whole reason.
+function Forecast({ score, reason }: { score: number; reason: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Pressable onPress={() => { feel("tap"); setOpen(o => !o); }} style={s.forecast} testID="forecast-chip" accessibilityRole="button"
+      accessibilityLabel={`Forecast ${Math.round(score)} out of 100: ${reason}`}>
+      <Badge label={HONESTY.forecast.label} tone={HONESTY.forecast.tone} size="sm" dashed />
+      <Text style={s.forecastScore}>{Math.round(score)}</Text>
+      <Text style={s.forecastReason} numberOfLines={open ? 4 : 1}>{reason}</Text>
+    </Pressable>
   );
 }
 
@@ -353,13 +452,13 @@ function Pill({ live, pop, sig, onPress, testID, label, children }:
 
 // The whole 9:16 video fits inside the deck area, so nothing on it is cropped, including the AI-made label at the
 // bottom. The card sits in a gold frame with the Post and Remake buttons hanging off its bottom edge.
-function Deck({ clips, done, onSwipe, active, box, behind, tucked }:
-  { clips: Clip[]; done: Outcome[]; onSwipe: (c: Clip, dir: 1 | -1, dwellMs: number) => void; active: boolean; box: Box; behind: boolean;
-    tucked: boolean }) {
+function Deck({ clips, done, onSwipe, onNote, active, box, behind, tucked }:
+  { clips: Clip[]; done: Outcome[]; onSwipe: (c: Clip, dir: 1 | -1, dwellMs: number, edit?: string) => void;
+    onNote: (c: Clip, dwellMs: number) => void; active: boolean; box: Box; behind: boolean; tucked: boolean }) {
   // While the post tray is down, the cards waiting behind slide in behind the top one, so the tray never sits on their edges.
   const tuck = useSharedValue(0);
   useEffect(() => { tuck.value = withTiming(tucked ? 1 : 0, { duration: 180 }); }, [tucked]);
-  const innerW = Math.min(box.w - 24 - FRAME * 2, ((box.h - OVERHANG - FRAME * 2) * 9) / 16);
+  const innerW = Math.min(box.w - 24 - FRAME * 2, ((box.h - OVERHANG - EDIT_ROW - FRAME * 2) * 9) / 16);
   const card = { width: innerW + FRAME * 2, height: (innerW * 16) / 9 + FRAME * 2, left: (box.w - innerW) / 2 - FRAME };
   const players = useRef(new Map<string, VideoPlayer>());
   const committed = useRef<string | null>(null); // a card swiped away can't be swiped again by a second tap
@@ -420,18 +519,19 @@ function Deck({ clips, done, onSwipe, active, box, behind, tucked }:
   // Clear the map too: a hot reload runs this cleanup and then reuses the ref.
   useEffect(() => () => { for (const p of players.current.values()) p.release(); players.current.clear(); }, []);
 
-  const commit = (dir: 1 | -1) => {
+  const commit = (dir: 1 | -1, edit?: string) => {
     if (!top || committed.current === top.id) return;
     committed.current = top.id;
     nudged = true;
     Haptics.impactAsync(dir > 0 ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
-    onSwipe(top, dir, Date.now() - shownAt.current);
+    onSwipe(top, dir, Date.now() - shownAt.current, edit);
   };
-  // The buttons throw the card the same way a swipe does.
-  const fling = (dir: 1 | -1) => {
+  // The buttons and edit chips throw the card the same way a swipe does.
+  const fling = (dir: 1 | -1, edit?: string) => {
     if (!top || thrown.current === top.id) return;
     thrown.current = top.id;
-    x.value = withTiming(dir * W * 1.5, { duration: 220 }, finished => { if (finished) runOnJS(commit)(dir); });
+    nudged = true;
+    x.value = withTiming(dir * W * 1.5, { duration: 220 }, finished => { if (finished) runOnJS(commit)(dir, edit); });
   };
 
   // A touch means they found the card, so the nudge never plays again. It also stops a nudge that's running, so the
@@ -508,14 +608,24 @@ function Deck({ clips, done, onSwipe, active, box, behind, tucked }:
               <View style={s.screenIn}>
                 <VideoView key={top.id} player={cur} style={s.video} nativeControls={false} contentFit="cover" />
                 <Segments key={`p${top.id}`} done={done} left={clips.length} player={cur} />
-                {top.remade ? (
-                  <View style={[s.badge, { backgroundColor: TAG.gold }]} testID="remade-label"><Text style={s.badgeText}>{`Remade · ${top.remade.label}`}</Text></View>
-                ) : top.scout ? (
-                  <View style={[s.badge, { backgroundColor: TAG.teal }]} testID="scout-label">
-                    <Image source={ICON.glass} style={s.badgeIcon} />
-                    <Text style={s.badgeText}>{`Scout pick · ${money(top.scout.priceCents)} Whop app`}</Text>
-                  </View>
-                ) : null}
+                {/* What the video is for and how it was made, stacked down the top-left corner under the segments. */}
+                <View style={s.tags} pointerEvents="box-none">
+                  {top.bounty ? (
+                    <Badge label={`${top.bounty.brand} · ${top.bounty.rewardLabel}`} tone="gold" icon="coin" testID="bounty-tag" style={s.tagMax} />
+                  ) : top.scout ? (
+                    <View style={[s.badge, { backgroundColor: TAG.teal }]} testID="scout-label">
+                      <Image source={ICON.glass} style={s.badgeIcon} />
+                      <Text style={s.badgeText}>{`Scout pick · ${money(top.scout.priceCents)} Whop app`}</Text>
+                    </View>
+                  ) : null}
+                  {top.remade ? (
+                    <Badge label={`Remade: ${top.remade.label}`} tone="orange" testID="remade-label" />
+                  ) : null}
+                  {top.pregenerated ? (
+                    <Badge label="Pregenerated for the demo" size="sm" dashed testID="pregenerated-label" />
+                  ) : null}
+                  {top.predicted ? <Forecast key={top.id} score={top.predicted.score} reason={top.predicted.reason} /> : null}
+                </View>
               </View>
             </Block>
             <Animated.View style={[s.stamp, s.post, postStamp]}><Block bevel="green" depth={3} style={s.stampFace}><Outlined size={34}>POST</Outlined></Block></Animated.View>
@@ -527,6 +637,12 @@ function Deck({ clips, done, onSwipe, active, box, behind, tucked }:
         <View style={[s.actions, { top: card.height - OVERHANG, left: card.left + 8, width: card.width - 16 }]} pointerEvents="box-none">
           <PixelButton label="REMAKE" bevel="orange" size={20} onPress={() => fling(-1)} testID="remake-button" style={s.action} />
           <PixelButton label="POST" bevel="green" size={20} onPress={() => fling(1)} testID="post-button" style={s.action} />
+        </View>
+      )}
+      {cur && active && (
+        <View style={[s.edits, { top: card.height + OVERHANG + 17 }]} pointerEvents="box-none" testID="edit-chips">
+          {EDITS.map(([key, label]) => <Chip key={key} label={label} size="md" onPress={() => fling(-1, key)} testID={`edit-${key}`} style={s.editCell} />)}
+          <Chip label="Note" size="md" onPress={() => onNote(top, Date.now() - shownAt.current)} testID="edit-note" style={s.editCell} />
         </View>
       )}
     </View>
@@ -578,8 +694,10 @@ function useBehind(x: SharedValue<number>, height: number, depth: number, tuck: 
 }
 
 // The sheet names the video it's about, since the deck behind it has already moved on to the next card.
-function ReasonSheet({ hook, onPick, onSkip }: { hook: string; onPick: (reason: string, note?: string) => void; onSkip: () => void }) {
-  const [writing, setWriting] = useState(false);
+// From the Note chip it opens on the note box, and backing out keeps the video in the Feed.
+function ReasonSheet({ hook, note: noteOnly, onPick, onSkip }:
+  { hook: string; note: boolean; onPick: (reason: string, note?: string) => void; onSkip: () => void }) {
+  const [writing, setWriting] = useState(noteOnly);
   const [note, setNote] = useState("");
   return (
     // The sheet rides up with the keyboard, so "Say more" keeps its note box and send button in view.
@@ -618,7 +736,7 @@ function ReasonSheet({ hook, onPick, onSkip }: { hook: string; onPick: (reason: 
             ))}
           </View>
         )}
-        <Pressable onPress={onSkip} hitSlop={8}><Text style={s.skip}>Just skip it</Text></Pressable>
+        <Pressable onPress={onSkip} hitSlop={8} testID="reason-skip"><Text style={s.skip}>{noteOnly ? "Keep it" : "Just skip it"}</Text></Pressable>
       </Block>
     </KeyboardAvoidingView>
   );
@@ -668,12 +786,23 @@ const s = StyleSheet.create({
   segs: { position: "absolute", left: 6, right: 6, top: 5, height: 5, flexDirection: "row", gap: 3 },
   seg: { flex: 1, backgroundColor: "rgba(255,255,255,0.3)", overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: GOLD },
-  badge: {
-    position: "absolute", top: 14, left: 10, flexDirection: "row", alignItems: "center", gap: 4,
-    paddingHorizontal: 8, paddingVertical: 4, borderWidth: 2, borderColor: INK,
-  },
+  badge: { flexDirection: "row", alignItems: "center", gap: 4, maxWidth: "100%", paddingHorizontal: 8, paddingVertical: 4, borderWidth: 2, borderColor: INK },
   badgeIcon: { width: 20, height: 20, marginLeft: -2 },
   badgeText: { color: INK, fontSize: 16, fontFamily: FONT.bold },
+  tags: { position: "absolute", top: 14, left: 10, right: 10, alignItems: "flex-start", gap: 5 },
+  tagMax: { maxWidth: "100%" },
+  forecast: { flexDirection: "row", alignItems: "center", gap: 6, maxWidth: "100%", backgroundColor: COLOR.violetPale, borderWidth: 2,
+    borderColor: INK, borderStyle: "dashed", paddingLeft: 3, paddingRight: 7, paddingVertical: 3 },
+  forecastScore: { color: INK, fontSize: 19, fontFamily: FONT.bold },
+  forecastReason: { flexShrink: 1, color: PARCH.ink, fontSize: 15, fontFamily: FONT.semi },
+  edits: { position: "absolute", left: 12, right: 12, flexDirection: "row", gap: 6 },
+  editCell: { flexGrow: 1 },
+  sending: { position: "absolute", left: 24, right: 24, bottom: EDIT_ROW + OVERHANG + 40, alignItems: "center" },
+  sendingCard: { alignItems: "center", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 14 },
+  sendingRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
+  sendingSub: { color: INK, fontSize: 16, fontFamily: FONT.semi },
+  sendingNote: { marginTop: 8 },
+  demoNote: { marginTop: 14 },
   stamp: { position: "absolute", top: 56 },
   stampFace: { paddingHorizontal: 12, paddingTop: 4, paddingBottom: 8 },
   post: { left: 22 }, // tilted -10 degrees in postStamp
