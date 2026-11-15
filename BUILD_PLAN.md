@@ -382,7 +382,7 @@ auto-submit, which is shown as one tap.
   PR and flag it.
 - PR must pass the three CI checks and state what was verified and what was not (studio and iOS are not runnable
   in the cloud; say so).
-- Never merge PRs or push to `main` (humans merge).
+- Agents may merge their PRs once CI is green, following the merge order in Wave 3. Never push directly to `main`.
 
 ## 11. Known unknowns (track, don't pretend)
 
