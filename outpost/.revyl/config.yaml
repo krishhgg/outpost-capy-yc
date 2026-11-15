@@ -16,6 +16,7 @@ build:
                 build_commands:
                     - cd ios && pod install && WS=$(ls -d *.xcworkspace | head -n 1) && xcodebuild -workspace "$WS" -scheme "${WS%.xcworkspace}" -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' ARCHS=arm64 -derivedDataPath build
                 output_path: ios/build/Build/Products/Release-iphonesimulator/*.app
+                image: ios-macos-26-xcode-26.6
             android:
                 app_id: 55e58bcb-8425-4d08-bef3-81a1bfa673e0
                 setup_commands:
