@@ -21,10 +21,16 @@ const SUGGESTIONS = 6;
 // repeats the format ("POV: ...") drops it: 'POV for Nilo: "you have had the same game idea for years"'.
 function promptFor(video: Doc<"videos">, bounty: Doc<"bounties"> | null) {
   const format = video.brief?.format ?? "Short video";
-  const raw = video.brief?.hook ?? video.script?.hook ?? "";
-  const hook = raw.toLowerCase().startsWith(format.toLowerCase() + ":") ? raw.slice(format.length + 1).trim() : raw;
+  const hook = hookOf(video);
   const what = format.charAt(0).toUpperCase() + format.slice(1) + (bounty ? " for " + bounty.brand : "");
   return hook ? what + ': "' + hook + '"' : what;
+}
+
+// The video's hook without a format prefix it repeats ("POV: ").
+function hookOf(video: Doc<"videos">) {
+  const format = video.brief?.format ?? "";
+  const raw = video.brief?.hook ?? video.script?.hook ?? "";
+  return format && raw.toLowerCase().startsWith(format.toLowerCase() + ":") ? raw.slice(format.length + 1).trim() : raw;
 }
 
 // Library videos this user already has in the Feed or has already generated.
@@ -57,7 +63,8 @@ export const suggestions = query({
     }
     return [...first, ...rest].slice(0, SUGGESTIONS).map(v => {
       const bounty = bounties.get(v.bountyId ?? "") ?? null;
-      return { id: v._id, prompt: promptFor(v, bounty), brand: bounty?.brand ?? null };
+      const hook = hookOf(v);
+      return { id: v._id, prompt: promptFor(v, bounty), hook: hook.charAt(0).toUpperCase() + hook.slice(1), brand: bounty?.brand ?? null };
     });
   },
 });

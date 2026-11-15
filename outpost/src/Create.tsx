@@ -8,9 +8,9 @@ import type { Id } from "../convex/_generated/dataModel";
 import { Block, Sea, WoodHeader } from "./pixel";
 import { Portrait } from "./Portrait";
 import { DoneButton, Pregenerated, STEP_NAMES, stagedAt, useNow } from "./Generations";
-import { Badge, Button, Card, COLOR, Dots, EmptyState, FONT, INK, PARCH, ProgressBar, ProgressSteps, SPACE, feel } from "./ui";
+import { Badge, Button, Card, COLOR, Dots, EmptyState, FONT, INK, PARCH, ProgressSteps, SPACE, feel } from "./ui";
 
-type Suggestion = { id: Id<"videos">; prompt: string; brand: string | null };
+type Suggestion = { id: Id<"videos">; prompt: string; hook: string; brand: string | null };
 
 // The suggestion that shares the most words with what the user typed, or a random one when nothing matches.
 function closest(text: string, list: Suggestion[]) {
@@ -64,20 +64,20 @@ export function Create({ device }: { device: string }) {
       <KeyboardAvoidingView style={s.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView ref={scroll} style={s.fill} contentContainerStyle={s.chat} testID="create-chat" keyboardShouldPersistTaps="handled"
           onContentSizeChange={() => chat && scroll.current?.scrollToEnd({ animated: true })}>
-          <Agent text="What should we make? Each prompt fits a live bounty that pays per 1K views." />
+          <Agent text="What should we make?" />
 
           {!chat ? (
             !suggestions ? <Card loading testID="create-loading" />
               : suggestions.length === 0 ? (
-                <EmptyState title="No prompts ready" body="New ones show up as the studio finishes videos." who="writer" testID="create-empty"
+                <EmptyState title="No prompts ready yet" who="writer" testID="create-empty"
                   action={{ label: "See progress", onPress: () => router.push("/generations"), testID: "create-empty-progress" }} />
               ) : (
                 <View style={s.suggestions} testID="create-suggestions">
                   {suggestions.map((sug, i) => (
-                    <Card key={sug.id} onPress={() => go(sug, sug.prompt)} feel="commit" testID={"suggestion-" + i}
+                    <Card key={sug.id} onPress={() => go(sug, sug.hook)} feel="commit" testID={"suggestion-" + i}
                       accessibilityLabel={"Make: " + sug.prompt} style={s.suggestion}>
+                      <Text style={s.suggestionText} numberOfLines={2}>{sug.hook}</Text>
                       {sug.brand ? <Badge label={sug.brand} tone="gold" size="sm" /> : null}
-                      <Text style={s.suggestionText} numberOfLines={3}>{sug.prompt}</Text>
                     </Card>
                   ))}
                 </View>
@@ -97,10 +97,9 @@ export function Create({ device }: { device: string }) {
                     {!done ? <Dots size={5} color={PARCH.ink} /> : null}
                   </View>
                   <ProgressSteps steps={STEP_NAMES} current={at?.step ?? 0} testID="create-steps" />
-                  {!done ? <ProgressBar value={at?.value ?? 0} style={s.bar} /> : null}
                   {done ? (
                     <>
-                      {gen && !gen.video ? <Text style={s.warn}>That video wasn't available anymore. Try another prompt.</Text> : <Pregenerated testID="create-pregenerated" />}
+                      {gen && !gen.video ? <Text style={s.warn}>Not available. Try another prompt.</Text> : <View style={s.tag}><Pregenerated testID="create-pregenerated" /></View>}
                       <View style={s.actions}>
                         <Button label="Open Feed" bevel="green" size="md" onPress={() => router.navigate("/feed")} testID="create-open-feed" style={s.grow} />
                         <Button label="New chat" variant="secondary" size="md" onPress={() => setChat(null)} testID="create-new" style={s.grow} />
@@ -145,18 +144,18 @@ const s = StyleSheet.create({
   chat: { padding: SPACE.lg, gap: SPACE.lg, paddingBottom: 30 },
   agentRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, marginBottom: SPACE.sm },
   face: { borderWidth: 2, borderColor: INK },
-  agent: { flex: 1, padding: SPACE.md },
-  agentText: { color: PARCH.ink, fontSize: 18, fontFamily: FONT.semi },
+  agent: { padding: SPACE.md },
+  agentText: { color: PARCH.ink, fontSize: 20, fontFamily: FONT.bold },
   suggestions: { gap: SPACE.md },
-  suggestion: { padding: SPACE.md, paddingBottom: SPACE.md + 2, gap: 6 },
-  suggestionText: { color: PARCH.ink, fontSize: 19, fontFamily: FONT.bold },
+  suggestion: { padding: SPACE.md, paddingBottom: SPACE.md + 2, gap: SPACE.sm },
+  suggestionText: { color: PARCH.ink, fontSize: 20, fontFamily: FONT.bold },
   mineWrap: { alignItems: "flex-end" },
   mine: { padding: SPACE.md, maxWidth: "85%" },
   mineText: { color: INK, fontSize: 18, fontFamily: FONT.bold },
   status: { color: PARCH.ink, fontSize: 21, fontFamily: FONT.bold, flexShrink: 1 },
-  bar: { marginTop: SPACE.md },
+  tag: { marginTop: SPACE.md },
   actions: { flexDirection: "row", gap: SPACE.md, marginTop: SPACE.lg },
-  warn: { color: COLOR.redDeep, fontSize: 16, fontFamily: FONT.semi, marginTop: SPACE.md },
+  warn: { color: COLOR.redDeep, fontSize: 17, fontFamily: FONT.semi, marginTop: SPACE.md },
   error: { color: COLOR.foam, fontSize: 16, fontFamily: FONT.semi, textAlign: "center", textShadowColor: INK, textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 0 },
   link: { color: COLOR.sign, fontSize: 18, fontFamily: FONT.bold, textAlign: "center", textShadowColor: INK, textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 0 },
   inputRow: { flexDirection: "row", alignItems: "center", gap: SPACE.sm, padding: SPACE.md, paddingBottom: SPACE.xl, backgroundColor: "rgba(36,21,43,0.35)" },
