@@ -1,11 +1,16 @@
 project:
     id: f1bc30cf-7733-43cb-818d-32dc1773578b
+run_test_definitions_from_git: true
 session:
     idle_timeout_seconds: 1800
 build:
     framework: expo
     env:
         EXPO_PUBLIC_CONVEX_URL: https://patient-flamingo-104.convex.cloud
+    caches:
+        - key: npm
+          paths:
+            - ~/.npm
     profiles:
         pull-request:
             ios:
@@ -19,18 +24,20 @@ build:
                 image: ios-macos-26-xcode-26.6
                 env:
                     EXPO_PUBLIC_DEVICE_ID: revyl-proof-ios-fixed-device-for-pull-request-proofs
-            android:
-                app_id: 55e58bcb-8425-4d08-bef3-81a1bfa673e0
-                setup_commands:
-                    - npm ci
-                    - npx expo prebuild --platform android --no-install
-                build_commands:
-                    - cd android && ./gradlew assembleRelease -PreactNativeArchitectures=x86_64
-                output_path: android/app/build/outputs/apk/release/app-release.apk
-                env:
-                    EXPO_PUBLIC_DEVICE_ID: revyl-proof-android-fixed-device-for-pull-request-proofs
+                    REVYL_USE_FINGERPRINT: "1"
+                caches:
+                    - key: cocoapods
+                      paths:
+                        - ~/Library/Caches/CocoaPods
 pr_review:
     enabled: true
+    triggers:
+        paths:
+            - outpost/**
+            - "!outpost/convex/**"
+            - "!outpost/studio/**"
+            - "!outpost/docs/**"
+            - "!outpost/**/*.md"
     build:
         kind: revyl
         profile: pull-request
@@ -39,4 +46,9 @@ pr_review:
         harness:
             kind: revyl
         always_verify:
-            - The app launches to its first screen without crashing.
+            - The app launches straight to the Base village (the pixel-art island under a wooden header, with the Feed, Base and You tab bar) without a sign-in screen or a crash.
+        system_prompt: Outpost is iOS-only. The proof device is a fixed dry-run test user, so nothing it approves posts publicly. Its Feed may hold seeded "Revyl test clip" videos. Don't send a Feed card back with a reason unless the change is about remakes, because each one queues a render on the team's laptop studio.
+    workflows:
+        enabled: true
+        workflow_ids:
+            - b3b116b1-5b0c-4cd8-967a-8d2e0f01c16f
