@@ -6,7 +6,7 @@
 - **Live app:** not deployed
 - **Repo:** https://github.com/krishhgg/outpost-capy-yc
 - **Frontend:** not deployed
-- **Convex deployment:** TODO (team): add the public `*.convex.cloud` URL. It is not checked in, and the backend is moving to a new deployment.
+- **Convex deployment:** https://patient-flamingo-104.convex.cloud
 - **Components:** none
 - **Convex features:** schema, tables, indexes, queries, mutations, actions, HTTP actions, crons, scheduled functions, file storage, realtime queries
 - **Auth:** none
