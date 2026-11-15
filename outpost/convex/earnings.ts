@@ -9,7 +9,8 @@ import { DAY_MS, livePosts, userFor } from "./lib";
 type Status = Doc<"submissions">["status"];
 type Verdict = "hit" | "solid" | "miss";
 
-// A video beats its baseline by this much to be a Hit, and falls short of it below MISS.
+// A video beats its baseline by this much to be a Hit, and falls short of it below MISS. Same as HIT_AT and MISS_UNDER in
+// src/ui/Badge.tsx, which the app's badges use.
 const HIT = 1.5;
 const MISS = 0.8;
 // A post is scored once it has a view count, has been live this long, and has a baseline to compare with.
@@ -22,14 +23,6 @@ const NEEDED = 5;
 const MIN_SWIPES = 3;
 // Posts younger than this are graded "so far": views still climb for a day or two.
 const SETTLE_MS = 2 * DAY_MS;
-
-// Taste tiers, named as in src/ui (T14) so they don't collide with the village's Scout and Director.
-const TIERS = [
-  { name: "Settler", min: 0 },
-  { name: "Curator", min: 40 },
-  { name: "Showrunner", min: 60 },
-  { name: "Tastemaker", min: 80 },
-];
 
 type Item = {
   videoId: Id<"videos">;
@@ -97,13 +90,6 @@ function tasteAt({ items, swipes, submissions, accountBaseline }: Inputs, at: nu
     graded, score: raw === null ? null : Math.max(0, Math.min(100, Math.round(raw))), provisional: n < NEEDED, scored: n,
     hits, approvalRate, approvedSubs, settledSubs: settled.length, pickiness, approvedClips, seenClips: seen.length,
   };
-}
-
-function tierOf(score: number) {
-  let i = 0;
-  while (i + 1 < TIERS.length && score >= TIERS[i + 1].min) i++;
-  const next = TIERS[i + 1] ?? null;
-  return { name: TIERS[i].name, min: TIERS[i].min, rank: i, next, progress: next ? (score - TIERS[i].min) / (next.min - TIERS[i].min) : 1 };
 }
 
 // Content Rewards pays per 1K views above a minimum, up to a cap per clip. A per-submission bounty pays its reward.
@@ -217,8 +203,8 @@ export const summary = query({
       taste: {
         // empty: nothing to score yet. calibrating: a provisional score. scored: NEEDED videos scored.
         state: score === null ? ("empty" as const) : taste.provisional ? ("calibrating" as const) : ("scored" as const),
+        // The app names the tier with tierFor() in src/ui.
         score,
-        tier: score === null ? null : tierOf(score),
         scored: taste.scored,
         needed: NEEDED,
         hits: taste.hits,

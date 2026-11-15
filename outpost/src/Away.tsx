@@ -14,6 +14,7 @@ import { ICON, type IconName } from "./Hud";
 import { centerOf, clearPending, getPending, setAwayUp, setPending, targets, type Point } from "./collect";
 import { Block, FONT, INK, Outlined, PARCH, PixelButton, WOOD } from "./pixel";
 import { TierUp } from "./Payoff";
+import { TIERS, tierFor } from "./ui";
 
 type Summary = FunctionReturnType<typeof api.away.summary>;
 // The taste side of the card: the score when the user last collected and now, and the best and worst post.
@@ -120,15 +121,16 @@ export function Away() {
 // A tier reached while the app is open gets its moment. The first score after launch only sets the mark, so opening
 // the app never celebrates an old tier.
 function TierWatch({ device }: { device: string }) {
-  const e = useQuery(api.earnings.summary, { deviceId: device });
-  const tier = e?.taste?.tier;
+  const taste = useQuery(api.earnings.summary, { deviceId: device })?.taste;
+  const tier = taste?.score === null || taste?.score === undefined ? null : tierFor(taste.score);
+  const rank = tier ? TIERS.indexOf(tier) : null;
   const last = useRef<number | null>(null);
   const [up, setUp] = useState<{ name: string; provisional: boolean } | null>(null);
   useEffect(() => {
-    if (!tier) return;
-    if (last.current !== null && tier.rank > last.current) setUp({ name: tier.name, provisional: e?.taste.state === "calibrating" });
-    last.current = tier.rank;
-  }, [tier?.rank]);
+    if (rank === null || !tier) return;
+    if (last.current !== null && rank > last.current) setUp({ name: tier.name, provisional: taste?.state === "calibrating" });
+    last.current = rank;
+  }, [rank]);
   return up ? <TierUp name={up.name} provisional={up.provisional} onDone={() => setUp(null)} /> : null;
 }
 

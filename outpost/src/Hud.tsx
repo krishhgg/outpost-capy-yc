@@ -3,8 +3,6 @@ import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useIsFocused } from "expo-router";
-import { useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
 import { FONT, INK, Outlined, PARCH, POP } from "./pixel";
 import { click, tick } from "./click";
 import { targets } from "./collect";
@@ -52,28 +50,6 @@ export function useTicker(value: number | undefined, ms = 650) {
     return () => cancelAnimationFrame(raf);
   }, [value]);
   return shown;
-}
-
-const cash = (cents: number) => `${(cents / 100).toFixed(2)}`;
-
-// The taste score and estimated pending earnings as header counters, for any screen's resource bar. Both count to a new
-// value and bump. The pending figure is an estimate, so it always wears "est"; a provisional score wears "prov".
-export function ScoreCounter({ device, onPress, testID = "hud-score" }: { device: string; onPress?: () => void; testID?: string }) {
-  const e = useQuery(api.earnings.summary, { deviceId: device });
-  const taste = e?.taste;
-  const n = useTicker(taste?.score ?? undefined);
-  const value = !taste ? "…" : taste.score === null || n === undefined ? "–" : String(n);
-  const tag = !taste?.tier ? undefined : taste.state === "calibrating" ? "prov" : taste.tier.name;
-  return <Counter icon="star" value={value} tag={tag} testID={testID} onPress={onPress}
-    label={!taste ? "Taste score loading" : taste.score === null ? "No taste score yet"
-      : `Taste score ${taste.score}, ${taste.tier?.name}${taste.state === "calibrating" ? ", provisional" : ""}`} />;
-}
-
-export function PendingCounter({ device, onPress, testID = "hud-pending" }: { device: string; onPress?: () => void; testID?: string }) {
-  const e = useQuery(api.earnings.summary, { deviceId: device });
-  const n = useTicker(e?.pendingCents);
-  return <Counter icon="coin" value={n === undefined ? "…" : cash(n)} tag="est" testID={testID} onPress={onPress}
-    label={e ? `${cash(e.pendingCents)} estimated pending, not guaranteed, pending Whop review` : "Pending earnings loading"} />;
 }
 
 // A resource counter for the header: an icon riding the left end of a dark bar, the value in outlined type, and an
