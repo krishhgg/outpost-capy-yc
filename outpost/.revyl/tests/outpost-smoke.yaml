@@ -2,10 +2,10 @@
 
 _meta:
     remote_id: 4017c49c-94d5-4a0d-8017-b1cf9af7c6e9
-    remote_version: 1
-    local_version: 1
-    last_synced_at: "2026-11-15T21:09:39Z"
-    checksum: f55ae3b550511584fb8befff24d14e40982627f395a5f30a95855e950665a453
+    remote_version: 2
+    local_version: 2
+    last_synced_at: "2026-11-15T22:09:06Z"
+    checksum: 427e432f4de0a7d16d1ed2092f6c60123fba377246cc21c9fd891816c506ebb1
 test:
     metadata:
         name: outpost-smoke
@@ -26,8 +26,10 @@ test:
               step_description: Tap Collect and wait for the card to close.
         - type: validation
           step_description: No sign-in, sign-up or account connection screen is showing, and there is no error such as "Outpost is full right now".
+        - type: instructions
+          step_description: Tap the Base tab in the bottom tab bar.
         - type: validation
-          step_description: The Base screen shows the pixel-art village under a wooden header with streak, views and coin counters, and a tab bar with Feed, Base and You at the bottom.
+          step_description: The Base screen shows the pixel-art village under a wooden header with streak, views and coin counters, and a tab bar with Bounties, Feed, Base and You at the bottom.
         - type: instructions
           step_description: Tap the Hood button with the gear icon at the top right of the Base header.
         - type: validation
