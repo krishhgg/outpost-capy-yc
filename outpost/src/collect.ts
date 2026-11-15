@@ -30,6 +30,14 @@ export function useAwayUp() {
   return useSyncExternalStore(cb => { awaySubs.add(cb); return () => { awaySubs.delete(cb); }; }, () => awayUp);
 }
 
+// The You tab's News button asks the Away card to open now, whether or not anything happened.
+const newsSubs = new Set<() => void>();
+export const showNews = () => newsSubs.forEach(f => f());
+export function onNews(f: () => void) {
+  newsSubs.add(f);
+  return () => { newsSubs.delete(f); };
+}
+
 // Where things sit on screen. Header counters register their icon by testID, so loot knows where to land.
 type Measurable = { measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => void };
 export type Point = { x: number; y: number };
