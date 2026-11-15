@@ -26,9 +26,11 @@ type BountyCard = {
 const usd = (cents: number, digits = 2) =>
   "$" + (cents / 100).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 
-function rewardLabel(b: Doc<"bounties">) {
-  if (b.rewardKind === "per_view") return b.ratePer1kCents != null ? usd(b.ratePer1kCents) + " / 1K views" : "Paid per 1K views";
-  return b.rewardCents != null ? usd(b.rewardCents) + " per approved post" : "Paid per approved post";
+// What a bounty pays, worded the same on the Bounties board and the Feed's bounty tag. Whole dollars drop the cents.
+export function rewardLabel(b: Doc<"bounties">) {
+  const pay = (cents: number) => usd(cents, cents % 100 ? 2 : 0);
+  if (b.rewardKind === "per_view") return b.ratePer1kCents != null ? pay(b.ratePer1kCents) + " / 1K views" : "Paid per 1K views";
+  return b.rewardCents != null ? pay(b.rewardCents) + " per approved post" : "Paid per approved post";
 }
 
 // Every video the library user owns, in any status.

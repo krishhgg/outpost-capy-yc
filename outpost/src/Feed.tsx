@@ -18,7 +18,7 @@ import { FindCard } from "./Scout";
 import { Block, DEEP, FONT, INK, Outlined, PARCH, PixelButton, POP, Sea, WOOD, WoodHeader } from "./pixel";
 import { usePayoff } from "./Payoff";
 import { Portrait } from "./Portrait";
-import { Flame, localDay, Milestones, MILESTONES, PLAT } from "./You";
+import { Flame, localDay, Milestones, MILESTONES, PendingCounter, PLAT, ScoreCounter } from "./You";
 import { Counter, ICON } from "./Hud";
 import { Badge, Button, Chip, COLOR, DemoNote, EmptyState, feel, HONESTY, useToast } from "./ui";
 
@@ -202,18 +202,26 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
     <View style={s.screen}>
       <Sea />
       {/* A slim strip instead of a titled header: the tab bar already says this is the Feed, and the video gets the room.
-          It carries the two numbers a session moves: the streak, and the videos left to review. */}
+          It carries the numbers a session moves: the streak, the videos left to review, the taste score and estimated
+          pending money. The mode chip sits beside the studio line under them, since four counters fill the row. */}
       <View style={s.top}>
-        <WoodHeader title="" right={status && <ModeChip mode={status.mode} />}
+        <WoodHeader title=""
           left={
             <View style={s.counters}>
               <Counter icon={you?.todayDone ? "flame" : "flameoff"} value={you ? String(you.streak) : "…"} testID="feed-streak"
                 label={you ? `${you.streak} day streak${you.todayDone ? ", kept today" : ", not kept today yet"}` : "Streak loading"} />
               <Counter icon="play" value={ready === null ? "…" : String(ready)} testID="feed-ready"
                 label={ready === null ? "Ready videos loading" : `${ready} videos ready`} />
+              <ScoreCounter device={device} compact onPress={() => router.navigate("/you")} testID="feed-score" />
+              <PendingCounter device={device} onPress={() => router.navigate("/you")} testID="feed-pending" />
             </View>
           }
-          below={<Text style={[s.line, atRisk && !offline && s.lineRisk]} numberOfLines={1} testID="studio-line">{line}</Text>} />
+          below={
+            <View style={s.lineRow}>
+              {status && <ModeChip mode={status.mode} />}
+              <Text style={[s.line, s.lineText, atRisk && !offline && s.lineRisk]} numberOfLines={1} testID="studio-line">{line}</Text>
+            </View>
+          } />
         <View style={s.drop} pointerEvents="box-none">
           {/* The tray sits above the deck area, out of the streak banner's dimming, so it steps aside while the banner
               shows and drops back in after it for the rest of its time. */}
@@ -761,6 +769,8 @@ const s = StyleSheet.create({
   pillText: { fontSize: 15, fontFamily: FONT.bold, flexShrink: 1 },
   counters: { flexDirection: "row", gap: 6 },
   line: { color: "#FFD65C", fontSize: 17, fontFamily: FONT.semi, marginTop: 6 },
+  lineRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
+  lineText: { flex: 1, marginTop: 0 },
   lineRisk: { color: "#FFB347", fontFamily: FONT.bold },
   deckArea: { flex: 1, marginTop: 12 + PEEK * 2, marginBottom: 18 }, // room for the cards peeking above and the buttons below
   caughtWrap: { flex: 1, justifyContent: "center", marginHorizontal: 24, marginBottom: 40 },

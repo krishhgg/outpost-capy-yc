@@ -6,6 +6,7 @@ import { PLATFORMS, bumpDay, dayOf, livePosts, ownVideo, refill, userFor } from 
 import { place, slotFor } from "./pace";
 import { attachDemoAccounts } from "./demo";
 import { scoutIfLow } from "./scout";
+import { rewardLabel } from "./bounties";
 
 export const REASONS: Record<string, string> = {
   hook: "Hook too slow",
@@ -73,14 +74,6 @@ function remadeLabel(reason: string) {
   return ({ hook: "punchier hook", visuals: "new look", voice: "new voice", long: "shorter", topic: "new topic", more: "your note" } as Record<string, string>)[reason] ?? "remade";
 }
 
-const money = (c: number) => `$${(c / 100).toFixed(c % 100 ? 2 : 0)}`;
-
-// What the bounty pays, as its tag on the card says it: per 1K views, or per accepted video.
-function rewardLabel(b: Doc<"bounties">) {
-  if (b.rewardKind === "per_view" && b.ratePer1kCents) return `${money(b.ratePer1kCents)} / 1K views`;
-  if (b.rewardCents) return `${money(b.rewardCents)} per video`;
-  return "Paid bounty";
-}
 
 // Studio and posting state for the header and the "just posted" tray.
 export const status = query({
