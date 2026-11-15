@@ -1,0 +1,42 @@
+project:
+    id: f1bc30cf-7733-43cb-818d-32dc1773578b
+session:
+    idle_timeout_seconds: 1800
+build:
+    framework: expo
+    env:
+        EXPO_PUBLIC_CONVEX_URL: https://patient-flamingo-104.convex.cloud
+    profiles:
+        pull-request:
+            ios:
+                app_id: db085c7f-c3e1-48dd-a52a-d8bf110e5236
+                setup_commands:
+                    - npm ci
+                    - npx expo prebuild --platform ios --no-install
+                build_commands:
+                    - cd ios && pod install && WS=$(ls -d *.xcworkspace | head -n 1) && xcodebuild -workspace "$WS" -scheme "${WS%.xcworkspace}" -configuration Release -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' ARCHS=arm64 -derivedDataPath build
+                output_path: ios/build/Build/Products/Release-iphonesimulator/*.app
+                image: ios-macos-26-xcode-26.6
+                env:
+                    EXPO_PUBLIC_DEVICE_ID: revyl-proof-ios-fixed-device-for-pull-request-proofs
+            android:
+                app_id: 55e58bcb-8425-4d08-bef3-81a1bfa673e0
+                setup_commands:
+                    - npm ci
+                    - npx expo prebuild --platform android --no-install
+                build_commands:
+                    - cd android && ./gradlew assembleRelease -PreactNativeArchitectures=x86_64
+                output_path: android/app/build/outputs/apk/release/app-release.apk
+                env:
+                    EXPO_PUBLIC_DEVICE_ID: revyl-proof-android-fixed-device-for-pull-request-proofs
+pr_review:
+    enabled: true
+    build:
+        kind: revyl
+        profile: pull-request
+    proof_of_changes:
+        enabled: true
+        harness:
+            kind: revyl
+        always_verify:
+            - The app launches to its first screen without crashing.
