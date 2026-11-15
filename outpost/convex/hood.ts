@@ -4,6 +4,7 @@ import { userFor } from "./lib";
 
 // Each outside service, in the order a video moves through them. `env` names the key a service waits on.
 const SERVICES = [
+  { key: "bounties", name: "Content Rewards", role: "Lists paid Whop campaigns", env: null },
   { key: "claude", name: "Claude", role: "Writes each script", env: null },
   { key: "kokoro", name: "Kokoro", role: "Reads it aloud", env: null },
   { key: "compound", name: "Compound", role: "Renders the video", env: null },

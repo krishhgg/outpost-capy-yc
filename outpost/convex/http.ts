@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { fromPayment, verifyWebhook } from "./whop";
+import { callback as whopOAuthCallback } from "./whopAuth";
 
 const http = httpRouter();
 
@@ -20,5 +21,7 @@ http.route({
     return new Response("ok", { status: 200 });
   }),
 });
+
+http.route({ path: "/whop/oauth/callback", method: "GET", handler: whopOAuthCallback });
 
 export default http;

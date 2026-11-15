@@ -61,6 +61,7 @@ export const reslot = internalMutation({
     const slots = {
       youtube: await reservedSlots(ctx, asPaused, "youtube", now),
       instagram: await reservedSlots(ctx, asPaused, "instagram", now),
+      tiktok: await reservedSlots(ctx, asPaused, "tiktok", now),
     };
     for (const p of held) {
       const slotAt = nextSlot(slots[p.platform], user.pacePerDay, now);
