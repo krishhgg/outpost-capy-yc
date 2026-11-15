@@ -177,8 +177,9 @@ export const swipe = mutation({
         userId: user._id, status: "queued", rank, parentId: videoId, findId: video.findId, remakeReason: key,
         remakeNote: key === "more" ? text : undefined, attempts: 0, createdAt: now,
       });
-    } else if (video.storageId) {
-      // A plain skip makes no remake, so nothing needs the file again.
+    } else if (video.storageId && !video.pregenerated && !video.sourceVideoId) {
+      // A plain skip makes no remake, so nothing needs the file again. A demo library video's file is shared with
+      // every clone of it, so the library keeps it.
       await ctx.storage.delete(video.storageId);
       await ctx.db.patch(videoId, { storageId: undefined });
     }
