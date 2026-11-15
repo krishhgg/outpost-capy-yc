@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { PLATFORMS, bumpDay, dayOf, livePosts, ownVideo, refill, userFor } from "./lib";
 import { place, slotFor } from "./pace";
@@ -53,18 +54,32 @@ export const next = query({
       if (!url || !r.script) continue;
       // A video made from a Scout find carries the find's price, so its tag can say which product it sells.
       const find = r.findId ? await ctx.db.get(r.findId) : null;
+      const bounty = r.bountyId ? await ctx.db.get(r.bountyId) : null;
       out.push({
         id: r._id, url, hook: r.script.hook, durationS: r.durationS ?? 0,
         remade: r.remakeReason ? { reason: REASONS[r.remakeReason] ?? r.remakeReason, label: remadeLabel(r.remakeReason) } : null,
         scout: find ? { priceCents: find.priceCents } : null,
+        bounty: bounty ? { brand: bounty.brand, title: bounty.title, rewardLabel: rewardLabel(bounty), url: bounty.url } : null,
+        pregenerated: !!r.pregenerated,
+        predicted: r.predicted ?? null,
       });
     }
     return out;
   },
 });
 
+// Named after the edit chip that asked for the remake, so the card that comes back reads "Remade: punchier hook".
 function remadeLabel(reason: string) {
-  return ({ hook: "shorter hook", visuals: "new look", voice: "new voice", long: "shorter cut", topic: "new topic", more: "your note" } as Record<string, string>)[reason] ?? "remade";
+  return ({ hook: "punchier hook", visuals: "new look", voice: "new voice", long: "shorter", topic: "new topic", more: "your note" } as Record<string, string>)[reason] ?? "remade";
+}
+
+const money = (c: number) => `$${(c / 100).toFixed(c % 100 ? 2 : 0)}`;
+
+// What the bounty pays, as its tag on the card says it: per 1K views, or per accepted video.
+function rewardLabel(b: Doc<"bounties">) {
+  if (b.rewardKind === "per_view" && b.ratePer1kCents) return `${money(b.ratePer1kCents)} / 1K views`;
+  if (b.rewardCents) return `${money(b.rewardCents)} per video`;
+  return "Paid bounty";
 }
 
 // Studio and posting state for the header and the "just posted" tray.
@@ -173,12 +188,15 @@ export const swipe = mutation({
       const ready = await ctx.db.query("videos")
         .withIndex("by_user_status_rank", q => q.eq("userId", user._id).eq("status", "ready")).take(4);
       const rank = ready.length >= 4 ? (ready[2].rank + ready[3].rank) / 2 : (ready.at(-1)?.rank ?? now) + 0.5;
+      // A remake stays on its bounty, so it comes back with the same tag and still submits there.
       await ctx.db.insert("videos", {
         userId: user._id, status: "queued", rank, parentId: videoId, findId: video.findId, remakeReason: key,
         remakeNote: key === "more" ? text : undefined, attempts: 0, createdAt: now,
+        bountyId: video.bountyId, mode: video.mode, clip: video.clip,
       });
-    } else if (video.storageId) {
-      // A plain skip makes no remake, so nothing needs the file again.
+    } else if (video.storageId && !video.pregenerated && !video.sourceVideoId) {
+      // A plain skip makes no remake, so nothing needs the file again. A demo library video's file is shared with
+      // every clone of it, so the library keeps it.
       await ctx.storage.delete(video.storageId);
       await ctx.db.patch(videoId, { storageId: undefined });
     }
