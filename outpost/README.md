@@ -109,7 +109,7 @@ npx tsc --noEmit -p convex   # Convex functions
 node --check studio/worker.mjs
 ```
 
-CI runs the same three on every pull request that touches `outpost/`.
+CI runs the same three on every pull request that touches `outpost/`. Revyl also builds those pull requests for an iOS simulator and an Android emulator, runs the app on a cloud device, and posts a verdict comment. Comment `@revyl rerun <guidance>` on the pull request to run it again.
 
 ## The studio worker
 
