@@ -31,6 +31,7 @@ planned feature as working.**
 | Scoreboard | Partial: total and per-video views, streak, You tab. No pending earnings or Whop review status | `convex/you.ts`, `src/You.tsx` |
 | Taste score (approval rate x performance) | Planned. "Taste" today means Supermemory notes from left-swipe reasons | `convex/memory.ts` |
 | iMessage agent | Planned. Nothing built | |
+| On-stage generation | Built for the demo: suggestion prompts on `/create` play a staged sequence, then clone a pregenerated library video into the Feed (labeled). `/generations` shows staged and real studio progress | `convex/generate.ts`, `src/Create.tsx`, `src/Generations.tsx` |
 | Studio (claude -p script + Kokoro voice + Compound render) | Built: today's video pipeline, Convex job queue to MP4 upload. Starting point for the clip engine | `studio/`, `convex/studio.ts` |
 | Shop raid | Built, Whop sandbox only: creates a $9 Notion template product + checkout, records test payments. Starting point for Whop bounty work | `convex/raids.ts`, `convex/whop.ts` |
 | Pixel-art Base village, streaks, widget | Built. The home screen and daily loop that bounty features plug into | `src/Base.tsx`, `convex/you.ts`, `src/widgets/` |

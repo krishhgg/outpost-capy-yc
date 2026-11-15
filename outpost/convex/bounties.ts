@@ -34,7 +34,7 @@ export function rewardLabel(b: Doc<"bounties">) {
 }
 
 // Every video the library user owns, in any status.
-async function libraryVideos(ctx: QueryCtx) {
+export async function libraryVideos(ctx: QueryCtx) {
   const library = await ctx.db.query("users").withIndex("by_device", q => q.eq("deviceId", LIBRARY_DEVICE_ID)).unique();
   if (!library) return [];
   return ctx.db.query("videos").withIndex("by_user_status_rank", q => q.eq("userId", library._id)).collect();
@@ -42,7 +42,7 @@ async function libraryVideos(ctx: QueryCtx) {
 
 // Clones the bounty's ready library videos the user doesn't have yet to the front of their Feed, in library order.
 // A clone shares its library video's storage file and never deletes it (contracts.md, storage rule).
-async function cloneInto(ctx: MutationCtx, userId: Id<"users">, library: Doc<"videos">[]) {
+export async function cloneInto(ctx: MutationCtx, userId: Id<"users">, library: Doc<"videos">[]) {
   const mine = await ctx.db.query("videos").withIndex("by_user_status_rank", q => q.eq("userId", userId)).collect();
   const have = new Set(mine.map(v => v.sourceVideoId));
   const fresh = library.filter(v => v.status === "ready" && v.storageId && v.script && !have.has(v._id)).sort((a, b) => a.rank - b.rank);
