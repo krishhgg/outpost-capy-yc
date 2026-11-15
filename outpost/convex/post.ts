@@ -52,6 +52,10 @@ export const settle = internalMutation({
       checks: p.checks + (patch.status === "publishing" ? 1 : 0),
       ...(patch.status === "live" ? { liveAt: Date.now() } : {}),
     });
+    // A public post on a bounty video going live becomes a submission. dryRun and private posts never submit.
+    if (patch.status === "live" && p.status !== "live" && p.mode === "public" && (await ctx.db.get(p.videoId))?.bountyId) {
+      await ctx.scheduler.runAfter(0, internal.submit.forPost, { postId });
+    }
   },
 });
 
