@@ -1,41 +1,41 @@
-This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
+# outpost/AGENTS.md
 
-## Expo has changed — do not trust your training data
+Start with the root [AGENTS.md](../AGENTS.md): what Outpost is, built vs planned, hard rules and commands. This
+file adds what is specific to the app, Convex and the studio.
 
-Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
+## Expo app (`src/`)
 
-1. Read the major version of the `expo` package in `package.json`.
-2. Fetch the matching versioned docs: `https://docs.expo.dev/versions/v<major>.0.0/`
-3. For anything else, fetch https://docs.expo.dev/llms.txt — an index of all Expo docs with corrections to common LLM misconceptions. Follow its links to the specific page you need; never answer from memory.
+Expo SDK 58, React Native 0.88, Expo Router, iOS only. **Expo changes every SDK; don't trust memory.** Check the
+`expo` major in `package.json`, then read `https://docs.expo.dev/versions/v58.0.0/` or
+https://docs.expo.dev/llms.txt before touching an Expo or RN API.
 
-## Commands
+- Add packages with `npx expo install <pkg>`, never `npm install`, so versions match the SDK.
+  `npx expo install --fix` and `npx expo-doctor` repair mismatches.
+- `ios/` and `android/` are generated (CNG) and git-ignored. Never create or edit them; configure native
+  behavior in `app.json` and config plugins.
+- The app uses native modules (widgets, secure store, video), so it needs a dev build (`npx expo run:ios`), not
+  Expo Go. Adding a native library means rebuilding.
+- Routes are files in `src/app/` (`(tabs)/` holds Base, Feed and You; `hood.tsx` is the call log). Components
+  live in `src/`, outside `app/`. Import `Link`, `router`, `useLocalSearchParams` from `expo-router`.
+- The app reads only `EXPO_PUBLIC_CONVEX_URL`, fixed at build time. No other env or secret goes in the app.
+- Keep the `testID`s on screens; device tests may rely on them.
 
-Use `bunx` instead of `npx` if the project uses bun (`bun.lock` present).
+## Convex (`convex/`)
 
-```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
-```
+- `convex/_generated/` is written by `npx convex dev`. Don't hand-edit it; commit it when functions change so CI
+  typechecks.
+- Typecheck separately: `npx tsc --noEmit -p convex` (own `tsconfig.json`).
+- App-facing functions take `deviceId` and resolve the user with `userFor()`; worker functions live in
+  `studio.ts` and take `key` (`requireWorker()`); everything builder-only is `internal` and run with
+  `npx convex run admin:<name>`.
+- Outside calls happen in actions and are logged to `calls` (`internal.post.call`); never log keys or webhook
+  secrets.
+- Posting mode is copied onto each `posts` row at swipe time, so changing a user's mode doesn't send held posts
+  that were approved in `dryRun`.
 
-Run lint and typecheck before declaring any task done.
+## Studio (`studio/`)
 
-## Navigation & Routing
-
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
-
-## Building with EAS
-
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
-Docs: https://docs.expo.dev/eas/index.md
-
-## Rules
-
-- If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
-- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
-- Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+- `worker.mjs` has hardcoded macOS paths (`PROJECT_DIR`, `COMPOUND`, `PY`) for one laptop. It cannot run in a
+  cloud sandbox; verify edits with `node --check studio/worker.mjs` and say so in the PR.
+- It reads `EXPO_PUBLIC_CONVEX_URL` from `.env.local` and `WORKER_SECRET` from `.env.worker` (shell vars win).
+- It exits on purpose when Compound or the voice server dies; run it in the restart loop.
