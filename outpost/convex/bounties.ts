@@ -20,7 +20,7 @@ export const list = query({
   handler: async (): Promise<BountyCard[]> => [],
 });
 
-// Upserts the user's userBounties row as active, then refills with bounty videos.
+// Upserts the user's userBounties row as active and clones the bounty's pregenerated library videos into the Feed.
 export const take = mutation({
   args: { deviceId: v.string(), bountyId: v.id("bounties") },
   handler: async (): Promise<null> => null,
@@ -32,7 +32,7 @@ export const drop = mutation({
   handler: async (): Promise<null> => null,
 });
 
-// Cron, every 15 minutes: lists open bounties with the demo Whop token and the Content Rewards fallback.
+// Cron, every 15 minutes: reads the Content Rewards public catalog.
 export const sync = internalAction({
   args: {},
   handler: async (): Promise<null> => null,

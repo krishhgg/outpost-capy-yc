@@ -91,6 +91,9 @@ export default defineSchema({
     clip: v.optional(v.object({ sourceUrl: v.string(), startS: v.number(), endS: v.number(), hook: v.string(), captionStyle: v.string() })),
     // The studio's forecast of how well this video meets its bounty brief, 0 to 100, shown as a forecast.
     predicted: v.optional(v.object({ score: v.number(), reason: v.string() })),
+    // Made ahead of time for the demo library. A clone shares its library video's storage file and never deletes it.
+    pregenerated: v.optional(v.boolean()),
+    sourceVideoId: v.optional(v.id("videos")),
   })
     .index("by_user_status_rank", ["userId", "status", "rank"])
     .index("by_status", ["status"])
@@ -298,7 +301,7 @@ export default defineSchema({
     checks: v.number(),
   }).index("by_post", ["postId"]).index("by_status", ["status"]).index("by_user", ["userId"]),
 
-  // Server-only. No public function may return a token. v1 holds the one demo Whop account here.
+  // Server-only. No public function may return a token. A seam for real Whop accounts; unused in v1.
   whopAuth: defineTable({
     userId: v.id("users"),
     whopUserId: v.string(),
@@ -311,7 +314,7 @@ export default defineSchema({
 
   oauthStates: defineTable({ state: v.string(), userId: v.id("users"), at: v.number() }).index("by_state", ["state"]),
 
-  // Texts to and from the user over iMessage.
+  // Texts to and from the user over iMessage. Unused in v1.
   messages: defineTable({
     userId: v.id("users"),
     direction: v.union(v.literal("out"), v.literal("in")),

@@ -3,7 +3,6 @@ import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { fromPayment, verifyWebhook } from "./whop";
 import { callback as whopOAuthCallback } from "./whopAuth";
-import { inbound as kakaiInbound } from "./agent";
 
 const http = httpRouter();
 
@@ -24,6 +23,5 @@ http.route({
 });
 
 http.route({ path: "/whop/oauth/callback", method: "GET", handler: whopOAuthCallback });
-http.route({ path: "/kakai/webhook", method: "POST", handler: kakaiInbound });
 
 export default http;
