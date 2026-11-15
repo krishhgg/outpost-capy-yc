@@ -39,6 +39,7 @@ npm ci
 | Part | Variable | Where it is set | What it is |
 |---|---|---|---|
 | App | `EXPO_PUBLIC_CONVEX_URL` | `outpost/.env.local` | The Convex deployment URL. Built into the app |
+| App | `EXPO_PUBLIC_DEVICE_ID` | Build env, optional | Pins the device id, so every install of the build is one user. Only the Revyl proof builds set it (`.revyl/config.yaml`). At least 43 letters, digits, `-` or `_` |
 | Studio worker | `EXPO_PUBLIC_CONVEX_URL` or `CONVEX_URL` | `.env.local`, or the shell | Same URL. `CONVEX_URL` in the shell wins |
 | Studio worker | `WORKER_SECRET` | `outpost/.env.worker`, or the shell | Must match the Convex variable of the same name |
 | Studio worker | `WRITER_MODEL` | Shell, optional | The Claude model for scripts. Default `sonnet` |

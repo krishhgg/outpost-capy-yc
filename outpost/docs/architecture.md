@@ -51,7 +51,7 @@ Every outside call that Convex or the worker makes is written to the `calls` tab
 
 ## Identity
 
-There are no accounts. On first launch, `src/device.ts` makes a random 64-character id and keeps it in the iOS keychain through `expo-secure-store`. `src/session.tsx` calls `feed.ensureUser` with that id and the phone's time zone. Every app query and mutation takes `deviceId` and looks the user up with `userFor()` in `convex/lib.ts`.
+There are no accounts. On first launch, `src/device.ts` makes a random 64-character id and keeps it in the iOS keychain through `expo-secure-store`. A build made with `EXPO_PUBLIC_DEVICE_ID` uses that id instead, which is how the Revyl proof builds stay one user per platform across fresh simulators. `src/session.tsx` calls `feed.ensureUser` with that id and the phone's time zone. Every app query and mutation takes `deviceId` and looks the user up with `userFor()` in `convex/lib.ts`.
 
 `ensureUser` refuses new users once the `users` table holds `MAX_USERS` rows (default 5). A new user starts with:
 

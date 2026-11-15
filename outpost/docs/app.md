@@ -18,7 +18,7 @@ The app is an Expo Router app in `outpost/src/`. Routes are files under `src/app
 ## Startup
 
 1. `src/session.tsx` holds the splash screen.
-2. `src/device.ts` reads or makes the device id in the keychain.
+2. `src/device.ts` reads or makes the device id in the keychain, unless the build pins one with `EXPO_PUBLIC_DEVICE_ID`.
 3. `feed.ensureUser` finds or creates the user. This also fills the video queue and may start a Scout search.
 4. The splash hides. If Convex is slow, it hides after 4 seconds and the screen says "Opening the outpost…". If the user cap is hit, it shows "Outpost is full right now."
 
