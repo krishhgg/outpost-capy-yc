@@ -324,6 +324,18 @@ export default defineSchema({
     at: v.number(),
   }).index("by_user_at", ["userId", "at"]),
 
+  // A staged on-stage generation: the user picked a suggestion, the app plays its stage timeline, and when it ends a
+  // scheduled mutation clones that one ready library video into the user's Feed. One row per user and library video.
+  generations: defineTable({
+    userId: v.id("users"),
+    sourceVideoId: v.id("videos"), // the library video behind the suggestion
+    bountyId: v.optional(v.id("bounties")),
+    prompt: v.string(),
+    startedAt: v.number(),
+    doneAt: v.optional(v.number()),
+    videoId: v.optional(v.id("videos")), // the clone in the user's Feed, set when it lands
+  }).index("by_user", ["userId"]).index("by_user_source", ["userId", "sourceVideoId"]),
+
   // Source footage for clip bounties, downloaded once on the laptop studio. `localKey` names the laptop file.
   sources: defineTable({
     bountyId: v.id("bounties"),
