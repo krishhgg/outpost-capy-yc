@@ -10,6 +10,8 @@ The app is an Expo Router app in `outpost/src/`. Routes are files under `src/app
 | `/feed` | `src/app/(tabs)/feed.tsx` | Feed | `src/Feed.tsx` |
 | `/you` | `src/app/(tabs)/you.tsx` | You | `src/You.tsx` |
 | `/hood` | `src/app/hood.tsx` | Under the hood, full-screen modal | `src/Hood.tsx` |
+| `/create` | `src/app/create.tsx` | Create: suggestion prompts and the staged generation | `src/Create.tsx` |
+| `/generations` | `src/app/generations.tsx` | Progress of staged and studio videos | `src/Generations.tsx` |
 
 `src/app/_layout.tsx` is the root. It loads the Jersey pixel fonts, creates the Convex client from `EXPO_PUBLIC_CONVEX_URL`, sets the audio session to play with the ring switch off, and wraps everything in `Session`. The Away card (`src/Away.tsx`) and the widget sync (`src/WidgetSync.tsx`) mount here too, so they work over any tab.
 
@@ -75,6 +77,14 @@ Two big buttons under the village:
 
 - **REVIEW n** opens the Feed. Its second line says what a swipe does today: keep or reach a streak, "Dry run · nothing posts", "Swipe right to post privately" or "Swipe right to post".
 - **RAID** ("Open a shop on Whop") opens the raid picker. It goes away once a raid exists.
+
+Under them, **CREATE** ("Pick a prompt, get a video") opens `/create`.
+
+## Create (`/create`) and Progress (`/generations`)
+
+A chat-style screen for the stage demo. The writer offers up to six prompts from `generate.suggestions`, one per ready pregenerated library video the user doesn't have yet, one bounty each first. The text box picks the suggestion sharing the most words with what was typed, or a random one. Picking one calls `generate.start`, then plays the stage timeline from `generate.list` (Script, Voice, Render, Done, about 12 s). When the server's scheduled `finish` has cloned the video to the front of the Feed, the card offers Open Feed and New chat. The finished card and every staged row on the progress page carry the PREGENERATED tag ("Pregenerated for the demo").
+
+`/generations` lists the staged generations with their live step and where the video is now (in the Feed, approved, sent back), then the user's real queued and making videos with the studio worker's stage.
 
 ### Raid picker
 

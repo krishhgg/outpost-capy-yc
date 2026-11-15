@@ -254,6 +254,9 @@ export function Base({ device }: { device: string }) {
           )}
           {!raid && <Action label="RAID" sub="Open a shop on Whop" bevel="gold" grow={1} onPress={() => setPicking(true)} testID="raid-button" />}
         </View>
+        <View style={s.actions}>
+          <Action label="CREATE" sub="Pick a prompt, get a video" bevel="teal" grow={1} onPress={() => router.push("/create")} testID="create-button" />
+        </View>
         {raid && <RaidCard device={device} raid={raid} held={browsing} onBrowse={setBrowsing} />}
       </View>
 
@@ -268,7 +271,7 @@ export function Base({ device }: { device: string }) {
 // A big home-screen button with a line under its label saying what it does. With pulse, it breathes slowly so the eye
 // lands on it first, the way a game pulses the button for what's ready.
 function Action({ label, sub, bevel, grow, pulse, onPress, testID }:
-  { label: string; sub: string; bevel: "green" | "gold"; grow: number; pulse?: boolean; onPress: () => void; testID: string }) {
+  { label: string; sub: string; bevel: "green" | "gold" | "teal"; grow: number; pulse?: boolean; onPress: () => void; testID: string }) {
   const breath = useSharedValue(1);
   useEffect(() => {
     if (!pulse) return;

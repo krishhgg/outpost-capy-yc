@@ -16,6 +16,7 @@ import type * as crons from "../crons.js";
 import type * as demo from "../demo.js";
 import type * as earnings from "../earnings.js";
 import type * as feed from "../feed.js";
+import type * as generate from "../generate.js";
 import type * as hood from "../hood.js";
 import type * as http from "../http.js";
 import type * as lib from "../lib.js";
@@ -48,6 +49,7 @@ declare const fullApi: ApiFromModules<{
   demo: typeof demo;
   earnings: typeof earnings;
   feed: typeof feed;
+  generate: typeof generate;
   hood: typeof hood;
   http: typeof http;
   lib: typeof lib;

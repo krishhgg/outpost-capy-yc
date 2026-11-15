@@ -180,6 +180,17 @@ A day counts toward the streak when at least one video was approved that day. `s
 
 `calls` (query) feeds the Under the hood screen: one row per service with its role, last call and whether its key is missing, the 60 newest calls, the 20 newest taste notes with their sync state, and the Supermemory cache.
 
+### generate.ts
+
+Staged on-stage generation over the pregenerated library. Each generation row is one user and one library video.
+
+| Function | Kind | What it does |
+|---|---|---|
+| `suggestions` | query | Up to 6 prompts (`{id, prompt, brand}`), one per ready library video of an open bounty the user has neither in the Feed nor generated, one per bounty first |
+| `start({deviceId, suggestionId, prompt?})` | mutation | Records a generation and schedules `finish` after `TOTAL_MS` (the sum of `STAGES`, 12 s). Idempotent per user and library video |
+| `finish` | internal mutation | Clones that one library video to the front of the Feed with `bounties.cloneInto` (same storage file, `pregenerated`, `sourceVideoId`) and marks the row done |
+| `list` | query | The stage timeline, the user's 20 newest generations with their clone's status, and their queued and making videos with the worker's `stage` |
+
 ### admin.ts
 
 Builder-only switches. Run them with `npx convex run admin:<name> '<json args>'` or from the dashboard.
@@ -234,6 +245,7 @@ Everything else is scheduled by the code that needs it:
 | `whop.setup` | `raids.start`, `raids.retry` | At once |
 | `whop.poll` | `raids.setStep`, `raids.watch`, `raids.pollNext` | Every 4 seconds while the raid is watched |
 | `views.sync` (next batch) | `views.sync` | 1 minute later, while posts remain |
+| `generate.finish` | `generate.start` | 12 s later, when the staged steps end |
 
 ## Typecheck
 
