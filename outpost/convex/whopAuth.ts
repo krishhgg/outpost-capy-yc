@@ -1,6 +1,7 @@
 import { ConvexError, v, type ObjectType } from "convex/values";
 import { httpAction, internalAction, internalMutation, query, type ActionCtx, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 
 // Whop OAuth for the Bounties API (production, api.whop.com), with ONE demo Whop login: every Outpost user's Whop
 // Bounty submissions go out as the demo account (Charlie's). A builder mints a one-time authorize link with
@@ -144,7 +145,7 @@ export const importDemoToken = internalMutation({
 // The token if it is fresh; else, for exactly one caller at a time, the refresh token to rotate.
 export const lease = internalMutation({
   args: {},
-  handler: async (ctx): Promise<{ token: string } | { refresh: string } | { wait: true } | null> => {
+  handler: async (ctx): Promise<{ token: string } | { refresh: string; id: Id<"whopAuth"> } | { wait: true } | null> => {
     const row = await demo(ctx);
     if (!row) return null;
     const now = Date.now();
@@ -152,24 +153,25 @@ export const lease = internalMutation({
     if (!row.refreshToken) return null;
     if ((row.refreshingUntil ?? 0) > now) return { wait: true };
     await ctx.db.patch(row._id, { refreshingUntil: now + LEASE_MS });
-    return { refresh: row.refreshToken };
+    return { refresh: row.refreshToken, id: row._id };
   },
 });
 
+// Both refresh outcomes apply only to the login that took the lease: a login replaced meanwhile is left alone.
 export const rotated = internalMutation({
-  args: { accessToken: v.string(), refreshToken: v.optional(v.string()), expiresAt: v.number() },
-  handler: async (ctx, tokens) => {
-    const row = await demo(ctx);
-    if (row) await ctx.db.patch(row._id, { ...tokens, refreshToken: tokens.refreshToken ?? row.refreshToken, refreshingUntil: undefined });
+  args: { id: v.id("whopAuth"), accessToken: v.string(), refreshToken: v.optional(v.string()), expiresAt: v.number() },
+  handler: async (ctx, { id, ...tokens }) => {
+    const row = await ctx.db.get(id);
+    if (row) await ctx.db.patch(id, { ...tokens, refreshToken: tokens.refreshToken ?? row.refreshToken, refreshingUntil: undefined });
   },
 });
 
 // After a failed refresh: a revoked grant is dropped (a builder mints a new authorizeUrl); any other failure only
 // releases the lease so the next caller retries.
 export const afterFailedRefresh = internalMutation({
-  args: { revoked: v.boolean() },
-  handler: async (ctx, { revoked }) => {
-    const row = await demo(ctx);
+  args: { id: v.id("whopAuth"), revoked: v.boolean() },
+  handler: async (ctx, { id, revoked }) => {
+    const row = await ctx.db.get(id);
     if (!row) return;
     if (revoked) await ctx.db.delete(row._id);
     else await ctx.db.patch(row._id, { refreshingUntil: undefined });
@@ -190,12 +192,12 @@ export async function accessToken(ctx: ActionCtx): Promise<string | null> {
     try {
       const t = await tokenCall(ctx, "oauth.refresh", { grant_type: "refresh_token", refresh_token: l.refresh });
       await ctx.runMutation(internal.whopAuth.rotated, {
-        accessToken: t.access_token, refreshToken: t.refresh_token, expiresAt: expiry(t.expires_in),
+        id: l.id, accessToken: t.access_token, refreshToken: t.refresh_token, expiresAt: expiry(t.expires_in),
       });
       return t.access_token;
     } catch (e) {
       const revoked = e instanceof WhopOAuthError && (e.code === "invalid_grant" || e.status === 401);
-      await ctx.runMutation(internal.whopAuth.afterFailedRefresh, { revoked });
+      await ctx.runMutation(internal.whopAuth.afterFailedRefresh, { id: l.id, revoked });
       if (revoked) return null;
       throw e;
     }

@@ -145,8 +145,8 @@ export const open = internalQuery({
   args: {},
   handler: async (ctx) => {
     const pending = await ctx.db.query("submissions").withIndex("by_status", q => q.eq("status", "pending")).take(25);
-    const submitted = (await ctx.db.query("submissions").withIndex("by_status", q => q.eq("status", "submitted")).take(100))
-      .filter(s => s.externalId);
+    const submitted = await ctx.db.query("submissions").withIndex("by_status", q => q.eq("status", "submitted"))
+      .filter(q => q.neq(q.field("externalId"), undefined)).take(100);
     const reviewing = [];
     for (const s of submitted) {
       const bounty = await ctx.db.get(s.bountyId);

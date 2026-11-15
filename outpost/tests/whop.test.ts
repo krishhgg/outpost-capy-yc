@@ -257,7 +257,7 @@ describe("refresh rotation", () => {
   test("a refresh already running makes others wait for the lease instead of spending the refresh token twice", async () => {
     const t = convexTest(schema, modules);
     await connect(t, Date.now() - 1);
-    expect(await t.mutation(internal.whopAuth.lease, {})).toEqual({ refresh: "ref-1" });
+    expect(await t.mutation(internal.whopAuth.lease, {})).toMatchObject({ refresh: "ref-1" });
     expect(await t.mutation(internal.whopAuth.lease, {})).toEqual({ wait: true });
   });
 });
@@ -432,6 +432,40 @@ describe("addWhopBounty", () => {
     await expect(t.mutation(internal.bounties.addWhopBounty, {
       externalId: "cc01", title: "x", brand: "x", description: "", rewardCents: 1, url: "https://whop.com",
     })).rejects.toThrow(/bnty_/);
+  });
+});
+
+describe("reconnect during a refresh", () => {
+  test("a refresh that finishes after a new login was stored leaves the new login alone", async () => {
+    const t = convexTest(schema, modules);
+    await connect(t, Date.now() - 1);
+    const l = await t.mutation(internal.whopAuth.lease, {});
+    if (!l || !("id" in l)) throw new Error("expected a refresh lease");
+    await t.mutation(internal.whopAuth.saveTokens, { whopUserId: "user_new", accessToken: "acc-new", refreshToken: "ref-new", expiresAt: Date.now() + 3600_000, scopes: [] });
+    await t.mutation(internal.whopAuth.rotated, { id: l.id, accessToken: "acc-old", refreshToken: "ref-old", expiresAt: Date.now() + 3600_000 });
+    await t.mutation(internal.whopAuth.afterFailedRefresh, { id: l.id, revoked: true });
+    expect(await t.run(ctx => ctx.db.query("whopAuth").collect())).toMatchObject([{ whopUserId: "user_new", accessToken: "acc-new", refreshToken: "ref-new" }]);
+  });
+});
+
+describe("poll batch", () => {
+  test("hand-confirmed Content Rewards rows never crowd out Whop Bounty rows under review", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await user(t, "public");
+    const cr = await contentRewards(t);
+    for (let i = 0; i < 101; i++) {
+      const { videoId, postId } = await livePost(t, userId, cr, "public");
+      await t.run(ctx => ctx.db.insert("submissions", { userId, bountyId: cr, videoId, postId, url: "u", status: "submitted", checks: 0 }));
+    }
+    const wb = await whopBounty(t);
+    const { videoId, postId } = await livePost(t, userId, wb, "public");
+    await t.run(ctx => ctx.db.insert("submissions", { userId, bountyId: wb, videoId, postId, url: "u", status: "submitted", externalId: "btys_9", checks: 0 }));
+    await connect(t);
+    const seen = mockFetch(s => s.url.pathname === "/api/v1/bounty_submissions" ? json(200, { data: [{ id: "btys_9", status: "approved" }] }) : undefined);
+    await t.action(internal.submit.poll, {});
+    expect(seen).toHaveLength(1);
+    const row = await t.run(ctx => ctx.db.query("submissions").filter(q => q.eq(q.field("externalId"), "btys_9")).first());
+    expect(row!.status).toBe("approved");
   });
 });
 
