@@ -17,10 +17,12 @@ export const STAGES = [
 export const TOTAL_MS = STAGES.reduce((n, s) => n + s.ms, 0);
 const SUGGESTIONS = 6;
 
-// A prompt-like line from the video's brief: 'Dialogue skit for Nilo: "Stop buying games, make one"'.
+// A prompt-like line from the video's brief: 'Dialogue skit for Nilo: "Stop buying games, make one"'. A hook that
+// repeats the format ("POV: ...") drops it: 'POV for Nilo: "you have had the same game idea for years"'.
 function promptFor(video: Doc<"videos">, bounty: Doc<"bounties"> | null) {
-  const hook = video.brief?.hook ?? video.script?.hook ?? "";
   const format = video.brief?.format ?? "Short video";
+  const raw = video.brief?.hook ?? video.script?.hook ?? "";
+  const hook = raw.toLowerCase().startsWith(format.toLowerCase() + ":") ? raw.slice(format.length + 1).trim() : raw;
   const what = format.charAt(0).toUpperCase() + format.slice(1) + (bounty ? " for " + bounty.brand : "");
   return hook ? what + ': "' + hook + '"' : what;
 }
