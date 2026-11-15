@@ -336,7 +336,8 @@ function Earnings({ e, device }: { e: Earn | undefined; device: string }) {
 // One bounty video: brand, verdict, estimate, views and where its submission stands. A manual submission carries the
 // "Submit on Whop" flow: the post URL to paste there, the campaign page, then "I submitted it". A video posted to both
 // platforms has a row per post, so the flow repeats until none is left. A submission the user reported themselves is a
-// label, not a Whop-confirmed status.
+// label, not a Whop-confirmed status. A Whop Bounty submits itself; its one note line says why it is still waiting or
+// why Whop refused it (then the manual steps show).
 function EarnRow({ r, device }: { r: Earn["perVideo"][number]; device: string }) {
   const sub = useQuery(api.submit.forVideo, { deviceId: device, videoId: r.videoId });
   const mark = useMutation(api.submit.markSubmitted);
@@ -359,6 +360,7 @@ function EarnRow({ r, device }: { r: Earn["perVideo"][number]; device: string })
           : <Badge label={st?.text ?? "NOT SUBMITTED"} tone={st?.tone ?? "parch"} size="sm" />}
       </Pressable>
       {status === "denied" && sub?.denialReason ? <Text style={s.denied}>{`Denied: ${sub.denialReason}`}</Text> : null}
+      {sub?.auto && sub.note && (status === "pending" || status === "manual") ? <Text style={s.note} testID="you-submit-note">{sub.note}</Text> : null}
       {/* The post link to paste on the brand's campaign, then the two steps. No box: the row's rule already sets it apart. */}
       {sub?.status === "manual" && (
         <View style={s.submit} testID="you-submit">
@@ -489,6 +491,7 @@ const s = StyleSheet.create({
   earnViews: { color: PARCH.ink, fontSize: 15, fontFamily: FONT.bold },
   selfReported: { color: PARCH.soft, fontSize: 14, fontFamily: FONT.semi, fontStyle: "italic" },
   denied: { color: "#8A3A32", fontSize: 15, fontFamily: FONT.semi },
+  note: { color: PARCH.soft, fontSize: 14, fontFamily: FONT.semi },
   submit: { marginTop: 4, gap: 8 },
   urlRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   url: { flex: 1, color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi },

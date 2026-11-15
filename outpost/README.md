@@ -43,7 +43,7 @@ npm ci
 | Studio worker | `EXPO_PUBLIC_CONVEX_URL` or `CONVEX_URL` | `.env.local`, or the shell | Same URL. `CONVEX_URL` in the shell wins |
 | Studio worker | `WORKER_SECRET` | `outpost/.env.worker`, or the shell | Must match the Convex variable of the same name |
 | Studio worker | `WRITER_MODEL` | Shell, optional | The Claude model for scripts. Default `sonnet` |
-| Convex | `WORKER_SECRET`, `MAX_USERS`, `ZERNIO_API_KEY`, `WHOP_API_KEY`, `WHOP_ENV`, `WHOP_WEBHOOK_SECRET`, `PUBLIC_SITE_URL`, `SUPERMEMORY_API_KEY` | `npx convex env set` | See [backend.md](docs/backend.md#environment-variables) |
+| Convex | `WORKER_SECRET`, `MAX_USERS`, `ZERNIO_API_KEY`, `WHOP_API_KEY`, `WHOP_ENV`, `WHOP_WEBHOOK_SECRET`, `PUBLIC_SITE_URL`, `SUPERMEMORY_API_KEY`, `WHOP_CLIENT_ID`, `WHOP_CLIENT_SECRET`, `WHOP_OAUTH_REDIRECT` | `npx convex env set` | See [backend.md](docs/backend.md#environment-variables) |
 
 Git ignores every `.env*` file except `.env.example`. The worker reads only `NAME=value` lines from both files.
 

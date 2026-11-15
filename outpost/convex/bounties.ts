@@ -195,3 +195,40 @@ export const seedBounties = internalMutation({
     return { bounties: ids.length, libraryUserId: library._id, queued, libraryVideos: have.length + queued };
   },
 });
+
+// Builder-only: puts one real Whop Bounty (a bnty_ id) on the board, or updates it. Outpost submits right-swiped public
+// posts for it through the Bounties API as the demo Whop login (submit.ts). It has no library videos; a clip bounty
+// queues its source footage on Take like any other. rewardCents is the net reward per accepted submission.
+//   npx convex run bounties:addWhopBounty '{"externalId":"bnty_...","title":"...","brand":"...","description":"...",
+//     "rewardCents":500,"url":"https://whop.com/..."}'
+export const addWhopBounty = internalMutation({
+  args: {
+    externalId: v.string(),
+    title: v.string(),
+    brand: v.string(),
+    description: v.string(),
+    rewardCents: v.number(),
+    url: v.string(),
+    rules: v.optional(v.string()),
+    goalType: v.optional(v.string()),
+    mode: v.optional(v.union(v.literal("original"), v.literal("clip"))),
+    spotsRemaining: v.optional(v.number()),
+    sourceUrls: v.optional(v.array(v.string())),
+    brief: v.optional(v.any()),
+  },
+  handler: async (ctx, args): Promise<Id<"bounties">> => {
+    if (!/^bnty_\w+$/.test(args.externalId)) throw new ConvexError("externalId must be a Whop Bounty id (bnty_...)");
+    const fields = {
+      ...args, source: "whop_bounty" as const, rewardKind: "per_submission" as const, status: "open" as const,
+      rules: args.rules ?? "", goalType: args.goalType ?? "clipping", mode: args.mode ?? "original",
+      sourceUrls: args.sourceUrls ?? [], syncedAt: Date.now(),
+    };
+    const row = await ctx.db.query("bounties")
+      .withIndex("by_source_external", q => q.eq("source", "whop_bounty").eq("externalId", args.externalId)).unique();
+    if (row) {
+      await ctx.db.patch(row._id, fields);
+      return row._id;
+    }
+    return ctx.db.insert("bounties", fields);
+  },
+});

@@ -301,18 +301,23 @@ export default defineSchema({
     checks: v.number(),
   }).index("by_post", ["postId"]).index("by_status", ["status"]).index("by_user", ["userId"]),
 
-  // Server-only. No public function may return a token. A seam for real Whop accounts; unused in v1.
+  // Server-only Whop OAuth tokens (whopAuth.ts): one row, the demo Whop login every user submits as. No public function,
+  // log or calls row may carry a token.
   whopAuth: defineTable({
-    userId: v.id("users"),
-    whopUserId: v.string(),
+    userId: v.optional(v.id("users")),
+    whopUserId: v.optional(v.string()),
     username: v.optional(v.string()),
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
     expiresAt: v.number(),
     scopes: v.array(v.string()),
+    refreshingUntil: v.optional(v.number()), // lease: refresh tokens rotate, so only one refresh runs at a time
   }).index("by_user", ["userId"]).index("by_whop_user", ["whopUserId"]),
 
-  oauthStates: defineTable({ state: v.string(), userId: v.id("users"), at: v.number() }).index("by_state", ["state"]),
+  // One-time OAuth states from whopAuth.authorizeUrl. nonce and the PKCE verifier are server-only.
+  oauthStates: defineTable({
+    state: v.string(), userId: v.optional(v.id("users")), at: v.number(), nonce: v.optional(v.string()), verifier: v.optional(v.string()),
+  }).index("by_state", ["state"]),
 
   // Texts to and from the user over iMessage. Unused in v1.
   messages: defineTable({
