@@ -8,6 +8,7 @@ import { Block, FONT, INK, Outlined, WOOD } from "./pixel";
 import { click } from "./click";
 
 const TABS: Record<string, { icon: IconName; label: string }> = {
+  bounties: { icon: "coin", label: "Bounties" },
   feed: { icon: "play", label: "Feed" },
   index: { icon: "house", label: "Base" },
   you: { icon: "person", label: "You" },
