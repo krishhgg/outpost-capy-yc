@@ -20,7 +20,7 @@ import { usePayoff } from "./Payoff";
 import { Portrait } from "./Portrait";
 import { Flame, localDay, Milestones, MILESTONES, PLAT } from "./You";
 import { Counter, ICON } from "./Hud";
-import { click } from "./click";
+import { Badge, Button, Chip, COLOR, DemoNote, EmptyState, feel, HONESTY, useToast } from "./ui";
 
 const { width: W } = Dimensions.get("window");
 type Clip = FunctionReturnType<typeof api.feed.next>[number];
@@ -28,7 +28,7 @@ type Mode = "dryRun" | "private" | "public";
 const FIND_EVERY = 3; // videos swiped between Scout cards
 const FRAME = 9; // the gold frame around a video: outline, gold, inner outline
 const OVERHANG = 28; // how far the Post and Remake buttons hang below the card
-const EDIT_ROW = 68; // room under the hanging buttons for the edit chips
+const EDIT_ROW = 58; // room under the hanging buttons for the edit chips
 const PEEK = 7; // how much of each card waiting behind the top one shows above it
 type Outcome = "post" | "remake";
 type Box = { w: number; h: number };
@@ -68,7 +68,7 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
   const [asking, setAsking] = useState<{ clip: Clip; note: boolean } | null>(null);
   // The bounty an approved video is going to, shown over the deck for a moment after the swipe lands.
   const [sent, setSent] = useState<{ id: string; brand: string; mode: Mode; forecast: number | null } | null>(null);
-  const coin = useAudioPlayer(require("../assets/sounds/collect.wav"));
+  const toast = useToast();
   // This session's swipes, for the segments along the top of the video. A session starts each time the Feed comes into view.
   const [outcomes, setOutcomes] = useState<{ id: Id<"videos">; o: Outcome }[]>([]);
   useEffect(() => { if (active) setOutcomes([]); }, [active]);
@@ -111,8 +111,7 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
       if (!ok) return;
       payoff.post();
       if (!clip.bounty || !status) return;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      setTimeout(() => { coin.seekTo(0).catch(() => {}); coin.play(); }, 250);
+      feel("success");
       setSent({ id: clip.id, brand: clip.bounty.brand, mode: status.mode, forecast: clip.predicted ? Math.round(clip.predicted.score) : null });
     });
     else if (edit) remake(clip, dwellMs, edit, EDITS.find(([k]) => k === edit)?.[1] ?? edit);
@@ -160,7 +159,7 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
   const sig = latest ? `${latest.videoId}:${latest.posts.map(p => `${p.platform}=${p.status}`).join(",")}` : "";
   const [trayUntil, setTrayUntil] = useState(0);
   // Once the newest post is live on a bounty, its submission waits for one tap on Whop. That flow lives on the You tab,
-  // so the tray drops once more with a button that goes there.
+  // so a toast points there.
   const toSubmit = latest?.submission === "manual";
   const lastSubmit = useRef<string | null>(null);
   useEffect(() => {
@@ -169,8 +168,8 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
     const was = lastSubmit.current;
     lastSubmit.current = key;
     if (was === null || was === key || !toSubmit || !active) return;
-    setTrayUntil(Date.now() + 8000);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    toast.show({ title: "Ready to submit on Whop", body: "Your post is live. Submit it from the You tab.", icon: "coin",
+      action: { label: "Submit", onPress: () => router.navigate("/you") }, testID: "submit-toast" });
   }, [latest?.videoId, latest?.submission]);
   // Platforms seen turning live while the app is open. Each pops in turn with a tick; one already live on open doesn't.
   const lastSig = useRef("");
@@ -220,7 +219,7 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
               shows and drops back in after it for the rest of its time. */}
           {latest && now < trayUntil && !payoff.banner && (
             <Animated.View entering={FadeInUp.duration(180)} exiting={FadeOutUp.duration(180)} style={s.dropIn}>
-              <Tray item={latest} fresh={fresh.sig === sig ? fresh.live : []} sig={sig} submit={toSubmit} />
+              <Tray item={latest} fresh={fresh.sig === sig ? fresh.live : []} sig={sig} />
             </Animated.View>
           )}
           {payoff.toasts}
@@ -266,12 +265,13 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
           />
         )}
       </Modal>
+      {toast.node}
     </View>
   );
 }
 
 // Status tags are flat, a fill with a 2 pt outline, so they never look like something to press. Only buttons get a bevel.
-const TAG = { gold: "#FFC83A", slate: "#46567A", green: "#5BC44A", teal: "#2EB8A6", orange: "#FFB070", violet: "#C9A8FF", violetPale: "#E8DCFF" } as const;
+const TAG = { gold: "#FFC83A", slate: "#46567A", green: "#5BC44A", teal: "#2EB8A6" } as const;
 const money = (c: number) => `$${(c / 100).toFixed(c % 100 ? 2 : 0)}`;
 
 function ModeChip({ mode }: { mode: "dryRun" | "private" | "public" }) {
@@ -314,7 +314,7 @@ function CaughtUp({ approved, remakes, streak, making, stages, queued, offline, 
           <Text style={s.caughtNext}>{studio}</Text>
         </View>
         {onFind && <PixelButton label="See the Scout's find" bevel="teal" size={20} onPress={onFind} testID="caught-find" style={s.caughtBtn} />}
-        <PixelButton label="Find more bounties" bevel="green" size={22} onPress={() => router.navigate("/bounties")} testID="caught-bounties"
+        <Button label="Find more bounties" bevel="green" size="md" onPress={() => router.navigate("/bounties")} testID="caught-bounties"
           style={onFind ? s.caughtBtn2 : s.caughtBtn} />
         <PixelButton label="Back to Base" bevel="gold" size={20} onPress={() => router.navigate("/")} testID="caught-base" style={s.caughtBtn2} />
       </Block>
@@ -326,17 +326,10 @@ function CaughtUp({ approved, remakes, streak, making, stages, queued, offline, 
 function NoVideos({ making }: { making: number }) {
   return (
     <Animated.View entering={ZoomIn.springify().damping(12).mass(1).stiffness(180)} style={s.caughtWrap}>
-      <Block style={s.caught} lift={4} testID="feed-empty">
-        <Outlined size={30} width={2.5}>NOTHING TO SWIPE</Outlined>
-        <View style={s.caughtHero}>
-          <Image source={ICON.coin} style={s.emptyCoin} />
-          <Text style={s.emptyLead}>Take a paid bounty and its videos land here</Text>
-        </View>
-        <Text style={s.emptyBody}>Approve the ones worth posting. The brand pays per 1K views on Whop.</Text>
-        {making > 0 && <Text style={[s.caughtNext, s.emptyStudio]}>{`Studio · remaking ${making} for you`}</Text>}
-        <PixelButton label="Browse bounties" bevel="green" size={22} onPress={() => router.navigate("/bounties")} testID="empty-bounties"
-          style={s.caughtBtn} />
-      </Block>
+      <EmptyState icon="coin" title="Take a paid bounty and its videos land here" testID="feed-empty"
+        body={`Approve the ones worth posting. The brand pays per 1K views on Whop.${making > 0 ? `\nStudio · remaking ${making} for you` : ""}`}
+        action={{ label: "Browse bounties", onPress: () => router.navigate("/bounties"), testID: "empty-bounties" }} />
+      <DemoNote style={s.demoNote} />
     </Animated.View>
   );
 }
@@ -353,13 +346,14 @@ function Sending({ brand, mode, forecast, onDone }: { brand: string; mode: Mode;
       pointerEvents="none" testID="posting-banner" accessible accessibilityLabel={`${line} ${brand}${sub ? `. ${sub}` : ""}`}>
       <Block bevel="green" depth={3} lift={4} style={s.sendingCard}>
         <Outlined size={18} width={1.5}>{line}</Outlined>
-        <Outlined size={28} color="#FFE88C">{brand}</Outlined>
+        <Outlined size={28} color={COLOR.goldPale}>{brand}</Outlined>
         {sub || forecast !== null ? (
           <View style={s.sendingRow}>
             {sub ? <Text style={s.sendingSub}>{sub}</Text> : null}
-            {forecast !== null ? <Text style={s.sendingForecast}>{`FORECAST ${forecast}`}</Text> : null}
+            {forecast !== null ? <Badge label={`FORECAST ${forecast}`} tone="violet" size="sm" dashed /> : null}
           </View>
         ) : null}
+        <DemoNote style={s.sendingNote} />
       </Block>
     </Animated.View>
   );
@@ -369,25 +363,11 @@ function Sending({ brand, mode, forecast, onDone }: { brand: string; mode: Mode;
 function Forecast({ score, reason }: { score: number; reason: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <Pressable onPress={() => { click(); setOpen(o => !o); }} style={s.forecast} testID="forecast-chip" accessibilityRole="button"
+    <Pressable onPress={() => { feel("tap"); setOpen(o => !o); }} style={s.forecast} testID="forecast-chip" accessibilityRole="button"
       accessibilityLabel={`Forecast ${Math.round(score)} out of 100: ${reason}`}>
-      <Text style={s.forecastTag}>FORECAST</Text>
+      <Badge label={HONESTY.forecast.label} tone={HONESTY.forecast.tone} size="sm" dashed />
       <Text style={s.forecastScore}>{Math.round(score)}</Text>
       <Text style={s.forecastReason} numberOfLines={open ? 4 : 1}>{reason}</Text>
-    </Pressable>
-  );
-}
-
-// A one-tap edit under the card, in the remake sheet's chip style: parchment on a thick ink edge that squashes flat.
-function EditChip({ label, onPress, testID, a11y }: { label: string; onPress: () => void; testID: string; a11y?: string }) {
-  return (
-    <Pressable style={s.editCell} testID={testID} accessibilityRole="button" accessibilityLabel={a11y ?? label}
-      onPress={() => { click(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {}); onPress(); }}>
-      {({ pressed }) => (
-        <View style={[s.edit, pressed && s.editDown]}>
-          <Text style={s.editText} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>{label}</Text>
-        </View>
-      )}
     </Pressable>
   );
 }
@@ -421,26 +401,13 @@ function Empty({ text }: { text: string }) {
 type Recent = FunctionReturnType<typeof api.feed.status>["recent"][number];
 
 // The newest approved video and where each platform's copy stands. Tap a live one to open it.
-// Once it's live on a bounty and ready to submit, the platform pills step aside for a button to the You tab's Submit on
-// Whop flow; the live links stay there too.
-function Tray({ item, fresh, sig, submit }: { item: Recent; fresh: string[]; sig: string; submit: boolean }) {
+function Tray({ item, fresh, sig }: { item: Recent; fresh: string[]; sig: string }) {
   const dry = item.posts.every(p => p.status === "dry_run");
   return (
     <Block style={s.tray} depth={3} lift={3} testID="post-tray">
       <Text style={s.trayTag}>{dry ? "APPROVED" : "POSTED"}</Text>
       <Text style={s.trayHook} numberOfLines={1}>{item.hook}</Text>
-      {submit && (
-        <Pressable onPress={() => { click(); router.navigate("/you"); }} testID="tray-submit" accessibilityRole="button"
-          accessibilityLabel="Ready to submit on Whop. Opens the You tab">
-          {({ pressed }) => (
-            <Block bevel="gold" depth={2} lift={pressed ? 0 : 3} style={s.pill}>
-              <Image source={ICON.coin} style={s.pillMark} />
-              <Text style={[s.pillText, { color: INK }]} numberOfLines={1}>Submit on Whop</Text>
-            </Block>
-          )}
-        </Pressable>
-      )}
-      {!submit && item.posts.map(p => {
+      {item.posts.map(p => {
         const name = p.platform === "youtube" ? "YouTube" : "Instagram";
         const [short, full, color] =
           p.status === "live" ? ["Live", "Live, tap to open", "#2F8A2C"]
@@ -644,12 +611,7 @@ function Deck({ clips, done, onSwipe, onNote, active, box, behind, tucked }:
                 {/* What the video is for and how it was made, stacked down the top-left corner under the segments. */}
                 <View style={s.tags} pointerEvents="box-none">
                   {top.bounty ? (
-                    <View style={[s.badge, { backgroundColor: TAG.gold }]} testID="bounty-tag" accessible
-                      accessibilityLabel={`Bounty: ${top.bounty.brand}, ${top.bounty.rewardLabel}`}>
-                      <Image source={ICON.coin} style={s.badgeIcon} />
-                      <Text style={[s.badgeText, s.shrink]} numberOfLines={1}>{top.bounty.brand}</Text>
-                      <Text style={s.reward} numberOfLines={1}>{top.bounty.rewardLabel}</Text>
-                    </View>
+                    <Badge label={`${top.bounty.brand} · ${top.bounty.rewardLabel}`} tone="gold" icon="coin" testID="bounty-tag" style={s.tagMax} />
                   ) : top.scout ? (
                     <View style={[s.badge, { backgroundColor: TAG.teal }]} testID="scout-label">
                       <Image source={ICON.glass} style={s.badgeIcon} />
@@ -657,10 +619,10 @@ function Deck({ clips, done, onSwipe, onNote, active, box, behind, tucked }:
                     </View>
                   ) : null}
                   {top.remade ? (
-                    <View style={[s.badge, { backgroundColor: TAG.orange }]} testID="remade-label"><Text style={s.badgeText}>{`Remade: ${top.remade.label}`}</Text></View>
+                    <Badge label={`Remade: ${top.remade.label}`} tone="orange" testID="remade-label" />
                   ) : null}
                   {top.pregenerated ? (
-                    <View style={s.pregen} testID="pregenerated-label"><Text style={s.pregenText}>Pregenerated for the demo</Text></View>
+                    <Badge label="Pregenerated for the demo" size="sm" dashed testID="pregenerated-label" />
                   ) : null}
                   {top.predicted ? <Forecast key={top.id} score={top.predicted.score} reason={top.predicted.reason} /> : null}
                 </View>
@@ -679,8 +641,8 @@ function Deck({ clips, done, onSwipe, onNote, active, box, behind, tucked }:
       )}
       {cur && active && (
         <View style={[s.edits, { top: card.height + OVERHANG + 17 }]} pointerEvents="box-none" testID="edit-chips">
-          {EDITS.map(([key, label]) => <EditChip key={key} label={label} onPress={() => fling(-1, key)} testID={`edit-${key}`} />)}
-          <EditChip label="Note" a11y="Write a note for the studio" testID="edit-note" onPress={() => onNote(top, Date.now() - shownAt.current)} />
+          {EDITS.map(([key, label]) => <Chip key={key} label={label} size="md" onPress={() => fling(-1, key)} testID={`edit-${key}`} style={s.editCell} />)}
+          <Chip label="Note" size="md" onPress={() => onNote(top, Date.now() - shownAt.current)} testID="edit-note" style={s.editCell} />
         </View>
       )}
     </View>
@@ -792,7 +754,7 @@ const s = StyleSheet.create({
   tray: { marginHorizontal: 12, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 10, paddingRight: 6, paddingTop: 7, paddingBottom: 9 },
   trayTag: { color: "#B06A00", fontSize: 15, fontFamily: FONT.bold },
   trayHook: { flex: 1, color: PARCH.ink, fontSize: 16, fontFamily: FONT.semi },
-  pill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 6, paddingTop: 3, paddingBottom: 5, maxWidth: 140 },
+  pill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 6, paddingTop: 3, paddingBottom: 5, maxWidth: 110 },
   hidden: { opacity: 0 },
   pillFlat: { backgroundColor: PARCH.top, borderWidth: 2, borderColor: INK, paddingBottom: 3 },
   pillMark: { width: 18, height: 18 },
@@ -828,32 +790,19 @@ const s = StyleSheet.create({
   badgeIcon: { width: 20, height: 20, marginLeft: -2 },
   badgeText: { color: INK, fontSize: 16, fontFamily: FONT.bold },
   tags: { position: "absolute", top: 14, left: 10, right: 10, alignItems: "flex-start", gap: 5 },
-  shrink: { flexShrink: 1 },
-  reward: { color: "#7A4A00", fontSize: 16, fontFamily: FONT.bold },
-  // Honesty labels are calm dashed tags, not warnings.
-  pregen: { backgroundColor: PARCH.top, borderWidth: 2, borderColor: INK, borderStyle: "dashed", paddingHorizontal: 6, paddingVertical: 1 },
-  pregenText: { color: PARCH.soft, fontSize: 14, fontFamily: FONT.bold },
-  forecast: { flexDirection: "row", alignItems: "center", gap: 6, maxWidth: "100%", backgroundColor: TAG.violetPale, borderWidth: 2,
+  tagMax: { maxWidth: "100%" },
+  forecast: { flexDirection: "row", alignItems: "center", gap: 6, maxWidth: "100%", backgroundColor: COLOR.violetPale, borderWidth: 2,
     borderColor: INK, borderStyle: "dashed", paddingLeft: 3, paddingRight: 7, paddingVertical: 3 },
-  forecastTag: { backgroundColor: TAG.violet, color: INK, fontSize: 13, fontFamily: FONT.bold, paddingHorizontal: 4 },
   forecastScore: { color: INK, fontSize: 19, fontFamily: FONT.bold },
   forecastReason: { flexShrink: 1, color: PARCH.ink, fontSize: 15, fontFamily: FONT.semi },
   edits: { position: "absolute", left: 12, right: 12, flexDirection: "row", gap: 6 },
-  editCell: { flexGrow: 1, flexShrink: 1 },
-  edit: { minHeight: 50, alignItems: "center", justifyContent: "center", backgroundColor: PARCH.top, borderWidth: 2, borderColor: INK,
-    borderBottomWidth: 5, paddingHorizontal: 8, paddingTop: 6, paddingBottom: 5 },
-  editDown: { borderBottomWidth: 2, marginTop: 3, backgroundColor: PARCH.bottom },
-  editText: { color: PARCH.ink, fontSize: 20, fontFamily: FONT.bold },
+  editCell: { flexGrow: 1 },
   sending: { position: "absolute", left: 24, right: 24, bottom: EDIT_ROW + OVERHANG + 40, alignItems: "center" },
   sendingCard: { alignItems: "center", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 14 },
   sendingRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
   sendingSub: { color: INK, fontSize: 16, fontFamily: FONT.semi },
-  sendingForecast: { backgroundColor: TAG.violet, color: INK, fontSize: 15, fontFamily: FONT.bold, paddingHorizontal: 5, borderWidth: 2,
-    borderColor: INK, borderStyle: "dashed" },
-  emptyCoin: { width: 44, height: 44 },
-  emptyLead: { flexShrink: 1, color: PARCH.ink, fontSize: 21, fontFamily: FONT.bold, lineHeight: 23 },
-  emptyBody: { color: PARCH.soft, fontSize: 17, fontFamily: FONT.semi, textAlign: "center", lineHeight: 22, marginTop: 10 },
-  emptyStudio: { marginTop: 10 },
+  sendingNote: { marginTop: 8 },
+  demoNote: { marginTop: 14 },
   stamp: { position: "absolute", top: 56 },
   stampFace: { paddingHorizontal: 12, paddingTop: 4, paddingBottom: 8 },
   post: { left: 22 }, // tilted -10 degrees in postStamp
