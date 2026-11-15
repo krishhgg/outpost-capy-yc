@@ -2,6 +2,8 @@
 
 Read this first. It orients any coding agent (Capy, Claude Code, Codex, Cursor) working on Outpost.
 
+Building toward the demo? Read [BUILD_PLAN.md](BUILD_PLAN.md) first: it is the build plan, its wave and file-ownership rules, and the contracts.
+
 ## What Outpost is
 
 **Get paid for your taste.** An iOS app where you swipe through AI-made vertical clips cut for real paid brand
@@ -107,6 +109,7 @@ suite configured.
 
 ## Deeper docs
 
+- `BUILD_PLAN.md`: the build plan, wave and file-ownership rules, and the contracts
 - `outpost/README.md`: setup and every environment variable
 - `outpost/docs/architecture.md`: how the parts connect, data model
 - `outpost/docs/backend.md`: every Convex module, crons, admin commands
