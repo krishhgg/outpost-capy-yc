@@ -88,7 +88,7 @@ suite configured.
   (e.g. SupoClip).
 - Don't change Convex deployment config or env files in unrelated PRs; the deployment is being migrated.
 - Don't delete or rip out the studio, shop raid or village; extend or adapt them.
-- Never merge PRs or push to `main`.
+- Agents may merge PRs. Merge once CI is green and the PR does what it says. Never push directly to `main`: every change goes through a PR.
 
 ## Conventions
 
