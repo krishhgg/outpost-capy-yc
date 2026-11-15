@@ -1,0 +1,26 @@
+# PENDING until the right-swipe posting and submitting status (T8 + T4) merges. Runs read only files directly in .revyl/tests/, so this one is skipped.
+# To turn it on, follow "Promote a pending test" in outpost/docs/testing.md.
+test:
+    metadata:
+        name: outpost-right-swipe-status
+        platform: ios
+        tags:
+            - outpost-regression
+    build:
+        name: Outpost iOS
+        build_selection: inherit
+    blocks:
+        - type: manual
+          step_type: wait
+          step_description: "5"
+        - type: if
+          condition: Is a "While you were away" card showing with a Collect button?
+          then:
+            - type: instructions
+              step_description: Tap Collect and wait for the card to close.
+        - type: instructions
+          step_description: Tap the Feed tab in the bottom tab bar.
+        - type: instructions
+          step_description: Swipe the top video card to the right.
+        - type: validation
+          step_description: The app confirms the approval with a status such as "Posting + submitting to <brand>", and because this test user is in dry run it says nothing is posted publicly.

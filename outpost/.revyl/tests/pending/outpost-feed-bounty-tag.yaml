@@ -1,0 +1,24 @@
+# PENDING until bounty tags on Feed cards (T8) merges. Runs read only files directly in .revyl/tests/, so this one is skipped.
+# To turn it on, follow "Promote a pending test" in outpost/docs/testing.md.
+test:
+    metadata:
+        name: outpost-feed-bounty-tag
+        platform: ios
+        tags:
+            - outpost-regression
+    build:
+        name: Outpost iOS
+        build_selection: inherit
+    blocks:
+        - type: manual
+          step_type: wait
+          step_description: "5"
+        - type: if
+          condition: Is a "While you were away" card showing with a Collect button?
+          then:
+            - type: instructions
+              step_description: Tap Collect and wait for the card to close.
+        - type: instructions
+          step_description: Tap the Feed tab in the bottom tab bar.
+        - type: validation
+          step_description: The top video card shows a bounty tag with the brand and the reward, and a forecast chip that is labeled as a forecast.

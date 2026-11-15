@@ -1,0 +1,26 @@
+# PENDING until the scoreboard: pending earnings and taste score (T9 + T14) merges. Runs read only files directly in .revyl/tests/, so this one is skipped.
+# To turn it on, follow "Promote a pending test" in outpost/docs/testing.md.
+test:
+    metadata:
+        name: outpost-scoreboard
+        platform: ios
+        tags:
+            - outpost-regression
+    build:
+        name: Outpost iOS
+        build_selection: inherit
+    blocks:
+        - type: manual
+          step_type: wait
+          step_description: "5"
+        - type: if
+          condition: Is a "While you were away" card showing with a Collect button?
+          then:
+            - type: instructions
+              step_description: Tap Collect and wait for the card to close.
+        - type: validation
+          step_description: The Base header shows views, estimated pending dollars labeled as an estimate, and a taste score with its tier or a "Calibrating" label with a count.
+        - type: instructions
+          step_description: Tap the You tab in the bottom tab bar.
+        - type: validation
+          step_description: The You screen shows the taste score and explains Hit rate, Approval rate and Pickiness as percentages.
