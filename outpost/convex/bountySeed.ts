@@ -44,6 +44,10 @@ export type SeedBounty = {
 
 export const CATALOG_READ_AT = Date.parse("2026-11-15T21:30:00Z");
 
+// The library queues each bounty's first VIDEOS_PER_CAMPAIGN briefs. Each list leads with its strongest, most distinct
+// five; the rest stay here unused.
+export const VIDEOS_PER_CAMPAIGN = 5;
+
 const campaignUrl = (id: string) => "https://contentrewards.com/c/campaigns/" + id;
 const hidden = (rules: number, reqs: number) =>
   rules + " content rule(s) and " + reqs + " creator requirement(s) are visible only after joining on Whop; read them before a public post.";
@@ -318,24 +322,24 @@ export const SEED_BOUNTIES: SeedBounty[] = [
       { format: "list explainer", hook: "Three things gamers buy all the time", set: "city", buddy: "invoice",
         story: "The narrator lists what gamers keep buying: new games, gift cards and PSN or Xbox top-ups. Each one is a card. The turn: code CLIP takes 5% off all of them on Eneba at ne.ba/clip.",
         why: "A list that mirrors the campaign's own product lines keeps the video accurate." },
-      { format: "expectation vs reality", hook: "Expectation: buying the new release", set: "home", buddy: "piggy",
-        story: "Expectation: he buys the new release without thinking. Reality: the piggy bank is empty before the month ends. The turn: he checks Eneba first and uses code CLIP at ne.ba/clip for 5% off.",
-        why: "Expectation vs reality with a money twist suits the discount message." },
-      { format: "dialogue skit", hook: "Can you top up my PSN account?", set: "cafe", cast: "friend", buddy: "mug",
-        story: "His friend asks him to help top up a PSN account. He says to get the top-up on Eneba and use code CLIP at ne.ba/clip for 5% off. The friend says he will do the same for his Xbox.",
-        why: "Top-ups are an everyday purchase and broaden the use case." },
-      { format: "POV", hook: "POV: your wishlist is longer than your budget", set: "home", buddy: "calendar",
-        story: "His game wishlist keeps growing while the calendar flips to payday. The narrator suggests a small habit: check Eneba first. The twist: code CLIP takes 5% off at ne.ba/clip.",
-        why: "Wishlist versus budget is relatable and frames the code as a smart habit." },
-      { format: "question and answer", hook: "Why pay full price if you do not have to?", set: "city", buddy: "piggy",
-        story: "The narrator asks why anyone pays full price for games. He shrugs because he always has. The answer: Eneba, where code CLIP takes 5% off games, gift cards and top-ups at ne.ba/clip.",
-        why: "A question hook pulls the viewer into the answer, which is the offer." },
       { format: "dialogue skit", hook: "What do you want for your birthday?", set: "cafe", cast: "friend", buddy: "invoice",
         story: "His friend asks what he wants for his birthday. He says a gaming gift card. The friend gets one on Eneba with code CLIP at ne.ba/clip for 5% off, and both are happy.",
         why: "Gift cards as gifts open the video to non-gamers buying for gamers." },
       { format: "explainer", hook: "The gamer habit that saves a little every time", set: "office", cast: "coworker", buddy: "mug",
         story: "His coworker asks how he keeps buying games. He explains one habit: before buying, he checks Eneba and uses code CLIP at ne.ba/clip for 5% off. Small, but every time.",
         why: "Framing the code as a habit makes it memorable without overpromising." },
+      { format: "POV", hook: "POV: your wishlist is longer than your budget", set: "home", buddy: "calendar",
+        story: "His game wishlist keeps growing while the calendar flips to payday. The narrator suggests a small habit: check Eneba first. The twist: code CLIP takes 5% off at ne.ba/clip.",
+        why: "Wishlist versus budget is relatable and frames the code as a smart habit." },
+      { format: "question and answer", hook: "Why pay full price if you do not have to?", set: "city", buddy: "piggy",
+        story: "The narrator asks why anyone pays full price for games. He shrugs because he always has. The answer: Eneba, where code CLIP takes 5% off games, gift cards and top-ups at ne.ba/clip.",
+        why: "A question hook pulls the viewer into the answer, which is the offer." },
+      { format: "expectation vs reality", hook: "Expectation: buying the new release", set: "home", buddy: "piggy",
+        story: "Expectation: he buys the new release without thinking. Reality: the piggy bank is empty before the month ends. The turn: he checks Eneba first and uses code CLIP at ne.ba/clip for 5% off.",
+        why: "Expectation vs reality with a money twist suits the discount message." },
+      { format: "dialogue skit", hook: "Can you top up my PSN account?", set: "cafe", cast: "friend", buddy: "mug",
+        story: "His friend asks him to help top up a PSN account. He says to get the top-up on Eneba and use code CLIP at ne.ba/clip for 5% off. The friend says he will do the same for his Xbox.",
+        why: "Top-ups are an everyday purchase and broaden the use case." },
       { format: "POV", hook: "POV: a new game drops on Friday night", set: "home", buddy: "calendar",
         story: "It is Friday night and a game he wants just dropped. Before buying, he opens Eneba. The twist: code CLIP at ne.ba/clip takes 5% off, and he starts his weekend.",
         why: "Release-night excitement is the moment gamers decide where to buy." },
@@ -370,12 +374,12 @@ export const SEED_BOUNTIES: SeedBounty[] = [
       { format: "list explainer", hook: "Three AI agents a small business could use", set: "city", buddy: "calendar",
         story: "The narrator lists three agents you can build on Agentplace without code: a support bot, a booking assistant and a lead qualifier. Each gets a card. The turn: you pick the one your business needs most.",
         why: "A list of the campaign's own use cases is accurate and saveable." },
-      { format: "dialogue skit", hook: "We need someone to answer all these emails", set: "office", cast: "boss", buddy: "mug",
-        story: "His boss says they need someone to answer the same customer questions all day. He suggests building a support bot on Agentplace, with no code. The boss asks how soon they can try it.",
-        why: "A workplace ask makes the product the obvious answer." },
       { format: "expectation vs reality", hook: "Expectation: building an AI agent", set: "home", buddy: "calendar",
         story: "Expectation: building an AI agent means hiring developers and waiting weeks. Reality: Agentplace lets anyone build one for a real business without code. He builds a simple support bot.",
         why: "Breaking the belief that you need engineers is the core of the campaign." },
+      { format: "dialogue skit", hook: "We need someone to answer all these emails", set: "office", cast: "boss", buddy: "mug",
+        story: "His boss says they need someone to answer the same customer questions all day. He suggests building a support bot on Agentplace, with no code. The boss asks how soon they can try it.",
+        why: "A workplace ask makes the product the obvious answer." },
       { format: "dialogue skit", hook: "You are always on your phone with customers", set: "cafe", cast: "friend", buddy: "mug",
         story: "His friend complains he is always on his phone answering customers. He explains he is setting up an AI agent on Agentplace, no code, to answer the repeat questions. His friend asks if it could work for her shop too.",
         why: "Peer conversation shows a believable reason to try it." },

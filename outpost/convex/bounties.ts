@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalAction, internalMutation, mutation, query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { CATALOG_READ_AT, SEED_BOUNTIES } from "./bountySeed";
+import { CATALOG_READ_AT, SEED_BOUNTIES, VIDEOS_PER_CAMPAIGN } from "./bountySeed";
 
 type BountyCard = {
   id: Id<"bounties">;
@@ -41,7 +41,7 @@ export const sync = internalAction({
 
 export const LIBRARY_DEVICE_ID = "library-outpost-demo-pregenerated-videos-v1-000000";
 
-// Builder-only: writes the demo bounties and queues the pregenerated library, ten videos per bounty, owned by one
+// Builder-only: writes the demo bounties and queues the pregenerated library, VIDEOS_PER_CAMPAIGN per bounty, owned by one
 // library user. Safe to run again: bounties upsert by (source, externalId), and a brief already queued for a bounty
 // is never queued twice. Library ranks are tiny round-robin numbers (every bounty's first video, then every
 // bounty's second...), so each bounty gets videos early and the studio, which claims the lowest rank first, renders
@@ -81,8 +81,8 @@ export const seedBounties = internalMutation({
       const mine = have.filter(v => v.bountyId === bountyId);
       const stories = new Set(mine.map(v => v.brief?.story));
       let count = mine.length;
-      for (const [k, brief] of SEED_BOUNTIES[b].videos.entries()) {
-        if (stories.has(brief.story) || count >= SEED_BOUNTIES[b].videos.length) continue;
+      for (const [k, brief] of SEED_BOUNTIES[b].videos.slice(0, VIDEOS_PER_CAMPAIGN).entries()) {
+        if (stories.has(brief.story) || count >= VIDEOS_PER_CAMPAIGN) continue;
         await ctx.db.insert("videos", {
           userId: library._id, bountyId, brief, mode: "original", pregenerated: true,
           status: "queued", rank: k * ids.length + b, attempts: 0, createdAt: now,
