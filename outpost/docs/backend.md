@@ -24,6 +24,7 @@ Set these on the Convex deployment with `npx convex env set NAME value` or in th
 | `WHOP_WEBHOOK_SECRET` | `whop.ts` | Overrides the webhook signing secret stored in `kv` | The secret saved when setup made the webhook |
 | `PUBLIC_SITE_URL` | `whop.ts` | Public base URL of the deployment's HTTP actions, for the Whop webhook | No webhook. Payments arrive only by polling |
 | `SUPERMEMORY_API_KEY` | `memory.ts`, `hood.ts` | Taste memory | Notes stay in Convex. The call is logged as skipped |
+| `WHOP_CLIENT_ID`, `WHOP_CLIENT_SECRET`, `WHOP_OAUTH_REDIRECT` | `whopAuth.ts` | The production Whop OAuth app (confidential) and its exact redirect URI, `<site>/whop/oauth/callback` | `authorizeUrl` and the callback refuse. Whop Bounty rows wait as `pending` |
 
 The Under the hood screen shows "Waiting on its key" for Zernio, Whop and Supermemory when their key is missing.
 
@@ -161,7 +162,32 @@ Whop calls are logged with a summary chosen per call, so the signing secret neve
 
 ### http.ts
 
-One route: `POST /whop/webhook`. It verifies the signature, parses the body, and passes `payment.succeeded` events to `raids.recordPayment`. A bad signature gets 401.
+Two routes. `POST /whop/webhook` verifies the signature, parses the body, and passes `payment.succeeded` events to `raids.recordPayment`. A bad signature gets 401. `GET /whop/oauth/callback` is `whopAuth.callback`.
+
+### whopAuth.ts
+
+One demo Whop login (Charlie's) that every user's Whop Bounty submissions go out as. Tokens live only in the single `whopAuth` row; no public function, log or `calls` row carries one.
+
+| Function | Kind | What it does |
+|---|---|---|
+| `authorizeUrl` | internal action | Builder-only. Stores a one-time `state` with an OIDC nonce and a PKCE verifier (15 minutes) and returns the `https://api.whop.com/oauth/authorize` link for scopes `openid profile bounty:basic:read bounty:submission:create` |
+| `callback` | HTTP action | Takes the state once, exchanges the code at `/oauth/token` with the client secret and the verifier, checks the ID token's nonce, reads `/oauth/userinfo`, and replaces the stored login. Then runs `submit.poll` so waiting rows go out |
+| `tokenFor` | internal action | The demo access token for any user. Refreshes it 5 minutes before expiry and stores the rotated refresh token; a lease keeps two refreshes from spending the same refresh token. `invalid_grant` drops the login (mint a new link); other failures throw and keep it |
+| `status` | query | `{connected, username}` of the demo login, never a token |
+
+### submit.ts
+
+| Function | Kind | What it does |
+|---|---|---|
+| `forPost` | internal action | Scheduled by `post.settle` when a public post on a bounty video goes live. Content Rewards: one `manual` row. Whop Bounty: a `pending` row, then `POST /api/v1/bounty_submissions {bounty_id, deliverable: {urls: [post url]}}` with the demo token and the post id as `Idempotency-Key` |
+| `poll` | internal action | Cron, every 10 minutes. Retries `pending` Whop Bounty rows, then reads `GET /bounty_submissions?bounty_id=` once per bounty and settles `approved` or `denied` (with `denialReason`) |
+| `forVideo` | query | Status, the "Submit on Whop" link, `auto` (Whop Bounty) and `note` (why an auto row waits or fell back) |
+| `markSubmitted` | mutation | The user confirms a `manual` row was submitted by hand |
+| `retry` | internal mutation | Builder-only. Sends a `manual` or `failed` Whop Bounty row back to `pending` |
+
+A Whop Bounty row with no demo login, or whose call failed with a network error, 401, 408, 429 or 5xx, stays `pending` with a short `error` the You tab shows, and the next poll retries it. Any other refusal (for example one open submission per Whop account) turns it `manual` with Whop's message, so the user can still submit by hand. dryRun and private posts never create a row and never reach Whop.
+
+`bounties.addWhopBounty` (internal mutation) puts one real `bnty_` bounty on the board with `source: whop_bounty` and a flat `rewardCents` per accepted submission, upserting by its id.
 
 ### you.ts
 
@@ -228,6 +254,8 @@ From `convex/crons.ts`:
 |---|---|---|
 | `studio sweep` | 1 minute | `studio.sweep` |
 | `read views` | 20 minutes | `views.sync` |
+| `sync bounties` | 15 minutes | `bounties.sync` |
+| `poll submissions` | 10 minutes | `submit.poll` |
 
 ## Scheduled jobs
 
@@ -250,3 +278,5 @@ Everything else is scheduled by the code that needs it:
 ## Typecheck
 
 CI (`.github/workflows/typecheck.yml`) runs on pull requests that touch `outpost/`. It type-checks the app with `npx tsc --noEmit`, the Convex functions with `npx tsc --noEmit -p convex`, and checks the worker's syntax with `node --check studio/worker.mjs`.
+
+`npm test` runs the convex-test suite in `tests/` (Whop OAuth, refresh rotation, auto-submit and poll, posting modes) against a mocked `fetch`. It never reaches Whop. CI doesn't run it yet.

@@ -25,7 +25,7 @@ planned feature as working.**
 | Posting | Built via Zernio to YouTube + Instagram, paced, `dryRun` / `private` / `public` modes. Brief wants TikTok/Reels/Shorts via an aggregator | `convex/post.ts`, `convex/pace.ts` |
 | Views polling | Built: cron reads Zernio analytics every 20 min | `convex/views.ts`, `convex/crons.ts` |
 | Bounty board (Whop Content Rewards campaigns) | Planned. Today's Scout searches Whop *products*, not campaigns | `convex/scout.ts` |
-| Whop join + submit post URL | Planned. Nothing built | |
+| Whop join + submit post URL | Whop Bounties: built, auto-submit as one demo Whop login via OAuth, review status polled. Content Rewards: one-tap manual submit (no creator API) | `convex/whopAuth.ts`, `convex/submit.ts` |
 | Clip engine (cut brand footage into 9:16 clips) | Planned. Today's studio makes original reels | |
 | Director edit chips | Partial: left-swipe reasons ("Hook too slow", "Too long"...) queue a full remake. One-tap param tweak + fast re-render is planned | `convex/feed.ts` (`REASONS`) |
 | Scoreboard | Partial: total and per-video views, streak, You tab. No pending earnings or Whop review status | `convex/you.ts`, `src/You.tsx` |
@@ -66,13 +66,14 @@ npm ci                              # install
 npx tsc --noEmit                    # typecheck app        (CI)
 npx tsc --noEmit -p convex          # typecheck Convex     (CI)
 node --check studio/worker.mjs      # syntax-check worker  (CI)
+npm test                            # convex-test suite in tests/, mocked fetch
 npx convex dev                      # push functions + watch; needs a Convex login or deploy key in env
 npx expo run:ios                    # build the dev client (macOS + Xcode); later just `npx expo start`
 while true; do node studio/worker.mjs; sleep 3; done   # studio worker, laptop only
 ```
 
-CI (`.github/workflows/typecheck.yml`) runs the three checks on PRs touching `outpost/`. There is no lint or test
-suite configured.
+CI (`.github/workflows/typecheck.yml`) runs the three checks on PRs touching `outpost/`. `npm test` runs locally
+(not in CI yet). There is no lint.
 
 ## Hard rules
 
