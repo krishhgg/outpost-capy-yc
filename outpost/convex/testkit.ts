@@ -2,7 +2,6 @@ import { ConvexError, v } from "convex/values";
 import { makeFunctionReference, type GenericDatabaseWriter, type GenericDataModel } from "convex/server";
 import { internalAction, internalMutation, internalQuery, type QueryCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { BUFFER } from "./lib";
 
 // Seed data for Revyl's proof users, the fixed EXPO_PUBLIC_DEVICE_ID builds in outpost/.revyl/config.yaml, so the
 // Feed has clips to test without the laptop studio. Builder-only:
@@ -11,6 +10,7 @@ import { BUFFER } from "./lib";
 // and deletes the user's queued videos so the laptop studio never renders for a test user.
 
 const PREFIX = "revyl-proof-";
+const BUFFER = 10;
 const MAX = 20;
 
 // A 3-second 360x640 H.264 clip, a gold square crossing a sea-blue frame (3.5 KB), made with:
