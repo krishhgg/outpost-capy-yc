@@ -1,4 +1,4 @@
-import { ConvexError, v } from "convex/values";
+import { ConvexError, v, type ObjectType } from "convex/values";
 import { httpAction, internalAction, internalMutation, query, type ActionCtx, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 
@@ -18,9 +18,9 @@ const LEASE_MS = 30 * 1000;
 function config() {
   const clientId = process.env.WHOP_CLIENT_ID;
   const clientSecret = process.env.WHOP_CLIENT_SECRET;
-  const redirectUri = process.env.WHOP_OAUTH_REDIRECT;
+  const redirectUri = process.env.WHOP_OAUTH_REDIRECT ?? process.env.WHOP_CALLBACK_URL;
   if (!clientId || !clientSecret || !redirectUri) {
-    throw new ConvexError("Set WHOP_CLIENT_ID, WHOP_CLIENT_SECRET and WHOP_OAUTH_REDIRECT on Convex first");
+    throw new ConvexError("Set WHOP_CLIENT_ID, WHOP_CLIENT_SECRET and WHOP_OAUTH_REDIRECT (or WHOP_CALLBACK_URL) on Convex first");
   }
   return { clientId, clientSecret, redirectUri };
 }
@@ -112,15 +112,32 @@ export const takeState = internalMutation({
   },
 });
 
+const login = {
+  whopUserId: v.optional(v.string()), username: v.optional(v.string()),
+  accessToken: v.string(), refreshToken: v.optional(v.string()), expiresAt: v.number(), scopes: v.array(v.string()),
+};
+
 // Stores the demo login, replacing any earlier one.
-export const saveTokens = internalMutation({
+async function store(ctx: MutationCtx, row: ObjectType<typeof login>) {
+  for (const old of await ctx.db.query("whopAuth").collect()) await ctx.db.delete(old._id);
+  await ctx.db.insert("whopAuth", row);
+}
+
+export const saveTokens = internalMutation({ args: login, handler: store });
+
+// Builder-only, run once: imports a demo token minted outside Convex. From then on only Convex refreshes it, so the
+// refresh token must not be used anywhere else afterwards. expiresAt is epoch milliseconds (epoch seconds also work).
+//   npx convex run whopAuth:importDemoToken '{"accessToken":"...","refreshToken":"...","expiresAt":1763300000000,
+//     "scope":"openid profile bounty:basic:read bounty:submission:create"}'
+export const importDemoToken = internalMutation({
   args: {
-    whopUserId: v.string(), username: v.optional(v.string()),
-    accessToken: v.string(), refreshToken: v.optional(v.string()), expiresAt: v.number(), scopes: v.array(v.string()),
+    accessToken: v.string(), refreshToken: v.string(), expiresAt: v.number(), scope: v.optional(v.string()),
+    whopUserId: v.optional(v.string()), username: v.optional(v.string()),
   },
-  handler: async (ctx, row) => {
-    for (const old of await ctx.db.query("whopAuth").collect()) await ctx.db.delete(old._id);
-    await ctx.db.insert("whopAuth", row);
+  handler: async (ctx, { scope, expiresAt, ...row }): Promise<{ connected: true; expiresAt: string }> => {
+    const ms = expiresAt < 1e12 ? expiresAt * 1000 : expiresAt;
+    await store(ctx, { ...row, expiresAt: ms, scopes: scope ? scope.split(" ") : SCOPES });
+    return { connected: true, expiresAt: new Date(ms).toISOString() };
   },
 });
 

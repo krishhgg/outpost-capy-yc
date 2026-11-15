@@ -24,7 +24,7 @@ Set these on the Convex deployment with `npx convex env set NAME value` or in th
 | `WHOP_WEBHOOK_SECRET` | `whop.ts` | Overrides the webhook signing secret stored in `kv` | The secret saved when setup made the webhook |
 | `PUBLIC_SITE_URL` | `whop.ts` | Public base URL of the deployment's HTTP actions, for the Whop webhook | No webhook. Payments arrive only by polling |
 | `SUPERMEMORY_API_KEY` | `memory.ts`, `hood.ts` | Taste memory | Notes stay in Convex. The call is logged as skipped |
-| `WHOP_CLIENT_ID`, `WHOP_CLIENT_SECRET`, `WHOP_OAUTH_REDIRECT` | `whopAuth.ts` | The production Whop OAuth app (confidential) and its exact redirect URI, `<site>/whop/oauth/callback` | `authorizeUrl` and the callback refuse. Whop Bounty rows wait as `pending` |
+| `WHOP_CLIENT_ID`, `WHOP_CLIENT_SECRET`, `WHOP_OAUTH_REDIRECT` (or `WHOP_CALLBACK_URL`) | `whopAuth.ts` | The production Whop OAuth app (confidential, PKCE, `oauth:token_exchange`) and its exact redirect URI, `<site>/whop/oauth/callback` | `authorizeUrl` and the callback refuse. Whop Bounty rows wait as `pending` |
 
 The Under the hood screen shows "Waiting on its key" for Zernio, Whop and Supermemory when their key is missing.
 
@@ -170,7 +170,8 @@ One demo Whop login (Charlie's) that every user's Whop Bounty submissions go out
 
 | Function | Kind | What it does |
 |---|---|---|
-| `authorizeUrl` | internal action | Builder-only. Stores a one-time `state` with an OIDC nonce and a PKCE verifier (15 minutes) and returns the `https://api.whop.com/oauth/authorize` link for scopes `openid profile bounty:basic:read bounty:submission:create` |
+| `importDemoToken` | internal mutation | Builder-only, run once. Imports a demo token minted outside Convex (`accessToken`, `refreshToken`, `expiresAt` in epoch ms or s, `scope`). From then on only Convex refreshes it. Returns no token |
+| `authorizeUrl` | internal action | Builder-only recovery when the login is gone. Stores a one-time `state` with an OIDC nonce and a PKCE verifier (15 minutes) and returns the `https://api.whop.com/oauth/authorize` link for scopes `openid profile bounty:basic:read bounty:submission:create` |
 | `callback` | HTTP action | Takes the state once, exchanges the code at `/oauth/token` with the client secret and the verifier, checks the ID token's nonce, reads `/oauth/userinfo`, and replaces the stored login. Then runs `submit.poll` so waiting rows go out |
 | `tokenFor` | internal action | The demo access token for any user. Refreshes it 5 minutes before expiry and stores the rotated refresh token; a lease keeps two refreshes from spending the same refresh token. `invalid_grant` drops the login (mint a new link); other failures throw and keep it |
 | `status` | query | `{connected, username}` of the demo login, never a token |

@@ -434,3 +434,37 @@ describe("addWhopBounty", () => {
     })).rejects.toThrow(/bnty_/);
   });
 });
+
+describe("importDemoToken", () => {
+  test("imports a minted token once; Convex then refreshes it and keeps the rotated refresh token", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await user(t, "public");
+    const res = await t.mutation(internal.whopAuth.importDemoToken, {
+      accessToken: "acc-minted", refreshToken: "ref-minted", expiresAt: Math.floor(Date.now() / 1000) + 3600,
+      scope: "openid profile bounty:basic:read bounty:submission:create",
+    });
+    expect(res).toEqual({ connected: true, expiresAt: new Date(Math.floor(Date.now() / 1000) * 1000 + 3600_000).toISOString() });
+    expect(JSON.stringify(res)).not.toContain("minted");
+    const row = (await t.run(ctx => ctx.db.query("whopAuth").first()))!;
+    expect(row.scopes).toEqual(["openid", "profile", "bounty:basic:read", "bounty:submission:create"]);
+    expect(await t.query(api.whopAuth.status, { deviceId: "dev-public" })).toEqual({ connected: true, username: null });
+
+    const none = mockFetch(() => undefined);
+    expect(await t.action(internal.whopAuth.tokenFor, { userId })).toBe("acc-minted");
+    expect(none).toHaveLength(0);
+
+    vi.advanceTimersByTime(3600_000);
+    const seen = mockFetch(s => s.url.pathname === "/oauth/token" ? json(200, { access_token: "acc-new", refresh_token: "ref-new", expires_in: 3600 }) : undefined);
+    expect(await t.action(internal.whopAuth.tokenFor, { userId })).toBe("acc-new");
+    expect(seen[0].body.refresh_token).toBe("ref-minted");
+    expect((await t.run(ctx => ctx.db.query("whopAuth").collect())).map(r => r.refreshToken)).toEqual(["ref-new"]);
+  });
+
+  test("the recovery link also works with only WHOP_CALLBACK_URL set", async () => {
+    vi.stubEnv("WHOP_OAUTH_REDIRECT", undefined as unknown as string);
+    vi.stubEnv("WHOP_CALLBACK_URL", "https://cb.example/whop/oauth/callback");
+    const t = convexTest(schema, modules);
+    const { url } = await t.action(internal.whopAuth.authorizeUrl, {});
+    expect(new URL(url).searchParams.get("redirect_uri")).toBe("https://cb.example/whop/oauth/callback");
+  });
+});

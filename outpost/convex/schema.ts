@@ -305,7 +305,7 @@ export default defineSchema({
   // log or calls row may carry a token.
   whopAuth: defineTable({
     userId: v.optional(v.id("users")),
-    whopUserId: v.string(),
+    whopUserId: v.optional(v.string()),
     username: v.optional(v.string()),
     accessToken: v.string(),
     refreshToken: v.optional(v.string()),
