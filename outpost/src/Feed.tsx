@@ -159,6 +159,19 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
   const latest = status?.recent[0];
   const sig = latest ? `${latest.videoId}:${latest.posts.map(p => `${p.platform}=${p.status}`).join(",")}` : "";
   const [trayUntil, setTrayUntil] = useState(0);
+  // Once the newest post is live on a bounty, its submission waits for one tap on Whop. That flow lives on the You tab,
+  // so the tray drops once more with a button that goes there.
+  const toSubmit = latest?.submission === "manual";
+  const lastSubmit = useRef<string | null>(null);
+  useEffect(() => {
+    if (!latest) return;
+    const key = `${latest.videoId}:${latest.submission ?? ""}`;
+    const was = lastSubmit.current;
+    lastSubmit.current = key;
+    if (was === null || was === key || !toSubmit || !active) return;
+    setTrayUntil(Date.now() + 8000);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+  }, [latest?.videoId, latest?.submission]);
   // Platforms seen turning live while the app is open. Each pops in turn with a tick; one already live on open doesn't.
   const lastSig = useRef("");
   // Kept with the state it came from, so a pill never pops for an older change.
@@ -207,7 +220,7 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
               shows and drops back in after it for the rest of its time. */}
           {latest && now < trayUntil && !payoff.banner && (
             <Animated.View entering={FadeInUp.duration(180)} exiting={FadeOutUp.duration(180)} style={s.dropIn}>
-              <Tray item={latest} fresh={fresh.sig === sig ? fresh.live : []} sig={sig} />
+              <Tray item={latest} fresh={fresh.sig === sig ? fresh.live : []} sig={sig} submit={toSubmit} />
             </Animated.View>
           )}
           {payoff.toasts}
@@ -408,13 +421,26 @@ function Empty({ text }: { text: string }) {
 type Recent = FunctionReturnType<typeof api.feed.status>["recent"][number];
 
 // The newest approved video and where each platform's copy stands. Tap a live one to open it.
-function Tray({ item, fresh, sig }: { item: Recent; fresh: string[]; sig: string }) {
+// Once it's live on a bounty and ready to submit, the platform pills step aside for a button to the You tab's Submit on
+// Whop flow; the live links stay there too.
+function Tray({ item, fresh, sig, submit }: { item: Recent; fresh: string[]; sig: string; submit: boolean }) {
   const dry = item.posts.every(p => p.status === "dry_run");
   return (
     <Block style={s.tray} depth={3} lift={3} testID="post-tray">
       <Text style={s.trayTag}>{dry ? "APPROVED" : "POSTED"}</Text>
       <Text style={s.trayHook} numberOfLines={1}>{item.hook}</Text>
-      {item.posts.map(p => {
+      {submit && (
+        <Pressable onPress={() => { click(); router.navigate("/you"); }} testID="tray-submit" accessibilityRole="button"
+          accessibilityLabel="Ready to submit on Whop. Opens the You tab">
+          {({ pressed }) => (
+            <Block bevel="gold" depth={2} lift={pressed ? 0 : 3} style={s.pill}>
+              <Image source={ICON.coin} style={s.pillMark} />
+              <Text style={[s.pillText, { color: INK }]} numberOfLines={1}>Submit on Whop</Text>
+            </Block>
+          )}
+        </Pressable>
+      )}
+      {!submit && item.posts.map(p => {
         const name = p.platform === "youtube" ? "YouTube" : "Instagram";
         const [short, full, color] =
           p.status === "live" ? ["Live", "Live, tap to open", "#2F8A2C"]
@@ -766,7 +792,7 @@ const s = StyleSheet.create({
   tray: { marginHorizontal: 12, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 10, paddingRight: 6, paddingTop: 7, paddingBottom: 9 },
   trayTag: { color: "#B06A00", fontSize: 15, fontFamily: FONT.bold },
   trayHook: { flex: 1, color: PARCH.ink, fontSize: 16, fontFamily: FONT.semi },
-  pill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 6, paddingTop: 3, paddingBottom: 5, maxWidth: 110 },
+  pill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 6, paddingTop: 3, paddingBottom: 5, maxWidth: 140 },
   hidden: { opacity: 0 },
   pillFlat: { backgroundColor: PARCH.top, borderWidth: 2, borderColor: INK, paddingBottom: 3 },
   pillMark: { width: 18, height: 18 },

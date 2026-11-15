@@ -108,8 +108,14 @@ export const status = query({
     const recent = [];
     for (const [videoId, rows] of [...byVideo].slice(0, 3)) {
       const video = await ctx.db.get(rows[0].videoId);
+      // A bounty video's submission, once one of its posts is live: "manual" means it waits for one tap on Whop.
+      let submission: Doc<"submissions">["status"] | null = null;
+      for (const r of rows) {
+        const s = await ctx.db.query("submissions").withIndex("by_post", q => q.eq("postId", r._id)).first();
+        if (s && submission !== "manual") submission = s.status;
+      }
       recent.push({
-        videoId, hook: video?.script?.hook ?? "",
+        videoId, hook: video?.script?.hook ?? "", submission,
         at: Math.max(...rows.map(r => r._creationTime)),
         posts: rows.sort((a, b) => PLATFORMS.indexOf(a.platform) - PLATFORMS.indexOf(b.platform)).map(r => ({
           platform: r.platform, status: r.status, url: r.url ?? null, slotAt: r.slotAt, error: r.error ?? null, mode: r.mode,
