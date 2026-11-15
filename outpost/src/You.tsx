@@ -255,10 +255,13 @@ export function PendingCounter({ device, onPress, testID = "hud-pending" }: { de
     label={e ? `${money(e.pendingCents)} estimated pending. ${ESTIMATE}` : "Pending earnings loading"} />;
 }
 
-// Hit, Solid or Miss against the user's baseline. Under two days old it says "so far", since views still climb.
-export function Verdict({ post }: { post: Pick<Post, "verdict" | "ratio" | "early"> | undefined | null }) {
+// Under two days old a post's views are still climbing, so its verdict is "so far".
+export const FRESH_MS = 2 * 86_400_000;
+
+// Hit, Solid or Miss against the user's baseline.
+export function Verdict({ post }: { post: Pick<Post, "verdict" | "ratio" | "liveAt"> | undefined | null }) {
   if (!post?.verdict || post.ratio === null) return null;
-  return <VerdictBadge verdict={post.verdict} ratio={post.ratio} size="sm" reason={post.early ? "so far" : undefined} />;
+  return <VerdictBadge verdict={post.verdict} ratio={post.ratio} size="sm" reason={Date.now() - post.liveAt < FRESH_MS ? "so far" : undefined} />;
 }
 
 // The taste score, its tier and the way to the next one, then the three percentages it comes from. Until five posts
@@ -286,7 +289,7 @@ function Taste({ e }: { e: Earn | undefined }) {
       )}
       {e.tasteTrend !== 0 && (
         <Text style={[s.trend, { color: e.tasteTrend > 0 ? "#2F8A2C" : "#8A3A32" }]} testID="you-trend">
-          {`${e.tasteTrend > 0 ? "▲ +" : "▼ "}${e.tasteTrend} in the last day`}
+          {`${e.tasteTrend > 0 ? "▲ +" : "▼ "}${e.tasteTrend} since you last collected`}
         </Text>
       )}
       {t.state === "calibrating" && (
@@ -370,7 +373,7 @@ function EarnRow({ r, device }: { r: Earn["perVideo"][number]; device: string })
     <View style={s.earnRow} testID="you-earning">
       <View style={s.earnHead}>
         <Text style={s.brand} numberOfLines={1}>{r.brand || "Bounty"}</Text>
-        <Verdict post={{ verdict: r.verdict, ratio: r.ratio, early: Date.now() - r.liveAt < 2 * 86_400_000 }} />
+        <Verdict post={r} />
         <Text style={s.earnCents}>{money(r.estCents)}</Text>
       </View>
       <Pressable style={({ pressed }) => [s.earnHead, pressed && { opacity: 0.7 }]} disabled={!r.url}

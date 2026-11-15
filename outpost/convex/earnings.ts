@@ -1,10 +1,11 @@
 import { v } from "convex/values";
-import { query } from "./_generated/server";
+import { mutation, query, type QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { DAY_MS, livePosts, userFor } from "./lib";
+import { livePosts, userFor } from "./lib";
 
 // Estimated earnings and the taste score, from real rows only: live posts and their view counts, submissions and the
-// statuses Whop gave them, and the user's swipes. Nothing here is stored, so every number traces back to a row.
+// statuses Whop gave them, and the user's swipes. Nothing here depends on the clock, so the query reruns exactly when
+// one of those rows changes. The only thing stored is the score at the user's last Collect (`mark`).
 
 type Status = Doc<"submissions">["status"];
 type Verdict = "hit" | "solid" | "miss";
@@ -13,16 +14,12 @@ type Verdict = "hit" | "solid" | "miss";
 // src/ui/Badge.tsx, which the app's badges use.
 const HIT = 1.5;
 const MISS = 0.8;
-// A post is scored once it has a view count, has been live this long, and has a baseline to compare with.
-const MIN_AGE_MS = 2 * 60 * 60 * 1000;
 // Earlier counted posts the baseline needs, when no account baseline is set.
 const MIN_EARLIER = 2;
 // Scored posts before the score stops being provisional.
 const NEEDED = 5;
 // Swipes before pickiness gives a provisional score.
 const MIN_SWIPES = 3;
-// Posts younger than this are graded "so far": views still climb for a day or two.
-const SETTLE_MS = 2 * DAY_MS;
 
 type Item = {
   videoId: Id<"videos">;
@@ -41,17 +38,17 @@ const median = (xs: number[]) => {
 };
 
 // Each video against the median of the user's earlier counted videos, or the account baseline when a builder set one.
-// Only videos live at `at` count, so the same function gives the score as it stood earlier. Views are today's counts.
-function grade(items: Item[], at: number, accountBaseline: number | null) {
-  const live = items.filter(i => i.liveAt <= at).sort((a, b) => a.liveAt - b.liveAt);
+// A video is scored once the platform has counted it and there is a baseline. The app labels a verdict on a video under
+// two days old "so far", since views still climb.
+function grade(items: Item[], accountBaseline: number | null) {
+  const live = [...items].sort((a, b) => a.liveAt - b.liveAt);
   return live.map((item, i) => {
     const earlier = live.slice(0, i).filter(e => e.counted).map(e => e.views);
     const baseline = accountBaseline ?? (earlier.length >= MIN_EARLIER ? median(earlier) : null);
-    const scored = item.counted && baseline !== null && at - item.liveAt >= MIN_AGE_MS;
     // Plus one on both sides, so a baseline of 0 views still compares.
-    const ratio = scored ? (item.views + 1) / (baseline! + 1) : null;
+    const ratio = item.counted && baseline !== null ? (item.views + 1) / (baseline + 1) : null;
     const verdict: Verdict | null = ratio === null ? null : ratio >= HIT ? "hit" : ratio >= MISS ? "solid" : "miss";
-    return { ...item, baseline, ratio, verdict, early: at - item.liveAt < SETTLE_MS };
+    return { ...item, baseline, ratio, verdict };
   });
 }
 
@@ -65,30 +62,29 @@ function pickScore(share: number) {
 
 type Inputs = { items: Item[]; swipes: Doc<"swipes">[]; submissions: Doc<"submissions">[]; accountBaseline: number | null };
 
-// The taste score as it stood at `at`: scaled(approval rate x performance). Performance is the median of the scored
+// The taste score: scaled(approval rate x performance). Performance is the median of the scored
 // videos' views over their baselines; the approval rate is Whop-approved over settled submissions, left out until Whop
 // settles one. Until NEEDED videos are scored the score is provisional: pickiness, blended with the videos scored so far.
-function tasteAt({ items, swipes, submissions, accountBaseline }: Inputs, at: number) {
-  const graded = grade(items, at, accountBaseline);
+function tasteOf({ items, swipes, submissions, accountBaseline }: Inputs) {
+  const graded = grade(items, accountBaseline);
   const scored = graded.filter(g => g.ratio !== null);
   const hits = scored.filter(g => g.verdict === "hit").length;
-  const settled = submissions.filter(s => (s.status === "approved" || s.status === "denied") && (s.resolvedAt ?? 0) <= at);
+  const settled = submissions.filter(s => s.status === "approved" || s.status === "denied");
   const approvedSubs = settled.filter(s => s.status === "approved").length;
   const approvalRate = settled.length ? approvedSubs / settled.length : null;
-  const seen = swipes.filter(s => s.at <= at);
-  const approvedClips = seen.filter(s => s.dir === "right").length;
-  const pickiness = seen.length ? approvedClips / seen.length : null;
+  const approvedClips = swipes.filter(s => s.dir === "right").length;
+  const pickiness = swipes.length ? approvedClips / swipes.length : null;
 
   const perf = scored.length ? median(scored.map(g => g.ratio!)) * (approvalRate ?? 1) : null;
   const perfScore = perf === null ? null : (100 * perf) / (perf + 1);
-  const pick = pickiness !== null && seen.length >= MIN_SWIPES ? pickScore(pickiness) : null;
+  const pick = pickiness !== null && swipes.length >= MIN_SWIPES ? pickScore(pickiness) : null;
   const n = scored.length;
   const raw = n >= NEEDED ? perfScore
     : perfScore !== null && pick !== null ? (pick * (NEEDED - n) + perfScore * n) / NEEDED
     : perfScore ?? pick;
   return {
     graded, score: raw === null ? null : Math.max(0, Math.min(100, Math.round(raw))), provisional: n < NEEDED, scored: n,
-    hits, approvalRate, approvedSubs, settledSubs: settled.length, pickiness, approvedClips, seenClips: seen.length,
+    hits, approvalRate, approvedSubs, settledSubs: settled.length, pickiness, approvedClips, seenClips: swipes.length,
   };
 }
 
@@ -100,6 +96,32 @@ function estimate(b: Doc<"bounties">, views: number) {
   return b.maxPerClipCents !== undefined ? Math.min(cents, b.maxPerClipCents) : cents;
 }
 
+// The rows everything here reads: live posts grouped into one item per video (platform views summed), the user's
+// submissions and swipes.
+async function gather(ctx: QueryCtx, user: Doc<"users">) {
+  const live = await livePosts(ctx, user._id);
+  const submissions = await ctx.db.query("submissions").withIndex("by_user", q => q.eq("userId", user._id)).collect();
+  const swipes = await ctx.db.query("swipes").withIndex("by_user_day", q => q.eq("userId", user._id)).collect();
+  const items = new Map<Id<"videos">, Item>();
+  for (const p of live) {
+    let item = items.get(p.videoId);
+    if (!item) {
+      const video = await ctx.db.get(p.videoId);
+      item = {
+        videoId: p.videoId, bountyId: video?.bountyId ?? null, title: video?.script?.hook ?? "",
+        liveAt: p.liveAt ?? p.slotAt, views: 0, counted: false, url: p.url ?? null,
+      };
+      items.set(p.videoId, item);
+    }
+    item.views += p.views;
+    item.counted ||= p.viewsAt !== undefined || p.views > 0;
+    item.liveAt = Math.min(item.liveAt, p.liveAt ?? p.slotAt);
+    item.url ??= p.url ?? null;
+  }
+  const inputs: Inputs = { items: [...items.values()], swipes, submissions, accountBaseline: user.baselineViews ?? null };
+  return { live, submissions, items, inputs };
+}
+
 // A video's posts can carry several submissions; the one furthest along speaks for it.
 const ORDER: Status[] = ["approved", "submitted", "pending", "manual", "denied", "failed"];
 
@@ -107,34 +129,13 @@ export const summary = query({
   args: { deviceId: v.string() },
   handler: async (ctx, { deviceId }) => {
     const user = await userFor(ctx, deviceId);
-    const now = Date.now();
-    const live = await livePosts(ctx, user._id);
-    const submissions = await ctx.db.query("submissions").withIndex("by_user", q => q.eq("userId", user._id)).collect();
-    const swipes = await ctx.db.query("swipes").withIndex("by_user_day", q => q.eq("userId", user._id)).collect();
+    const { live, submissions, items, inputs } = await gather(ctx, user);
     const subByPost = new Map(submissions.map(s => [s.postId, s]));
     const bounties = new Map<Id<"bounties">, Doc<"bounties"> | null>();
     const bountyOf = async (id: Id<"bounties">) => {
       if (!bounties.has(id)) bounties.set(id, await ctx.db.get(id));
       return bounties.get(id)!;
     };
-
-    // One item per video, its platforms' views summed.
-    const items = new Map<Id<"videos">, Item>();
-    for (const p of live) {
-      let item = items.get(p.videoId);
-      if (!item) {
-        const video = await ctx.db.get(p.videoId);
-        item = {
-          videoId: p.videoId, bountyId: video?.bountyId ?? null, title: video?.script?.hook ?? "",
-          liveAt: p.liveAt ?? p.slotAt, views: 0, counted: false, url: p.url ?? null,
-        };
-        items.set(p.videoId, item);
-      }
-      item.views += p.views;
-      item.counted ||= p.viewsAt !== undefined || p.views > 0;
-      item.liveAt = Math.min(item.liveAt, p.liveAt ?? p.slotAt);
-      item.url ??= p.url ?? null;
-    }
 
     // Earnings per submitted post: approved counts as approved, submitted and pending as pending, denied and failed as
     // nothing. A manual row isn't on Whop until the user submits it there, so its estimate waits apart.
@@ -160,11 +161,7 @@ export const summary = query({
       else pendingCents += cents;
     }
 
-    const inputs = { items: [...items.values()], swipes, submissions, accountBaseline: user.baselineViews ?? null };
-    const taste = tasteAt(inputs, now);
-    const dayAgo = tasteAt(inputs, now - DAY_MS);
-    const seenAt = user.seen?.at ?? user.createdAt;
-    const atSeen = tasteAt(inputs, seenAt);
+    const taste = tasteOf(inputs);
     const graded = new Map(taste.graded.map(g => [g.videoId, g]));
 
     const perVideo = [];
@@ -180,10 +177,10 @@ export const summary = query({
     }
     perVideo.sort((a, b) => b.liveAt - a.liveAt);
 
-    // Every live video, newest first, with its verdict. `early` means under two days old, so it is graded so far.
+    // Every live video, newest first, with its verdict.
     const posts = taste.graded.slice().reverse().map(g => ({
       videoId: g.videoId, title: g.title, liveAt: g.liveAt, views: g.views, counted: g.counted, url: g.url,
-      baseline: g.baseline, ratio: g.ratio, verdict: g.verdict, early: g.early,
+      baseline: g.baseline, ratio: g.ratio, verdict: g.verdict,
     }));
     // The Away card's best and worst post: graded videos by ratio, or counted ones by views before any are graded.
     const gradedPosts = posts.filter(p => p.ratio !== null).sort((a, b) => b.ratio! - a.ratio!);
@@ -197,7 +194,9 @@ export const summary = query({
       unsubmittedCents,
       perVideo,
       tasteScore: score ?? 0,
-      tasteTrend: score !== null && dayAgo.score !== null ? score - dayAgo.score : 0,
+      // The change since the score saved at the user's last Collect (`mark`). There is no view history, so a score
+      // recomputed for an earlier time would use today's views; the saved one is what the user actually saw.
+      tasteTrend: score !== null && user.tasteScore !== undefined ? score - user.tasteScore : 0,
       // Videos scored against a baseline: what moves the score out of calibrating.
       settledCount: taste.scored,
       taste: {
@@ -219,12 +218,23 @@ export const summary = query({
       },
       posts,
       away: {
-        since: seenAt,
-        scoreFrom: atSeen.score,
+        scoreFrom: user.tasteScore ?? null,
         scoreTo: score,
         best: ranked[0] ?? null,
         worst: ranked.length > 1 ? ranked[ranked.length - 1] : null,
       },
     };
+  },
+});
+
+// Saves the taste score as it is now, computed here rather than taken from the app. The Away card calls it on Collect,
+// so the next card and the trend compare with the score the user last saw.
+export const mark = mutation({
+  args: { deviceId: v.string() },
+  handler: async (ctx, { deviceId }) => {
+    const user = await userFor(ctx, deviceId);
+    const { score } = tasteOf((await gather(ctx, user)).inputs);
+    if (score !== null) await ctx.db.patch(user._id, { tasteScore: score });
+    return null;
   },
 });

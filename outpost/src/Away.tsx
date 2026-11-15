@@ -15,6 +15,7 @@ import { centerOf, clearPending, getPending, setAwayUp, setPending, targets, typ
 import { Block, FONT, INK, Outlined, PARCH, PixelButton, WOOD } from "./pixel";
 import { TierUp } from "./Payoff";
 import { TIERS, tierFor } from "./ui";
+import { FRESH_MS } from "./You";
 
 type Summary = FunctionReturnType<typeof api.away.summary>;
 // The taste side of the card: the score when the user last collected and now, and the best and worst post.
@@ -63,6 +64,7 @@ export function Away() {
   const device = useDevice();
   const convex = useConvex();
   const collect = useMutation(api.away.collect);
+  const mark = useMutation(api.earnings.mark);
   const status = useQuery(api.feed.status, device ? { deviceId: device } : "skip");
   // Lives here rather than in the sheet, so the chime keeps ringing after the sheet closes.
   const chime = useAudioPlayer(require("../assets/sounds/collect.wav"));
@@ -109,6 +111,7 @@ export function Away() {
     chime.seekTo(0).catch(() => {});
     chime.play();
     collect({ deviceId: device, at: shown.at, views: shown.views.to }).catch(() => {});
+    mark({ deviceId: device }).catch(() => {});
   };
   const finish = () => {
     setShown(null);
@@ -156,7 +159,7 @@ function ScoreLine({ t }: { t: Taste }) {
 // The best and worst post: by their verdict against the baseline once graded, by views before that.
 function PostsLine({ t }: { t: Taste }) {
   const say = (p: NonNullable<Taste["best"]>) => p.verdict && p.ratio !== null
-    ? `${VERDICT[p.verdict]} ${p.ratio.toFixed(1)}x${p.early ? " so far" : ""}` : `${p.views.toLocaleString()} views`;
+    ? `${VERDICT[p.verdict]} ${p.ratio.toFixed(1)}x${Date.now() - p.liveAt < FRESH_MS ? " so far" : ""}` : `${p.views.toLocaleString()} views`;
   return (
     <View style={st.postsBody}>
       {t.best && <Text style={st.postLine} numberOfLines={1}><Text style={st.postKey}>Best </Text>{`${say(t.best)} · ${t.best.title}`}</Text>}
