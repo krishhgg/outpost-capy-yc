@@ -64,8 +64,8 @@ Each run prints its report link. Runs from a checkout use that checkout's test f
 
 | Test | Checks | State |
 |---|---|---|
-| `outpost-smoke` | First launch with no sign-in reaches the Base village; Hood opens Under the Hood and Done returns; the Feed shows a video card or a designed empty state with the dry-run chip; the You tab shows the streak card | Active |
-| `outpost-bounties-take` | Bounties board, Take shows background progress | Pending: Bounties screen |
+| `outpost-smoke` | First launch shows no sign-in screen; the Base tab shows the village (Collect on the away card can open the Feed first); Hood opens Under the Hood and Done returns; the Feed shows a video card or a designed empty state with the dry-run chip; the You tab shows the streak card | Active |
+| `outpost-bounties-take` | The Bounties tab lists cards with brand, reward and TAKE or TAKEN; Take on an open bounty turns it TAKEN; the top card shows TAKEN, a ready-count pill and Swipe them. Once every bounty is taken it checks the TAKEN card only (reset with `purgeTestUser`) | Active |
 | `outpost-feed-bounty-tag` | Feed card with bounty tag and forecast chip | Pending: T8 |
 | `outpost-edit-chip-remake` | Edit chip queues a remake | Pending: T8 + T6 |
 | `outpost-right-swipe-status` | Right swipe shows posting and submitting status | Pending: T8 + T4 |
