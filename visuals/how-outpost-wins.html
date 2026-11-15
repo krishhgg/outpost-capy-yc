@@ -1,0 +1,265 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--gold:#FFD23F;--green:#38C172;--violet:#8E6BD8}
+*{box-sizing:border-box}
+body{margin:0}
+.wrap{display:flex;flex-direction:column;gap:30px;padding:4px 0 8px}
+h2{font-size:22px;line-height:1.2;margin:0 0 6px;letter-spacing:-.3px}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-foreground);margin:0 0 12px;font-weight:700}
+p{margin:0;line-height:1.5}
+.lead{color:var(--muted-foreground);font-size:14px}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;margin:0 4px 4px 0;white-space:nowrap}
+.ok{background:color-mix(in srgb,var(--success) 18%,transparent);color:var(--success)}
+.mid{background:color-mix(in srgb,var(--warning) 18%,transparent);color:var(--warning)}
+.you{background:color-mix(in srgb,var(--info) 18%,transparent);color:var(--info)}
+.sp{background:var(--secondary);color:var(--secondary-foreground)}
+/* timeline */
+.tl{display:flex;height:48px;font-size:11px;font-weight:700}
+.tl div:first-child{border-radius:var(--radius) 0 0 var(--radius)}.tl div:last-child{border-radius:0 var(--radius) var(--radius) 0}
+.tl div{display:flex;align-items:flex-end;justify-content:center;text-align:center;padding:0 4px 7px;color:#111;position:relative;line-height:1.15}
+.tlt{display:flex;font-size:11px;color:var(--muted-foreground);margin-top:6px}
+.tlt div{flex-shrink:0}
+.wm{position:absolute;top:-11px;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;background:var(--foreground);color:var(--background);font-size:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 3px var(--background)}
+.tlwrap{padding-top:14px}
+/* wows */
+.wow{display:grid;grid-template-columns:44px 1fr;gap:14px;padding:16px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);margin-bottom:12px}
+.num{width:44px;height:44px;border-radius:12px;background:var(--foreground);color:var(--background);font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.wow h4{margin:0 0 4px;font-size:18px;letter-spacing:-.2px}
+.see{font-size:14px;line-height:1.5;margin-bottom:10px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12.5px;line-height:1.45;color:var(--muted-foreground)}
+.cols b{color:var(--foreground);display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.status{margin-top:10px}
+/* phones */
+.phones{display:grid;grid-template-columns:repeat(3,1fr);gap:18px 14px}
+.ph{display:flex;flex-direction:column;align-items:center;gap:8px}
+.cap{font-size:12px;text-align:center;color:var(--muted-foreground);line-height:1.4;max-width:210px}
+.cap b{color:var(--foreground);display:block;font-size:13px}
+.phone{width:206px;height:420px;border-radius:34px;background:#0A0A0C;padding:7px;box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 0 0 1.5px #2A2A30}
+.scr{width:100%;height:100%;border-radius:28px;overflow:hidden;position:relative;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;color:#fff}
+.sb{display:flex;justify-content:space-between;font-size:10px;font-weight:700;padding:9px 18px 0;opacity:.9}
+.island{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:62px;height:18px;background:#000;border-radius:10px}
+/* screen 1 */
+.s1{background:radial-gradient(120% 60% at 50% 0%,#3A2E07 0%,#141210 60%)}
+.big{font-size:44px;font-weight:900;letter-spacing:-1.5px;color:#7CF29A;line-height:1}
+.row{display:flex;gap:5px;flex-wrap:wrap}
+.pill{font-size:10px;font-weight:800;padding:4px 7px;border-radius:8px;background:rgba(255,255,255,.1)}
+.li{display:flex;gap:7px;align-items:center;font-size:10.5px;opacity:.92;margin-bottom:6px}
+.dot{width:16px;height:16px;border-radius:5px;flex-shrink:0}
+.btn{position:absolute;left:14px;right:14px;bottom:16px;height:40px;border-radius:14px;background:var(--gold);color:#1A1200;font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 #B88A00}
+/* screen 2 */
+.s2{background:linear-gradient(#5AA9E6,#9BD3F5 45%,#2F7FC1 46%,#246AA6)}
+.res{display:flex;gap:4px;padding:6px 8px 0}
+.r{flex:1;background:rgba(0,0,0,.45);border-radius:9px;padding:4px 5px;font-size:9.5px;font-weight:800;display:flex;align-items:center;gap:4px}
+.ri{width:11px;height:11px;border-radius:50%}
+.nav{position:absolute;bottom:0;left:0;right:0;height:46px;background:rgba(10,14,30,.85);display:flex;justify-content:space-around;align-items:center;font-size:9.5px;font-weight:800}
+.nav .on{color:var(--gold)}
+.badge{background:#E4544B;border-radius:8px;padding:1px 5px;font-size:8.5px;margin-left:3px}
+/* screen 3 */
+.s3{background:#000}
+.card{position:absolute;top:52px;left:10px;right:10px;bottom:56px;border-radius:18px;background:#141414;transform:rotate(5deg) translateX(14px);box-shadow:0 10px 24px rgba(0,0,0,.6);padding:14px 12px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.under{position:absolute;top:50px;left:16px;right:16px;bottom:62px;border-radius:18px;background:#0F1A14}
+.hook{font-size:19px;font-weight:900;letter-spacing:-.6px;line-height:1.08;text-align:center}
+.chk{font-size:11.5px;font-weight:800;line-height:1.7}
+.price{align-self:center;background:var(--gold);color:#111;font-weight:900;font-size:22px;border-radius:12px;padding:2px 14px}
+.keep{position:absolute;top:20px;left:12px;transform:rotate(-14deg);border:3px solid #7CF29A;color:#7CF29A;font-weight:900;font-size:18px;padding:0 6px;border-radius:6px}
+.tag{position:absolute;top:27px;left:12px;right:12px;font-size:8.5px;font-weight:800;letter-spacing:.04em;color:#bbb;text-align:center}
+.hint{position:absolute;bottom:18px;left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;font-size:10px;font-weight:800}
+/* screen 4 */
+.s4{background:linear-gradient(#1B1030,#0E0A18)}
+.stars{display:flex;justify-content:center;gap:4px;font-size:34px;line-height:1}
+.st{color:var(--gold);text-shadow:0 0 12px rgba(255,210,63,.6)}
+.st.off{color:transparent;-webkit-text-stroke:1.5px var(--gold);text-shadow:none;opacity:.8}
+.goal{display:flex;justify-content:space-between;font-size:10px;padding:6px 8px;border-radius:9px;background:rgba(255,255,255,.07);margin-bottom:5px}
+.goal .d{color:#7CF29A;font-weight:800}
+/* screen 5 */
+.s5{background:linear-gradient(#20183A,#120E22)}
+.note{margin:0 12px;background:#F5EBD3;color:#2A2216;border-radius:10px;padding:11px 11px;font-size:11px;line-height:1.45;box-shadow:0 6px 0 #C9B88F}
+.note p{margin:0 0 7px;padding-left:12px;position:relative}
+.note p:before{content:"";position:absolute;left:0;top:6px;width:6px;height:6px;border-radius:50%;background:#8E6BD8}
+.new{background:#FFE58A;border-radius:3px;padding:0 3px}
+/* day loop */
+.day{display:grid;grid-template-columns:64px 1fr;gap:0 14px}
+.t{font-size:12px;font-weight:800;color:var(--muted-foreground);padding-top:13px;text-align:right}
+.step{border-left:2px solid var(--border);padding:10px 0 14px 16px;position:relative}
+.step:before{content:"";position:absolute;left:-7px;top:14px;width:12px;height:12px;border-radius:50%;background:var(--foreground)}
+.step b{font-size:14px}
+.step .ev{font-size:12px;color:var(--muted-foreground);margin-top:3px;line-height:1.45}
+/* sponsors */
+.sps{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.spc{border:1px solid var(--border);border-radius:var(--radius);padding:14px;background:var(--card)}
+.spc h4{margin:0 0 8px;font-size:16px}
+.spc .k{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-foreground);margin-top:8px}
+.spc p{font-size:12.5px;line-height:1.45}
+.foot{font-size:12px;color:var(--muted-foreground);margin-top:10px;line-height:1.5}
+.vs{display:grid;grid-template-columns:1.1fr 1fr 1fr;font-size:12.5px;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.vs div{padding:8px 10px;border-bottom:1px solid var(--border)}
+.vs .h{font-weight:800;background:var(--secondary)}
+.vs .y{color:var(--success);font-weight:700}
+.risk li{font-size:13px;line-height:1.5;margin-bottom:4px}
+.risk{margin:0;padding-left:18px}
+</style></head><body><div class="wrap">
+
+<section>
+<h2>Outpost: build a base, and AI agents run a real business inside it</h2>
+<p class="lead">Every swipe does real work. Everything on stage is real: real products, real views, real money. Last week's 2nd place at the same office (Nomen) replayed a recording and called its numbers "illustrative."</p>
+</section>
+
+<section>
+<h3>The 3-minute demo, and where the three wows land</h3>
+<div class="tlwrap">
+<div class="tl">
+<div style="width:8.3%;background:#B79CFF"><span class="wm">1</span>Open</div>
+<div style="width:22.2%;background:#9BD3F5">The loop: swipe, it learns you</div>
+<div style="width:30.6%;background:#5CE1D6"><span class="wm">2</span>Agents raid: stars 1 and 2</div>
+<div style="width:22.2%;background:var(--gold)"><span class="wm">3</span>A judge pays: star 3</div>
+<div style="width:16.7%;background:#FF7A93">Map, Revyl, close</div>
+</div>
+<div class="tlt"><div style="width:8.3%">0:00</div><div style="width:22.2%">0:15</div><div style="width:30.6%">0:55</div><div style="width:22.2%">1:50</div><div style="width:13%">2:30</div><div>3:00</div></div>
+</div>
+</section>
+
+<section>
+<h3>Three wows that sell it even if judges doubt the idea</h3>
+
+<div class="wow"><div class="num">1</div><div>
+<h4>"It worked while I slept"</h4>
+<p class="see">The demo opens on the overnight report: real views on videos the agents posted overnight, and new raid targets the scout found. Tap Collect and the coins fly into the base.</p>
+<div class="cols">
+<div><b>Real underneath</b>Convex crons ran the agents overnight. Supermemory picked which drafts to post from your swipes. The view counts are pulled live from the platforms.</div>
+<div><b>Why it lands</b>It's the brief ("open again tomorrow") shown with real numbers. Bside's character has "a life that runs while you're away" and reports D1 near 60%. The median mobile game's D1 is 22%.</div>
+</div>
+<div class="status"><span class="chip ok">Proven: video render 1 s, Mac bridge 1.1 s</span><span class="chip you">Needs: a connected YouTube account</span><span class="chip sp">Convex</span><span class="chip sp">Supermemory</span></div>
+</div></div>
+
+<div class="wow"><div class="num">2</div><div>
+<h4>"One swipe, and it exists"</h4>
+<p class="see">Swipe right on a product card. Seconds later the real Whop product page is up on the projector, and its video ad is the next card in the feed.</p>
+<div class="cols">
+<div><b>Real underneath</b>The swipe schedules the agent at once. It creates the Whop product, price and checkout link. The Mac worker renders the ad and drops it into Convex storage.</div>
+<div><b>Why it lands</b>Instant results raise motivation more than delayed rewards of any size (Woolley and Fishbach 2018, 5 studies). In today's test the next video started 80 ms after a swipe.</div>
+</div>
+<div class="status"><span class="chip ok">Proven: feed 80 ms, render 1 s</span><span class="chip mid">Untested: Whop product create (key pending)</span><span class="chip sp">Whop</span><span class="chip sp">Convex</span></div>
+</div></div>
+
+<div class="wow"><div class="num">3</div><div>
+<h4>"A judge buys it, live"</h4>
+<p class="see">A QR code goes up on screen. A judge pays $1 from their own phone. The vault on the projector fills with a coin sound and the third raid star lights up.</p>
+<div class="cols">
+<div><b>Real underneath</b>A real card payment on a production Whop account, which takes payments before ID checks up to $5,000. Whop's webhook hits Convex, and every screen updates live.</div>
+<div><b>Why it lands</b>Nothing beats money moving on stage, and Nomen had none. Showing what your actions caused raises motivation (d = +0.33), while points for tasks lower it (d = -0.28 to -0.40).</div>
+</div>
+<div class="status"><span class="chip mid">Documented, untested (Whop key pending)</span><span class="chip you">Your call: real card or sandbox</span><span class="chip sp">Whop</span><span class="chip sp">Convex</span></div>
+</div></div>
+</section>
+
+<section>
+<h3>The app, screen by screen</h3>
+<div class="phones">
+
+<div class="ph"><div class="phone"><div class="scr s1"><div class="island"></div><div class="sb"><span>8:02</span><span>●●●</span></div>
+<div style="padding:22px 14px 0">
+<div style="font-size:10px;opacity:.6;font-weight:700">AWAY 8H 12M</div>
+<div style="font-size:17px;font-weight:900;margin:2px 0 12px">While you were away</div>
+<div class="big">+$27</div>
+<div style="font-size:10.5px;opacity:.75;margin:4px 0 10px">2 sales · Notion Freelance Kit</div>
+<div class="row" style="margin-bottom:12px"><span class="pill">+4,180 views</span><span class="pill">+3 posts</span><span class="pill">+2 targets</span></div>
+<div class="li"><span class="dot" style="background:#D9476B"></span>Studio rendered 12 videos</div>
+<div class="li"><span class="dot" style="background:#9AA3B5"></span>Tower posted 3 Shorts</div>
+<div class="li"><span class="dot" style="background:#8E6BD8"></span>Scout found 2 rising hooks</div>
+</div><div class="btn">COLLECT ALL</div></div></div>
+<div class="cap"><b>While you were away</b>Opens first whenever results came in overnight.</div></div>
+
+<div class="ph"><div class="phone"><div class="scr s2"><div class="island"></div><div class="sb"><span>8:03</span><span>●●●</span></div>
+<div class="res"><div class="r"><span class="ri" style="background:var(--gold)"></span>$127</div><div class="r"><span class="ri" style="background:#FF7A93"></span>12.4k</div><div class="r"><span class="ri" style="background:#7CF29A"></span>8/12</div></div>
+<div style="margin-top:14px"><svg viewBox="0 0 200 250" width="100%" style="display:block"><polygon points="4.0,128.0 100.0,176.0 100.0,188.0 4.0,140.0" fill="#6B4A2B"/><polygon points="100.0,176.0 196.0,128.0 196.0,140.0 100.0,188.0" fill="#4E3520"/><polygon points="100.0,80.0 196.0,128.0 100.0,176.0 4.0,128.0" fill="#5DBB63"/><ellipse cx="111.5" cy="99.5" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="120.8" cy="108.6" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="71.0" cy="105.0" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="110.2" cy="159.0" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="146.9" cy="127.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="122.5" cy="119.9" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="105.7" cy="96.8" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="38.4" cy="134.1" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="101.9" cy="155.5" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="152.4" cy="127.7" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="72.6" cy="125.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="89.4" cy="153.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="168.5" cy="126.6" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="94.3" cy="140.0" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="128.4" cy="114.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="133.2" cy="109.1" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="106.0" cy="162.6" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="121.4" cy="121.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="129.1" cy="148.8" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="103.0" cy="159.6" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="108.2" cy="124.6" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="114.5" cy="129.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="87.6" cy="104.9" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="166.5" cy="121.8" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="49.9" cy="113.9" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="78.0" cy="120.0" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="111.1" cy="120.0" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="169.3" cy="136.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="118.2" cy="111.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="130.8" cy="124.1" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="66.2" cy="132.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="79.4" cy="122.8" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="169.4" cy="128.2" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="85.5" cy="97.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="112.9" cy="144.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="91.9" cy="109.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="75.7" cy="112.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="43.5" cy="116.8" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="94.9" cy="164.7" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="80.6" cy="158.0" rx="2.2" ry="1" fill="#4FA855"/><polyline points="52.0,140.0 100.0,116.0 148.0,140.0" fill="none" stroke="#C9B27A" stroke-width="5" stroke-linecap="round" opacity=".9"/><polyline points="100.0,116.0 100.0,160.0" fill="none" stroke="#C9B27A" stroke-width="5" stroke-linecap="round" opacity=".9"/><polyline points="70.0,100.0 100.0,116.0 132.0,98.0" fill="none" stroke="#C9B27A" stroke-width="4" stroke-linecap="round" opacity=".9"/><polygon points="55.0,98.0 68.0,104.5 68.0,94.5 55.0,88.0" fill="#785ab7"/><polygon points="68.0,104.5 81.0,98.0 81.0,88.0 68.0,94.5" fill="#584285"/><polygon points="55.0,88.0 68.0,94.5 68.0,76.0" fill="#b79cff"/><polygon points="68.0,94.5 81.0,88.0 68.0,76.0" fill="#806db2"/><polygon points="55.0,88.0 68.0,81.5 68.0,76.0" fill="#d2b3ff"/><polygon points="126.0,96.0 134.0,100.0 134.0,60.0 126.0,56.0" fill="#828a99"/><polygon points="134.0,100.0 142.0,96.0 142.0,56.0 134.0,60.0" fill="#5f6570"/><polygon points="126.0,56.0 134.0,60.0 134.0,49.0" fill="#e4544b"/><polygon points="134.0,60.0 142.0,56.0 134.0,49.0" fill="#9f3a34"/><polygon points="126.0,56.0 134.0,52.0 134.0,49.0" fill="#ff6056"/><line x1="134" y1="49" x2="134" y2="40" stroke="#E4544B" stroke-width="1.6"/><circle cx="134" cy="39" r="2.4" fill="#FFD23F"/><path d="M140 44 q5 5 0 10 M144 41 q8 8 0 16" fill="none" stroke="#FFD23F" stroke-width="1.2" opacity=".8"/><polygon points="78.0,116.0 100.0,127.0 100.0,109.0 78.0,98.0" fill="#b88916"/><polygon points="100.0,127.0 122.0,116.0 122.0,98.0 100.0,109.0" fill="#866410"/><polygon points="78.0,98.0 100.0,109.0 100.0,84.0" fill="#ffd23f"/><polygon points="100.0,109.0 122.0,98.0 100.0,84.0" fill="#b2932c"/><polygon points="78.0,98.0 100.0,87.0 100.0,84.0" fill="#fff148"/><circle cx="100" cy="112" r="4.5" fill="#FFF3B0" stroke="#B07D0A" stroke-width="1"/><polygon points="32.0,140.0 50.0,149.0 50.0,134.0 32.0,125.0" fill="#278d88"/><polygon points="50.0,149.0 68.0,140.0 68.0,125.0 50.0,134.0" fill="#1d6763"/><polygon points="32.0,125.0 50.0,134.0 50.0,116.0" fill="#5ce1d6"/><polygon points="50.0,134.0 68.0,125.0 50.0,116.0" fill="#409d95"/><polygon points="32.0,125.0 50.0,116.0 50.0,116.0" fill="#69fff6"/><polygon points="132.0,140.0 150.0,149.0 150.0,132.0 132.0,123.0" fill="#b83c5a"/><polygon points="150.0,149.0 168.0,140.0 168.0,123.0 150.0,132.0" fill="#862c42"/><polygon points="132.0,123.0 150.0,132.0 150.0,115.0" fill="#ff7a93"/><polygon points="150.0,132.0 168.0,123.0 150.0,115.0" fill="#b25566"/><polygon points="132.0,123.0 150.0,114.0 150.0,115.0" fill="#ff8ca9"/><polygon points="88.0,162.0 100.0,168.0 100.0,160.0 88.0,154.0" fill="#755a3a"/><polygon points="100.0,168.0 112.0,162.0 112.0,154.0 100.0,160.0" fill="#55412a"/><polygon points="100.0,148.0 112.0,154.0 100.0,160.0 88.0,154.0" fill="#9a764d"/><polygon points="105.0,168.0 112.0,171.5 112.0,165.5 105.0,162.0" fill="#886944"/><polygon points="112.0,171.5 119.0,168.0 119.0,162.0 112.0,165.5" fill="#634c31"/><polygon points="112.0,158.5 119.0,162.0 112.0,165.5 105.0,162.0" fill="#b38a59"/><rect x="166" y="160" width="2" height="14" fill="#7A5A3A"/><rect x="160" y="158" width="15" height="6" rx="1" fill="#E9D3A4"/><ellipse cx="76" cy="122" rx="3.2" ry="1.4" fill="#000" opacity=".35"/><rect x="73.8" y="115" width="4.4" height="6" rx="1.6" fill="#4AA3FF"/><circle cx="76" cy="113" r="2.3" fill="#F6D7B0"/><ellipse cx="124" cy="129" rx="3.2" ry="1.4" fill="#000" opacity=".35"/><rect x="121.8" y="122" width="4.4" height="6" rx="1.6" fill="#FF8A3D"/><circle cx="124" cy="120" r="2.3" fill="#F6D7B0"/><ellipse cx="100" cy="147" rx="3.2" ry="1.4" fill="#000" opacity=".35"/><rect x="97.8" y="140" width="4.4" height="6" rx="1.6" fill="#B79CFF"/><circle cx="100" cy="138" r="2.3" fill="#F6D7B0"/><ellipse cx="140" cy="114" rx="3.2" ry="1.4" fill="#000" opacity=".35"/><rect x="137.8" y="107" width="4.4" height="6" rx="1.6" fill="#7CF29A"/><circle cx="140" cy="105" r="2.3" fill="#F6D7B0"/><rect x="73.5" y="60" width="53.1" height="11" rx="5.5" fill="#FFD23F"/><text x="100" y="68.6" text-anchor="middle" font-size="6.6" font-weight="700" fill="#1A1200">VAULT  +$27</text><rect x="35.8" y="166" width="28.5" height="11" rx="5.5" fill="rgba(0,0,0,.55)"/><text x="50" y="174.6" text-anchor="middle" font-size="6.6" font-weight="700" fill="#fff">STORE</text><rect x="135.7" y="166" width="32.6" height="11" rx="5.5" fill="rgba(0,0,0,.55)"/><text x="152" y="174.6" text-anchor="middle" font-size="6.6" font-weight="700" fill="#fff">STUDIO</text><rect x="119.8" y="24" width="28.5" height="11" rx="5.5" fill="rgba(0,0,0,.55)"/><text x="134" y="32.6" text-anchor="middle" font-size="6.6" font-weight="700" fill="#fff">TOWER</text><rect x="49.8" y="72" width="28.5" height="11" rx="5.5" fill="rgba(0,0,0,.55)"/><text x="64" y="80.6" text-anchor="middle" font-size="6.6" font-weight="700" fill="#fff">SCOUT</text></svg></div>
+<div class="nav"><span class="on">BASE</span><span>FEED<span class="badge">12</span></span><span>MAP</span></div>
+</div></div>
+<div class="cap"><b>Base</b>Each building is a real system. Agents walk between them while they work.</div></div>
+
+<div class="ph"><div class="phone"><div class="scr s3"><div class="island"></div><div class="sb"><span>8:04</span><span>●●●</span></div>
+<div class="under"></div>
+<div class="tag">DRAFT · LIKE A 91.4K-VIEW HOOK</div>
+<div class="card"><div class="keep">POST</div>
+<div class="hook">Your Notion should pay rent.</div>
+<div class="chk"><span style="color:var(--gold)">✓ Client CRM</span><br>✓ Invoice tracker<br>✓ Weekly review</div>
+<div class="price">$9</div></div>
+<div class="hint"><span style="color:#FF5A5A">← skip</span><span style="color:#7CF29A">post it →</span></div>
+</div></div>
+<div class="cap"><b>Feed</b>A right swipe does the real thing: post the video, launch the product.</div></div>
+
+<div class="ph"><div class="phone"><div class="scr s4"><div class="island"></div><div class="sb"><span>8:06</span><span>●●●</span></div>
+<div style="padding:20px 12px 0;text-align:center">
+<div style="font-size:9.5px;opacity:.6;font-weight:800;letter-spacing:.06em">RAID · WHOP</div>
+<div style="font-size:15px;font-weight:900;margin:2px 0 10px">Notion Freelance Kit</div>
+<div class="stars"><span class="st">★</span><span class="st">★</span><span class="st off">★</span></div>
+<div style="margin-top:12px;text-align:left">
+<div class="goal"><span>★ Product live on Whop</span><span class="d">done</span></div>
+<div class="goal"><span>★ 1,000 views</span><span class="d">4,180</span></div>
+<div class="goal"><span>★ First sale</span><span style="opacity:.6">waiting</span></div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:8px"><svg viewBox="0 0 68 68" width="84" height="84" style="background:#fff;border-radius:6px;padding:5px"><rect x="0" y="0" width="4" height="4" fill="#111"/><rect x="4" y="0" width="4" height="4" fill="#111"/><rect x="8" y="0" width="4" height="4" fill="#111"/><rect x="12" y="0" width="4" height="4" fill="#111"/><rect x="16" y="0" width="4" height="4" fill="#111"/><rect x="24" y="0" width="4" height="4" fill="#111"/><rect x="28" y="0" width="4" height="4" fill="#111"/><rect x="36" y="0" width="4" height="4" fill="#111"/><rect x="48" y="0" width="4" height="4" fill="#111"/><rect x="52" y="0" width="4" height="4" fill="#111"/><rect x="56" y="0" width="4" height="4" fill="#111"/><rect x="60" y="0" width="4" height="4" fill="#111"/><rect x="64" y="0" width="4" height="4" fill="#111"/><rect x="0" y="4" width="4" height="4" fill="#111"/><rect x="16" y="4" width="4" height="4" fill="#111"/><rect x="20" y="4" width="4" height="4" fill="#111"/><rect x="32" y="4" width="4" height="4" fill="#111"/><rect x="36" y="4" width="4" height="4" fill="#111"/><rect x="48" y="4" width="4" height="4" fill="#111"/><rect x="64" y="4" width="4" height="4" fill="#111"/><rect x="0" y="8" width="4" height="4" fill="#111"/><rect x="8" y="8" width="4" height="4" fill="#111"/><rect x="16" y="8" width="4" height="4" fill="#111"/><rect x="24" y="8" width="4" height="4" fill="#111"/><rect x="28" y="8" width="4" height="4" fill="#111"/><rect x="32" y="8" width="4" height="4" fill="#111"/><rect x="48" y="8" width="4" height="4" fill="#111"/><rect x="56" y="8" width="4" height="4" fill="#111"/><rect x="64" y="8" width="4" height="4" fill="#111"/><rect x="0" y="12" width="4" height="4" fill="#111"/><rect x="16" y="12" width="4" height="4" fill="#111"/><rect x="24" y="12" width="4" height="4" fill="#111"/><rect x="32" y="12" width="4" height="4" fill="#111"/><rect x="36" y="12" width="4" height="4" fill="#111"/><rect x="48" y="12" width="4" height="4" fill="#111"/><rect x="64" y="12" width="4" height="4" fill="#111"/><rect x="0" y="16" width="4" height="4" fill="#111"/><rect x="4" y="16" width="4" height="4" fill="#111"/><rect x="8" y="16" width="4" height="4" fill="#111"/><rect x="12" y="16" width="4" height="4" fill="#111"/><rect x="16" y="16" width="4" height="4" fill="#111"/><rect x="20" y="16" width="4" height="4" fill="#111"/><rect x="24" y="16" width="4" height="4" fill="#111"/><rect x="28" y="16" width="4" height="4" fill="#111"/><rect x="32" y="16" width="4" height="4" fill="#111"/><rect x="36" y="16" width="4" height="4" fill="#111"/><rect x="44" y="16" width="4" height="4" fill="#111"/><rect x="48" y="16" width="4" height="4" fill="#111"/><rect x="52" y="16" width="4" height="4" fill="#111"/><rect x="56" y="16" width="4" height="4" fill="#111"/><rect x="60" y="16" width="4" height="4" fill="#111"/><rect x="64" y="16" width="4" height="4" fill="#111"/><rect x="8" y="20" width="4" height="4" fill="#111"/><rect x="12" y="20" width="4" height="4" fill="#111"/><rect x="20" y="20" width="4" height="4" fill="#111"/><rect x="24" y="20" width="4" height="4" fill="#111"/><rect x="32" y="20" width="4" height="4" fill="#111"/><rect x="40" y="20" width="4" height="4" fill="#111"/><rect x="52" y="20" width="4" height="4" fill="#111"/><rect x="56" y="20" width="4" height="4" fill="#111"/><rect x="60" y="20" width="4" height="4" fill="#111"/><rect x="0" y="24" width="4" height="4" fill="#111"/><rect x="4" y="24" width="4" height="4" fill="#111"/><rect x="16" y="24" width="4" height="4" fill="#111"/><rect x="20" y="24" width="4" height="4" fill="#111"/><rect x="28" y="24" width="4" height="4" fill="#111"/><rect x="36" y="24" width="4" height="4" fill="#111"/><rect x="48" y="24" width="4" height="4" fill="#111"/><rect x="60" y="24" width="4" height="4" fill="#111"/><rect x="64" y="24" width="4" height="4" fill="#111"/><rect x="8" y="28" width="4" height="4" fill="#111"/><rect x="20" y="28" width="4" height="4" fill="#111"/><rect x="28" y="28" width="4" height="4" fill="#111"/><rect x="32" y="28" width="4" height="4" fill="#111"/><rect x="48" y="28" width="4" height="4" fill="#111"/><rect x="52" y="28" width="4" height="4" fill="#111"/><rect x="0" y="32" width="4" height="4" fill="#111"/><rect x="12" y="32" width="4" height="4" fill="#111"/><rect x="20" y="32" width="4" height="4" fill="#111"/><rect x="24" y="32" width="4" height="4" fill="#111"/><rect x="28" y="32" width="4" height="4" fill="#111"/><rect x="32" y="32" width="4" height="4" fill="#111"/><rect x="36" y="32" width="4" height="4" fill="#111"/><rect x="40" y="32" width="4" height="4" fill="#111"/><rect x="48" y="32" width="4" height="4" fill="#111"/><rect x="56" y="32" width="4" height="4" fill="#111"/><rect x="8" y="36" width="4" height="4" fill="#111"/><rect x="16" y="36" width="4" height="4" fill="#111"/><rect x="20" y="36" width="4" height="4" fill="#111"/><rect x="28" y="36" width="4" height="4" fill="#111"/><rect x="32" y="36" width="4" height="4" fill="#111"/><rect x="40" y="36" width="4" height="4" fill="#111"/><rect x="48" y="36" width="4" height="4" fill="#111"/><rect x="56" y="36" width="4" height="4" fill="#111"/><rect x="60" y="36" width="4" height="4" fill="#111"/><rect x="0" y="40" width="4" height="4" fill="#111"/><rect x="16" y="40" width="4" height="4" fill="#111"/><rect x="20" y="40" width="4" height="4" fill="#111"/><rect x="24" y="40" width="4" height="4" fill="#111"/><rect x="28" y="40" width="4" height="4" fill="#111"/><rect x="40" y="40" width="4" height="4" fill="#111"/><rect x="44" y="40" width="4" height="4" fill="#111"/><rect x="52" y="40" width="4" height="4" fill="#111"/><rect x="56" y="40" width="4" height="4" fill="#111"/><rect x="0" y="44" width="4" height="4" fill="#111"/><rect x="16" y="44" width="4" height="4" fill="#111"/><rect x="24" y="44" width="4" height="4" fill="#111"/><rect x="44" y="44" width="4" height="4" fill="#111"/><rect x="48" y="44" width="4" height="4" fill="#111"/><rect x="56" y="44" width="4" height="4" fill="#111"/><rect x="64" y="44" width="4" height="4" fill="#111"/><rect x="0" y="48" width="4" height="4" fill="#111"/><rect x="4" y="48" width="4" height="4" fill="#111"/><rect x="8" y="48" width="4" height="4" fill="#111"/><rect x="12" y="48" width="4" height="4" fill="#111"/><rect x="16" y="48" width="4" height="4" fill="#111"/><rect x="24" y="48" width="4" height="4" fill="#111"/><rect x="28" y="48" width="4" height="4" fill="#111"/><rect x="32" y="48" width="4" height="4" fill="#111"/><rect x="44" y="48" width="4" height="4" fill="#111"/><rect x="48" y="48" width="4" height="4" fill="#111"/><rect x="0" y="52" width="4" height="4" fill="#111"/><rect x="16" y="52" width="4" height="4" fill="#111"/><rect x="20" y="52" width="4" height="4" fill="#111"/><rect x="48" y="52" width="4" height="4" fill="#111"/><rect x="60" y="52" width="4" height="4" fill="#111"/><rect x="0" y="56" width="4" height="4" fill="#111"/><rect x="8" y="56" width="4" height="4" fill="#111"/><rect x="16" y="56" width="4" height="4" fill="#111"/><rect x="24" y="56" width="4" height="4" fill="#111"/><rect x="44" y="56" width="4" height="4" fill="#111"/><rect x="52" y="56" width="4" height="4" fill="#111"/><rect x="60" y="56" width="4" height="4" fill="#111"/><rect x="0" y="60" width="4" height="4" fill="#111"/><rect x="16" y="60" width="4" height="4" fill="#111"/><rect x="32" y="60" width="4" height="4" fill="#111"/><rect x="48" y="60" width="4" height="4" fill="#111"/><rect x="52" y="60" width="4" height="4" fill="#111"/><rect x="56" y="60" width="4" height="4" fill="#111"/><rect x="64" y="60" width="4" height="4" fill="#111"/><rect x="0" y="64" width="4" height="4" fill="#111"/><rect x="4" y="64" width="4" height="4" fill="#111"/><rect x="8" y="64" width="4" height="4" fill="#111"/><rect x="12" y="64" width="4" height="4" fill="#111"/><rect x="16" y="64" width="4" height="4" fill="#111"/><rect x="20" y="64" width="4" height="4" fill="#111"/><rect x="24" y="64" width="4" height="4" fill="#111"/><rect x="36" y="64" width="4" height="4" fill="#111"/><rect x="44" y="64" width="4" height="4" fill="#111"/><rect x="52" y="64" width="4" height="4" fill="#111"/></svg><div style="font-size:10px;font-weight:800">Scan to buy · $1</div></div>
+</div></div></div>
+<div class="cap"><b>Raid</b>Three stars, and each one is a real outcome.</div></div>
+
+<div class="ph"><div class="phone"><div class="scr s5"><div class="island"></div><div class="sb"><span>8:07</span><span>●●●</span></div>
+<div style="padding:22px 14px 10px"><div style="font-size:9.5px;opacity:.6;font-weight:800;letter-spacing:.06em">SCOUT'S NOTEBOOK</div><div style="font-size:16px;font-weight:900">What I learned about you</div></div>
+<div class="note">
+<p>You skip anything over $40.</p>
+<p>You keep faceless videos with big text.</p>
+<p>Freelancer tools, yes. Trading, no.</p>
+<p><span class="new">You post more in the morning.</span></p>
+</div>
+<div style="padding:16px 14px 0;font-size:10.5px;opacity:.75;line-height:1.5">Updated 2 swipes ago.<br>Next drop: 12 cards tuned to this.</div>
+</div></div>
+<div class="cap"><b>Scout's notebook</b>Supermemory, in plain words. It rewrites itself while you swipe.</div></div>
+
+<div class="ph" style="justify-content:center"><div class="cap" style="text-align:left;max-width:200px;font-size:12.5px;line-height:1.55"><b style="margin-bottom:6px">Not shown</b>Map: three playable raids (your own product, affiliate, dropshipping) and locked targets with real gates.<br><br>Onboarding: pick a niche, or let the scout propose three.</div></div>
+
+</div>
+</section>
+
+<section>
+<h3>Why they open it again tomorrow (no push notifications)</h3>
+<div class="day">
+<div class="t">11 PM</div><div class="step"><b>The agents keep working after you close the app</b><div class="ev">Convex crons post the drafts you approved and scout tomorrow's targets. Finch's 6-hour adventures: D1 about 54%. Bside, "a life that runs while you're away": D1 about 60% (both reported, not audited).</div></div>
+<div class="t">8 AM</div><div class="step"><b>The overnight report opens first</b><div class="ev">Results show up after a break, so you never see them arrive. Interruptions made pleasant experiences more enjoyable (Nelson and Meyvis 2008, 6 studies).</div></div>
+<div class="t">8:01</div><div class="step"><b>Collect, or the agents stop</b><div class="ev">The vault holds one day of agent work. Collect it to unlock today's 12 actions. Supercell tunes when its collectors fill for exactly this reason. This also caps the API bill per player.</div></div>
+<div class="t">8:02</div><div class="step"><b>A fresh scout drop, gone when the trend moves</b><div class="ev">New cards from today's real TikTok and Whop data. Variety slows how fast people get used to a reward (Sheldon and Lyubomirsky 2012, n = 481, 3 months).</div></div>
+<div class="t">All day</div><div class="step" style="border-left-color:transparent"><b>Raid stars fill on real time</b><div class="ev">Sales and views arrive hours later, in sizes you can't predict. Likes measurably shaped people's posting (Lindström et al. 2021, 1M+ posts). Benchmark: median game D1 22%, top 10% 40%.</div></div>
+</div>
+</section>
+
+<section>
+<h3>The four sponsors, on stage and under the hood</h3>
+<div class="sps">
+<div class="spc"><h4>Whop</h4><div class="k">On stage</div><p>The product page appears after a swipe. A judge pays. The vault fills.</p><div class="k">Under the hood</div><p>Products, prices, checkout links, the payment webhook, and marketplace search for raid targets. Search works with no key, in 0.8 s.</p></div>
+<div class="spc"><h4>Convex</h4><div class="k">On stage</div><p>Everything on the phone updates live: feed, vault, stars, notebook.</p><div class="k">Under the hood</div><p>Realtime queries, the scheduler, overnight crons, the webhook endpoint, video storage, and the job queue the Mac worker reads (1.1 s per video today).</p></div>
+<div class="spc"><h4>Supermemory</h4><div class="k">On stage</div><p>The scout's notebook rewrites itself while you swipe, and the next cards change.</p><div class="k">Under the hood</div><p>Every swipe and how long you looked. Agents search it before picking cards and before posting overnight.</p></div>
+<div class="spc"><h4>Revyl</h4><div class="k">On stage</div><p>The close: "Revyl's AI played every build before it reached this phone." A grid of run videos, maybe one running live on the laptop.</p><div class="k">Under the hood</div><p>YAML tests on cloud iPhone simulators, and proof on every pull request through Capy.</p></div>
+</div>
+<p class="foot">Capy is also required by the event rules. It writes the code and runs the Revyl proofs. Compound renders and posts the videos on the Mac and never comes up in the pitch.</p>
+</section>
+
+<section>
+<h3>Against last week's 2nd place</h3>
+<div class="vs">
+<div class="h"></div><div class="h">Nomen</div><div class="h">Outpost</div>
+<div>Platform</div><div>Web app</div><div class="y">Native iPhone app</div>
+<div>Demo</div><div>Replayed a recording</div><div class="y">Live, on the phone</div>
+<div>Numbers</div><div>"Illustrative"</div><div class="y">Real views, real $1 sale</div>
+<div>Player's role</div><div>Paste a URL, watch</div><div class="y">Swipe to command, come back daily</div>
+<div style="border-bottom:0">Cost per video</div><div style="border-bottom:0">$2.49 to $4.20</div><div class="y" style="border-bottom:0">$0 (rendered on the Mac)</div>
+</div>
+</section>
+
+<section>
+<h3>What could still sink it</h3>
+<ul class="risk">
+<li>The base has to look like a game. It's the first thing judges see, and nothing about it is built or tested yet.</li>
+<li>Wow 1 needs videos posted overnight. Real but small view counts are fine. Zero is not.</li>
+<li>The Mac must stay awake with Compound open, or no new videos. Keep a stock of rendered videos as a fallback.</li>
+<li>Whop, Supermemory and Revyl are untested until the keys arrive. The affiliate raid needs you to join programs by hand.</li>
+<li>Nobody can prove retention in a one-day demo. The demo shows the loop, not D1 numbers.</li>
+</ul>
+</section>
+
+</div></body></html>

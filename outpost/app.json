@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Outpost",
+    "slug": "outpost",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.krishgarg.outpost"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-video",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-router",
+      "expo-status-bar",
+      ["expo-splash-screen", { "image": "./assets/splash-icon.png", "imageWidth": 192, "backgroundColor": "#3EB4E2" }],
+      ["expo-audio", { "microphonePermission": false, "recordAudioAndroid": false, "enableBackgroundPlayback": false }],
+      [
+        "expo-widgets",
+        {
+          "groupIdentifier": "group.com.krishgarg.outpost",
+          "widgets": [
+            {
+              "name": "Overnight",
+              "displayName": "Outpost",
+              "description": "Views your posts got while you were away.",
+              "ios": {
+                "supportedFamilies": [
+                  "systemSmall",
+                  "systemMedium"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    ],
+    "scheme": "outpost"
+  }
+}

@@ -1,0 +1,19 @@
+# dependencies and builds
+node_modules/
+.expo/
+dist/
+web-build/
+ios/build/
+android/build/
+*.app
+*.ipa
+*.apk
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# local tooling
+.playwright-mcp/
+.DS_Store

@@ -1,0 +1,379 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+:root{--gold:#FFD23F;--mint:#7CF29A;--red:#FF5A5A;--violet:#8E6BD8}
+*{box-sizing:border-box}
+body{margin:0}
+.wrap{display:flex;flex-direction:column;gap:34px;padding:4px 0 10px}
+h2{font-size:22px;line-height:1.2;margin:0 0 6px;letter-spacing:-.3px}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted-foreground);margin:0 0 12px;font-weight:700}
+p{margin:0;line-height:1.5}
+.lead{color:var(--muted-foreground);font-size:14px}
+/* change cards */
+.chg{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius);background:var(--card);margin-bottom:8px;font-size:13.5px;line-height:1.45}
+.chg .n{width:28px;height:28px;border-radius:8px;background:var(--foreground);color:var(--background);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}
+.chg b{display:block;font-size:14.5px;margin-bottom:2px}
+.chg span{color:var(--muted-foreground)}
+/* phones */
+.phones{display:grid;grid-template-columns:repeat(3,1fr);gap:22px 14px}
+.ph{display:flex;flex-direction:column;align-items:center;gap:9px}
+.cap{font-size:12px;text-align:center;color:var(--muted-foreground);line-height:1.4;max-width:214px}
+.cap b{color:var(--foreground);display:block;font-size:13px;margin-bottom:1px}
+.phone{width:206px;height:420px;border-radius:34px;background:#0A0A0C;padding:7px;box-shadow:0 10px 30px rgba(0,0,0,.35),inset 0 0 0 1.5px #2A2A30}
+.scr{width:100%;height:100%;border-radius:28px;overflow:hidden;position:relative;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",system-ui,sans-serif;color:#fff;background:#000}
+.island{position:absolute;top:7px;left:50%;transform:translateX(-50%);width:62px;height:18px;background:#000;border-radius:10px;z-index:9}
+.sb{display:flex;justify-content:space-between;font-size:10px;font-weight:700;padding:9px 18px 0;position:relative;z-index:8}
+/* video frame */
+.vid{position:absolute;inset:0;overflow:hidden}
+.v1{background:radial-gradient(90% 55% at 70% 30%,#2D6B5E 0%,transparent 70%),radial-gradient(80% 50% at 20% 80%,#4A2C6E 0%,transparent 70%),#0E1416}
+.v2{background:radial-gradient(90% 55% at 30% 30%,#6B3A2D 0%,transparent 70%),radial-gradient(80% 50% at 80% 85%,#22406B 0%,transparent 70%),#120F12}
+.v3{background:radial-gradient(90% 55% at 60% 25%,#2D4A6B 0%,transparent 70%),radial-gradient(70% 45% at 25% 85%,#6B5A2D 0%,transparent 70%),#0E1016}
+.desk{position:absolute;left:18px;right:18px;bottom:118px;height:64px;border-radius:10px;background:linear-gradient(#3B3F48,#22252B);box-shadow:inset 0 2px 0 rgba(255,255,255,.08)}
+.laptop{position:absolute;left:52px;bottom:150px;width:86px;height:56px;border-radius:6px 6px 2px 2px;background:linear-gradient(135deg,#E8EEF6,#B9C4D3);box-shadow:0 0 0 3px #2B2F36}
+.laptop:after{content:"";position:absolute;left:8px;top:8px;right:8px;height:6px;border-radius:2px;background:#8E6BD8;box-shadow:0 11px 0 #C9D2DE,0 20px 0 #C9D2DE,0 29px 0 #C9D2DE}
+.mug{position:absolute;right:46px;bottom:156px;width:18px;height:22px;border-radius:3px 3px 6px 6px;background:#F2C14E}
+.hk{position:absolute;left:14px;right:14px;top:70px;font-size:22px;font-weight:900;letter-spacing:-.7px;line-height:1.05;text-align:center;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+.hk em{font-style:normal;background:var(--gold);color:#1A1200;padding:0 4px;border-radius:4px}
+.sub{position:absolute;left:12px;right:12px;bottom:84px;text-align:center;font-size:10.5px;font-weight:800;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.prog{position:absolute;top:36px;left:12px;right:12px;display:flex;gap:3px;z-index:3}
+.prog i{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,.28)}
+.prog i.d{background:#fff}.prog i.c{background:linear-gradient(90deg,#fff 45%,rgba(255,255,255,.28) 45%)}
+.dl{position:absolute;top:44px;left:12px;right:12px;display:flex;justify-content:space-between;font-size:9px;font-weight:800;opacity:.9;z-index:3}
+.scrub{position:absolute;left:12px;right:12px;bottom:66px;height:2px;background:rgba(255,255,255,.25);border-radius:2px}
+.scrub b{position:absolute;left:0;top:0;bottom:0;width:38%;background:#fff;border-radius:2px}
+.acts{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center;gap:16px;align-items:center;z-index:4}
+.ab{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:900;background:rgba(20,20,24,.75);box-shadow:inset 0 0 0 2px currentColor}
+.ab.x{color:var(--red)}.ab.ok{color:var(--mint);width:50px;height:50px;font-size:21px}
+.slots{position:absolute;bottom:22px;right:14px;font-size:8px;font-weight:800;text-align:center;line-height:1.3;opacity:.85;z-index:4}
+.slots i{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--mint);margin:0 1px}.slots i.o{background:transparent;box-shadow:inset 0 0 0 1.2px var(--mint)}
+.x2{position:absolute;top:60px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.6);border-radius:999px;padding:4px 10px;font-size:11px;font-weight:900;z-index:4;display:flex;gap:4px;align-items:center}
+.ring{position:absolute;right:20px;top:205px;width:58px;height:58px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.35) 0 14px,rgba(255,255,255,.12) 15px 28px,transparent 29px);z-index:4}
+.zone{position:absolute;top:186px;bottom:110px;right:0;width:33%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.06));z-index:2;border-left:1px dashed rgba(255,255,255,.18)}
+.ztag{position:absolute;right:8px;top:268px;font-size:7.5px;font-weight:800;opacity:.7;z-index:4;text-align:right;line-height:1.25}
+/* reject */
+.gone{position:absolute;top:70px;left:-112px;width:150px;height:220px;border-radius:16px;transform:rotate(-14deg);box-shadow:0 12px 30px rgba(0,0,0,.7);overflow:hidden;z-index:5}
+.stamp{position:absolute;top:22px;right:10px;transform:rotate(14deg);border:3px solid var(--red);color:var(--red);font-weight:900;font-size:16px;padding:0 6px;border-radius:6px;background:rgba(0,0,0,.25)}
+.sheet{position:absolute;left:8px;right:8px;bottom:10px;border-radius:18px;background:rgba(22,22,28,.94);padding:10px 10px 12px;z-index:6;box-shadow:0 -6px 20px rgba(0,0,0,.4)}
+.sheet h5{margin:0 0 2px;font-size:11.5px;font-weight:800}
+.sheet .mt{font-size:9px;opacity:.65;margin-bottom:7px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chp{font-size:9.5px;font-weight:800;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,.1)}
+.chp.pre{background:var(--gold);color:#1A1200}
+.chp.say{background:transparent;box-shadow:inset 0 0 0 1.2px rgba(255,255,255,.35)}
+.timer{height:3px;border-radius:2px;background:rgba(255,255,255,.12);margin-top:9px;overflow:hidden}
+.timer b{display:block;height:100%;width:62%;background:rgba(255,255,255,.55)}
+/* learned */
+.toast{position:absolute;top:40px;left:10px;right:10px;border-radius:14px;background:#F5EBD3;color:#2A2216;padding:8px 10px;font-size:10px;line-height:1.35;z-index:6;display:flex;gap:8px;align-items:center;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.toast .ic{width:22px;height:22px;border-radius:6px;background:var(--violet);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:12px}
+.toast b{display:block;font-size:10.5px}
+.note1{position:absolute;top:110px;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(142,107,216,.92);font-size:8.5px;font-weight:900;letter-spacing:.05em;padding:4px 8px;border-radius:999px;z-index:4}
+/* widget */
+.home{background:radial-gradient(120% 70% at 20% 10%,#3A5BA8 0%,#1D2547 55%,#120F25 100%)}
+.wgt{position:absolute;top:44px;left:14px;width:84px;height:84px;border-radius:20px;background:#15121F;padding:9px;font-size:8.5px;line-height:1.25;box-shadow:0 6px 14px rgba(0,0,0,.35)}
+.wgt .t{font-size:7px;font-weight:900;letter-spacing:.08em;color:var(--gold);margin-bottom:4px}
+.wgt .big{font-size:20px;font-weight:900;line-height:1;letter-spacing:-.5px}
+.wgt .s{opacity:.7;font-weight:700}
+.wgtm{position:absolute;top:140px;left:14px;right:14px;height:88px;border-radius:20px;background:#15121F;padding:10px 11px;box-shadow:0 6px 14px rgba(0,0,0,.35);display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:8.5px}
+.wgtm .t{grid-column:1/3;font-size:7px;font-weight:900;letter-spacing:.08em;color:var(--gold)}
+.wgtm .k{font-size:15px;font-weight:900;letter-spacing:-.4px;line-height:1}
+.wgtm .k.g{color:var(--mint)}
+.wgtm .l{opacity:.65;font-weight:700}
+.apps{position:absolute;top:48px;left:108px;right:14px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px 8px}
+.app{width:34px;height:34px;border-radius:9px;margin:0 auto}
+.lbl{display:none}
+.apps2{position:absolute;top:244px;left:14px;right:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px 6px}
+.dock{position:absolute;left:10px;right:10px;bottom:10px;height:58px;border-radius:22px;background:rgba(255,255,255,.14);display:flex;justify-content:space-around;align-items:center}
+.dock .app{margin:0}
+/* away */
+.away{background:radial-gradient(120% 60% at 50% 0%,#2A2A0E 0%,#121210 60%);padding:0 14px}
+.away h4{margin:28px 0 0;font-size:15.5px;font-weight:900;letter-spacing:-.4px}
+.away .tm{font-size:9.5px;opacity:.6;margin-bottom:8px}
+.wl{font-size:10px;line-height:1.3;display:flex;gap:7px;align-items:center;margin-bottom:5px;opacity:.9;white-space:nowrap}
+.wl i{width:14px;height:14px;border-radius:4px;flex-shrink:0}
+.sep{display:flex;justify-content:space-between;font-size:8.5px;font-weight:800;letter-spacing:.06em;opacity:.55;margin:8px 0 5px;border-top:1px solid rgba(255,255,255,.12);padding-top:8px}
+.rr{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;margin-bottom:3px}
+.rr b{font-size:17px;font-weight:900;letter-spacing:-.4px}
+.rr.top b{font-size:28px;color:var(--mint);letter-spacing:-1px}
+.rr small{font-size:8.5px;opacity:.6}
+.cbtn{position:absolute;left:14px;right:14px;bottom:28px;height:40px;border-radius:14px;background:var(--gold);color:#1A1200;font-weight:900;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 #B8901A}
+.nxt{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:8.5px;opacity:.6;font-weight:700}
+/* sale */
+.sale{background:radial-gradient(70% 45% at 50% 42%,rgba(124,242,154,.35) 0%,transparent 70%),linear-gradient(#0F2418,#08110C);text-align:center}
+.sale h4{margin:40px 0 4px;font-size:24px;font-weight:900;letter-spacing:-.8px}
+.sale .sm{font-size:9.5px;opacity:.7}
+.duo{position:relative;height:96px;margin:12px 0 6px}
+.c1,.c2{position:absolute;top:0;width:92px;height:92px;border-radius:50%;box-shadow:0 0 0 4px #08110C,0 0 0 6px var(--mint)}
+.c1{left:8px;background:radial-gradient(90% 55% at 70% 30%,#2D6B5E 0%,transparent 70%),#0E1416;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;line-height:1.1;padding:12px;text-align:center}
+.c2{right:8px;background:radial-gradient(circle at 35% 30%,#FFF3B0,#FFD23F 45%,#B88916);color:#3A2A00;font-size:30px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.amt{font-size:34px;font-weight:900;color:var(--mint);letter-spacing:-1px;line-height:1}
+.prod{font-size:10.5px;font-weight:800;margin-top:4px}
+.real{display:inline-block;margin-top:10px;font-size:8px;font-weight:900;letter-spacing:.06em;padding:3px 7px;border-radius:5px;background:rgba(255,255,255,.1)}
+.sbt{position:absolute;left:14px;right:14px;bottom:20px;display:flex;gap:8px}
+.sbt div{flex:1;height:38px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:12px}
+/* base */
+.basebg{background:linear-gradient(#5AA9E6,#9BD3F5 45%,#2F7FC1 46%,#246AA6)}
+.res{display:flex;gap:4px;padding:6px 8px 0}
+.r{flex:1;background:rgba(0,0,0,.45);border-radius:9px;padding:4px 5px;font-size:9.5px;font-weight:800;display:flex;align-items:center;gap:4px}
+.ri{width:11px;height:11px;border-radius:50%}
+.nav{position:absolute;bottom:0;left:0;right:0;height:46px;background:rgba(10,14,30,.85);display:flex;justify-content:space-around;align-items:center;font-size:9.5px;font-weight:800}
+.nav .on{color:var(--gold)}
+.badge{background:#E4544B;border-radius:8px;padding:1px 5px;font-size:8.5px;margin-left:3px}
+/* notebook */
+.nb{background:linear-gradient(#20183A,#120E22);padding:0 12px}
+.nb h4{margin:30px 0 2px;font-size:15px;font-weight:900}
+.nb .tm{font-size:9px;opacity:.6;margin-bottom:9px}
+.pbar{height:6px;border-radius:3px;background:rgba(255,255,255,.12);margin:4px 0 12px;overflow:hidden}
+.pbar b{display:block;height:100%;width:57%;background:linear-gradient(90deg,var(--violet),#B79CFF)}
+.paper{background:#F5EBD3;color:#2A2216;border-radius:10px;padding:10px 10px 4px;box-shadow:0 5px 0 #C9B88F}
+.ln{display:grid;grid-template-columns:1fr 12px;gap:6px;font-size:10.5px;line-height:1.3;margin-bottom:8px;padding-bottom:7px;border-bottom:1px dashed #D8C9A4}
+.ln:last-child{border-bottom:0}
+.ln small{display:block;font-size:8.5px;color:#7A6B4E;margin-top:1px}
+.ln .ed{color:#A89870;font-size:10px}
+.ln.new{background:#FFE58A;border-radius:4px;padding:3px 4px 5px;border-bottom:0}
+/* done */
+.done{background:radial-gradient(100% 50% at 50% 0%,#1E2A44 0%,#0D1018 70%);padding:0 14px;text-align:center}
+.chk{width:44px;height:44px;border-radius:50%;margin:30px auto 8px;background:var(--mint);color:#0B2614;font-size:28px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.done h4{margin:0;font-size:18px;font-weight:900}
+.done .sm{font-size:9.5px;opacity:.65;margin:2px 0 12px}
+.ql{text-align:left;background:rgba(255,255,255,.06);border-radius:12px;padding:8px 10px;margin-bottom:8px}
+.ql .h{font-size:8px;font-weight:900;letter-spacing:.07em;opacity:.55;margin-bottom:4px}
+.qr{display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;white-space:nowrap}
+.qr span{opacity:.6}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.two .ql b{font-size:16px;font-weight:900;display:block}
+.dbtn{position:absolute;left:14px;right:14px;bottom:18px;display:flex;gap:8px}
+.dbtn div{flex:1;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:11px}
+/* tables */
+table{width:100%;border-collapse:collapse;font-size:12.5px;line-height:1.4}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-foreground);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--border)}
+td{padding:8px;border-bottom:1px solid var(--border);vertical-align:top}
+td:first-child{font-weight:700;white-space:nowrap}
+td .ev{color:var(--muted-foreground);font-size:11.5px}
+.g{font-size:11px;font-weight:800;padding:2px 7px;border-radius:6px;background:var(--secondary);white-space:nowrap}
+/* day */
+.day{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.dc{border:1px solid var(--border);border-radius:var(--radius);background:var(--card);padding:10px;font-size:12px;line-height:1.4}
+.dc b{display:block;font-size:15px;margin-bottom:3px}
+.dc span{color:var(--muted-foreground)}
+/* storyboard */
+.sbar{display:flex;height:58px;border-radius:var(--radius);overflow:visible;font-size:10px;font-weight:800;line-height:1.15}
+.sbar div{display:flex;align-items:center;justify-content:center;text-align:center;padding:0 3px;color:#111;position:relative}
+.sbar div:first-child{border-radius:var(--radius) 0 0 var(--radius)}.sbar div:last-child{border-radius:0 var(--radius) var(--radius) 0}
+.sbt2{display:flex;font-size:10.5px;color:var(--muted-foreground);margin-top:6px}
+.wm{position:absolute;top:-11px;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;background:var(--foreground);color:var(--background);font-size:12px;display:flex;align-items:center;justify-content:center}
+.wows{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.wow{border:1px solid var(--border);border-radius:var(--radius);background:var(--card);padding:12px;font-size:12.5px;line-height:1.45}
+.wow b{display:block;font-size:14px;margin-bottom:4px}
+.wow span{color:var(--muted-foreground)}
+.wn{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--foreground);color:var(--background);font-size:11px;font-weight:800;align-items:center;justify-content:center;margin-bottom:6px}
+/* decision */
+.dec{border:2px solid var(--foreground);border-radius:var(--radius);padding:16px}
+.opt{display:grid;grid-template-columns:24px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--border);font-size:13px;line-height:1.45}
+.opt:first-of-type{border-top:0}
+.opt .k{width:24px;height:24px;border-radius:7px;background:var(--secondary);font-weight:800;display:flex;align-items:center;justify-content:center}
+.opt.rec .k{background:var(--foreground);color:var(--background)}
+.opt b{display:block}
+.opt span{color:var(--muted-foreground)}
+.rec-tag{font-size:10.5px;font-weight:800;padding:2px 7px;border-radius:999px;background:color-mix(in srgb,var(--success) 18%,transparent);color:var(--success);margin-left:6px}
+</style></head><body><div class="wrap">
+
+<section>
+<h2>Outpost UX: what the research says to build</h2>
+<p class="lead">Six deep-dive reports covering about 40 apps, distilled into screens. Full playbook in <code>research/ux/00-playbook.md</code>.</p>
+</section>
+
+<section>
+<h3>Five things the research changes</h3>
+<div class="chg"><div class="n">1</div><div><b>A daily drop you judge. Not an endless scroll.</b><span>AI feeds made for watching lost their users: Sora kept under 8% at day 30, then shut down. The users who stayed came back to make and steer videos, about 70% of Sora return visits.</span></div></div>
+<div class="chg"><div class="n">2</div><div><b>Every swipe visibly changes the next video.</b><span>39.3% of YouTube control users felt nothing changed. Training on dislikes cut look-alikes 60.8%, against 22.7% when the dislike was only an input.</span></div></div>
+<div class="chg"><div class="n">3</div><div><b>Results land at set times. Those times are the reason to open.</b><span>No push. Coffee Meets Bagel's noon drop had 70% of users checking daily. Batching 3 times a day beat live delivery on stress (n=237).</span></div></div>
+<div class="chg"><div class="n">4</div><div><b>Open on a living base. Show the work before the numbers.</b><span>People judge a screen in 50 ms. Seeing the cooks raised rated food quality 22.2% in field tests.</span></div></div>
+<div class="chg"><div class="n">5</div><div><b>Celebrate real outcomes only, sized to the outcome.</b><span>Success-scaled effects raised enjoyment (n=1,699). Robinhood's confetti and scratch-off reveal were banned in Massachusetts.</span></div></div>
+</section>
+
+<section>
+<h3>The drop: your own videos, dating-app style</h3>
+<div class="phones">
+
+<div class="ph"><div class="phone"><div class="scr">
+<div class="vid v1"><div class="desk"></div><div class="laptop"></div><div class="mug"></div></div>
+<div class="island"></div><div class="sb"><span>8:02</span><span>5G</span></div>
+<div class="prog"><i class="d"></i><i class="d"></i><i class="c"></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="dl"><span>TODAY'S DROP · 3 OF 8</span><span>8:00 AM</span></div>
+<div class="x2">2x ▸▸</div>
+<div class="zone"></div><div class="ring"></div><div class="ztag">HOLD<br>EDGE</div>
+<div class="hk" style="top:96px">Your Notion should <em>pay rent.</em></div>
+<div class="sub">4 templates · $9 · link in bio</div>
+<div class="scrub"><b></b></div>
+<div class="acts"><div class="ab x">✕</div><div class="ab ok">✓</div></div>
+<div class="slots">POSTS<br><i></i><i></i><i class="o"></i></div>
+</div></div><div class="cap"><b>Hold an edge for 2x</b>Same gesture as TikTok, Reels and Shorts. Outpost reads it as "this part drags" and tightens that section next time.</div></div>
+
+<div class="ph"><div class="phone"><div class="scr">
+<div class="vid v2"><div class="desk"></div><div class="laptop"></div></div>
+<div class="island"></div><div class="sb"><span>8:03</span><span>5G</span></div>
+<div class="prog"><i class="d"></i><i class="d"></i><i class="d"></i><i class="c"></i><i></i><i></i><i></i><i></i></div>
+<div class="hk" style="top:100px;left:50px;right:10px;font-size:20px">Stop paying for <em>6 apps.</em></div><div class="stamp" style="top:66px;left:8px;right:auto;transform:rotate(-12deg);font-size:12px;z-index:6;background:rgba(0,0,0,.55)">REJECTED</div>
+<div class="gone"><div class="vid v1"></div></div>
+<div class="sheet"><h5>Why? You left at 0:02</h5><div class="mt">Tap one, or ignore it. The next video is already playing.</div>
+<div class="chips"><span class="chp pre">Hook too slow</span><span class="chp">Wrong product</span><span class="chp">Voice sounds fake</span><span class="chp">Too salesy</span><span class="chp">Caption off</span><span class="chp say">Say more</span></div>
+<div class="timer"><b></b></div></div>
+</div></div><div class="cap"><b>Swipe left, then one tap for why</b>Reasons read as orders to the agents. Instruction-style controls blocked 43% of unwanted repeats vs 11% for "Not interested".</div></div>
+
+<div class="ph"><div class="phone"><div class="scr">
+<div class="vid v3"><div class="desk"></div><div class="laptop"></div><div class="mug"></div></div>
+<div class="island"></div><div class="sb"><span>8:04</span><span>5G</span></div>
+<div class="toast"><div class="ic">✎</div><div><b>Got it. Hooks under 1 second.</b>Made 4 new videos with your note in 11 s.</div></div>
+<div class="note1">FROM YOUR NOTE · SHORTER HOOK</div>
+<div class="hk" style="top:134px;font-size:26px">$9 <em>beats</em> 6 apps.</div>
+<div class="sub">Freelancer OS · link in bio</div>
+<div class="scrub"><b style="width:12%"></b></div>
+<div class="acts"><div class="ab x">✕</div><div class="ab ok">✓</div></div>
+</div></div><div class="cap"><b>The change you can see</b>The next video names the note that made it. People feel they own AI output only when they shaped it.</div></div>
+
+</div>
+</section>
+
+<section>
+<h3>The return: no push, so the return has to be the reward</h3>
+<div class="phones">
+
+<div class="ph"><div class="phone"><div class="scr home">
+<div class="island"></div><div class="sb"><span>8:00</span><span>5G</span></div>
+<div class="wgt"><div class="t">OUTPOST</div><div class="big">8</div><div class="s">videos waiting</div><div style="margin-top:5px;font-weight:800">6-day streak</div></div>
+<div class="apps"><div><div class="app" style="background:#34C759"></div><div class="lbl">Messages</div></div><div><div class="app" style="background:#FF9500"></div><div class="lbl">Photos</div></div><div><div class="app" style="background:#0A84FF"></div><div class="lbl">Mail</div></div><div><div class="app" style="background:#5E5CE6"></div><div class="lbl">Notes</div></div></div>
+<div class="wgtm"><div class="t">OVERNIGHT · AS OF 8:00 AM</div><div><div class="k g">+2,814</div><div class="l">views</div></div><div><div class="k g">$9</div><div class="l">first sale</div></div><div><div class="k">3</div><div class="l">videos live</div></div><div><div class="k">6 PM</div><div class="l">next results</div></div></div>
+<div class="apps2"><div class="app" style="background:#FF375F"></div><div class="app" style="background:#30B0C7"></div><div class="app" style="background:#AF52DE"></div><div class="app" style="background:#FFD60A"></div></div>
+<div class="dock"><div class="app" style="background:#34C759"></div><div class="app" style="background:#0A84FF"></div><div class="app" style="background:#FF9F0A"></div><div class="app" style="background:#8E8E93"></div></div>
+</div></div><div class="cap"><b>The widget is the push</b>Duolingo's widget users retain "far better" and called it "just as effective" as push. Works on a free Apple ID.</div></div>
+
+<div class="ph"><div class="phone"><div class="scr away">
+<div class="island"></div><div class="sb" style="padding:9px 4px 0"><span>8:01</span><span>5G</span></div>
+<h4>While you were away</h4><div class="tm">11:04 PM to 8:00 AM</div>
+<div class="wl"><i style="background:#FF7A93"></i>12 videos rendered</div>
+<div class="wl"><i style="background:#E4544B"></i>3 posted to 3 platforms</div>
+<div class="wl"><i style="background:#B79CFF"></i>41 TikToks studied</div>
+<div class="wl"><i style="background:#5CE1D6"></i>2 comments answered</div>
+<div class="sep"><span>RESULTS</span><span>AS OF 8:00 AM</span></div>
+<div class="rr"><span>Link clicks</span><b>+23</b></div>
+<div class="rr"><span>Views <small>+40% vs typical</small></span><b>+2,814</b></div>
+<div class="rr top"><span>First sale</span><b>$9.00</b></div>
+<div class="cbtn">Collect</div><div class="nxt">Next results 6:00 PM · drop of 8 is ready</div>
+</div></div><div class="cap"><b>Work first, then numbers</b>Showing the effort raises the value of the result. Numbers count up from where you left them, smallest to biggest, all real.</div></div>
+
+<div class="ph"><div class="phone"><div class="scr sale">
+<div class="island"></div><div class="sb"><span>8:01</span><span>5G</span></div>
+<h4>Your first sale</h4><div class="sm">A stranger bought what your agents built</div>
+<div class="duo"><div class="c1">Your Notion should pay rent.</div><div class="c2">$</div></div>
+<div class="amt">$9.00</div><div class="prod">Freelancer OS · Notion template</div>
+<div class="sm" style="margin-top:3px">2nd video · TikTok · 2,140 views</div>
+<div class="real">REAL · WHOP · 7:42 AM</div>
+<div class="sbt"><div style="background:rgba(255,255,255,.1)">Share</div><div style="background:var(--mint);color:#0B2614">Keep going</div></div>
+</div></div><div class="cap"><b>The match moment is a real outcome</b>Each first gets one big moment. The first-sale sound plays twice ever, then the normal cash sound (Shopify does this).</div></div>
+
+</div>
+</section>
+
+<section>
+<h3>The base, the memory, and a clear end</h3>
+<div class="phones">
+
+<div class="ph"><div class="phone"><div class="scr basebg">
+<div class="island"></div><div class="sb" style="color:#0A1A2A"><span>8:02</span><span>5G</span></div>
+<div class="res"><div class="r"><span class="ri" style="background:#7CF29A"></span>$9</div><div class="r"><span class="ri" style="background:#5AA9E6"></span>2.8k</div><div class="r"><span class="ri" style="background:#FFD23F"></span>Day 6</div></div>
+<div style="margin-top:20px"><svg viewBox="0 0 200 250" width="100%" style="display:block"><polygon points="4.0,128.0 100.0,176.0 100.0,188.0 4.0,140.0" fill="#6B4A2B"/><polygon points="100.0,176.0 196.0,128.0 196.0,140.0 100.0,188.0" fill="#4E3520"/><polygon points="100.0,80.0 196.0,128.0 100.0,176.0 4.0,128.0" fill="#5DBB63"/><ellipse cx="111.5" cy="99.5" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="120.8" cy="108.6" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="71.0" cy="105.0" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="110.2" cy="159.0" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="146.9" cy="127.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="122.5" cy="119.9" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="105.7" cy="96.8" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="38.4" cy="134.1" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="101.9" cy="155.5" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="152.4" cy="127.7" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="72.6" cy="125.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="89.4" cy="153.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="168.5" cy="126.6" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="94.3" cy="140.0" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="128.4" cy="114.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="133.2" cy="109.1" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="106.0" cy="162.6" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="121.4" cy="121.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="129.1" cy="148.8" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="103.0" cy="159.6" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="108.2" cy="124.6" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="114.5" cy="129.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="87.6" cy="104.9" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="166.5" cy="121.8" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="49.9" cy="113.9" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="78.0" cy="120.0" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="111.1" cy="120.0" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="169.3" cy="136.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="118.2" cy="111.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="130.8" cy="124.1" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="66.2" cy="132.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="79.4" cy="122.8" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="169.4" cy="128.2" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="85.5" cy="97.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="112.9" cy="144.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="91.9" cy="109.4" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="75.7" cy="112.3" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="43.5" cy="116.8" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="94.9" cy="164.7" rx="2.2" ry="1" fill="#4FA855"/><ellipse cx="80.6" cy="158.0" rx="2.2" ry="1" fill="#4FA855"/><polyline points="52.0,140.0 100.0,116.0 148.0,140.0" fill="none" stroke="#C9B27A" stroke-width="5" stroke-linecap="round" opacity=".9"/><polyline points="100.0,116.0 100.0,160.0" fill="none" stroke="#C9B27A" stroke-width="5" stroke-linecap="round" opacity=".9"/><polyline points="70.0,100.0 100.0,116.0 132.0,98.0" fill="none" stroke="#C9B27A" stroke-width="4" stroke-linecap="round" opacity=".9"/><polygon points="55.0,98.0 68.0,104.5 68.0,94.5 55.0,88.0" fill="#785ab7"/><polygon points="68.0,104.5 81.0,98.0 81.0,88.0 68.0,94.5" fill="#584285"/><polygon points="55.0,88.0 68.0,94.5 68.0,76.0" fill="#b79cff"/><polygon points="68.0,94.5 81.0,88.0 68.0,76.0" fill="#806db2"/><polygon points="55.0,88.0 68.0,81.5 68.0,76.0" fill="#d2b3ff"/><polygon points="126.0,96.0 134.0,100.0 134.0,60.0 126.0,56.0" fill="#828a99"/><polygon points="134.0,100.0 142.0,96.0 142.0,56.0 134.0,60.0" fill="#5f6570"/><polygon points="126.0,56.0 134.0,60.0 134.0,49.0" fill="#e4544b"/><polygon points="134.0,60.0 142.0,56.0 134.0,49.0" fill="#9f3a34"/><polygon points="126.0,56.0 134.0,52.0 134.0,49.0" fill="#ff6056"/><line x1="134" y1="49" x2="134" y2="40" stroke="#E4544B" stroke-width="1.6"/><circle cx="134" cy="39" r="2.4" fill="#FFD23F"/><path d="M140 44 q5 5 0 10 M144 41 q8 8 0 16" fill="none" stroke="#FFD23F" stroke-width="1.2" opacity=".8"/><polygon points="78.0,116.0 100.0,127.0 100.0,109.0 78.0,98.0" fill="#b88916"/><polygon points="100.0,127.0 122.0,116.0 122.0,98.0 100.0,109.0" fill="#866410"/><polygon points="78.0,98.0 100.0,109.0 100.0,84.0" fill="#ffd23f"/><polygon points="100.0,109.0 122.0,98.0 100.0,84.0" fill="#b2932c"/><polygon points="78.0,98.0 100.0,87.0 100.0,84.0" fill="#fff148"/><circle cx="100" cy="112" r="4.5" fill="#FFF3B0" stroke="#B07D0A" stroke-width="1"/><polygon points="32.0,140.0 50.0,149.0 50.0,134.0 32.0,125.0" fill="#278d88"/><polygon points="50.0,149.0 68.0,140.0 68.0,125.0 50.0,134.0" fill="#1d6763"/><polygon points="32.0,125.0 50.0,134.0 50.0,116.0" fill="#5ce1d6"/><polygon points="50.0,134.0 68.0,125.0 50.0,116.0" fill="#409d95"/><polygon points="32.0,125.0 50.0,116.0 50.0,116.0" fill="#69fff6"/><polygon points="132.0,140.0 150.0,149.0 150.0,132.0 132.0,123.0" fill="#b83c5a"/><polygon points="150.0,149.0 168.0,140.0 168.0,123.0 150.0,132.0" fill="#862c42"/><polygon points="132.0,123.0 150.0,132.0 150.0,115.0" fill="#ff7a93"/><polygon points="150.0,132.0 168.0,123.0 150.0,115.0" fill="#b25566"/><polygon points="132.0,123.0 150.0,114.0 150.0,115.0" fill="#ff8ca9"/><polygon points="88.0,162.0 100.0,168.0 100.0,160.0 88.0,154.0" fill="#755a3a"/><polygon points="100.0,168.0 112.0,162.0 112.0,154.0 100.0,160.0" fill="#55412a"/><polygon points="100.0,148.0 112.0,154.0 100.0,160.0 88.0,154.0" fill="#9a764d"/><polygon points="105.0,168.0 112.0,171.5 112.0,165.5 105.0,162.0" fill="#886944"/><polygon points="112.0,171.5 119.0,168.0 119.0,162.0 112.0,165.5" fill="#634c31"/><polygon points="112.0,158.5 119.0,162.0 112.0,165.5 105.0,162.0" fill="#b38a59"/><rect x="166" y="160" width="2" height="14" fill="#7A5A3A"/><rect x="160" y="158" width="15" height="6" rx="1" fill="#E9D3A4"/><ellipse cx="76" cy="122" rx="3.2" ry="1.4" fill="#000" opacity=".35"/><rect x="73.8" y="115" width="4.4" height="6" rx="1.6" fill="#4AA3FF"/><circle cx="76" cy="113" r="2.3" fill="#F6D7B0"/><ellipse cx="124" cy="129" rx="3.2" ry="1.4" fill="#000" opacity=".35"/><rect x="121.8" y="122" width="4.4" height="6" rx="1.6" fill="#FF8A3D"/><circle cx="124" cy="120" r="2.3" fill="#F6D7B0"/><ellipse cx="100" cy="147" rx="3.2" ry="1.4" fill="#000" opacity=".35"/><rect x="97.8" y="140" width="4.4" height="6" rx="1.6" fill="#B79CFF"/><circle cx="100" cy="138" r="2.3" fill="#F6D7B0"/><ellipse cx="140" cy="114" rx="3.2" ry="1.4" fill="#000" opacity=".35"/><rect x="137.8" y="107" width="4.4" height="6" rx="1.6" fill="#7CF29A"/><circle cx="140" cy="105" r="2.3" fill="#F6D7B0"/><rect x="73.5" y="60" width="53.1" height="11" rx="5.5" fill="#FFD23F"/><text x="100" y="68.6" text-anchor="middle" font-size="6.6" font-weight="700" fill="#1A1200">VAULT  $9</text><rect x="35.8" y="166" width="28.5" height="11" rx="5.5" fill="rgba(0,0,0,.55)"/><text x="50" y="174.6" text-anchor="middle" font-size="6.6" font-weight="700" fill="#fff">STORE</text><rect x="126" y="166" width="52" height="11" rx="5.5" fill="#E4544B"/><text x="152" y="174.6" text-anchor="middle" font-size="6.6" font-weight="700" fill="#fff">STUDIO · 8 NEW</text><rect x="119.8" y="24" width="28.5" height="11" rx="5.5" fill="rgba(0,0,0,.55)"/><text x="134" y="32.6" text-anchor="middle" font-size="6.6" font-weight="700" fill="#fff">TOWER</text><rect x="49.8" y="72" width="28.5" height="11" rx="5.5" fill="rgba(0,0,0,.55)"/><text x="64" y="80.6" text-anchor="middle" font-size="6.6" font-weight="700" fill="#fff">SCOUT</text><circle cx="157" cy="106" r="4" fill="#fff" opacity=".75"/><circle cx="161" cy="97" r="5" fill="#fff" opacity=".55"/><circle cx="166" cy="87" r="6" fill="#fff" opacity=".35"/></svg></div>
+<div class="nav"><span class="on">Base</span><span>Drop<span class="badge">8</span></span><span>Raids</span><span>Notebook</span></div>
+</div></div><div class="cap"><b>Open on a living base</b>Agents walk before you touch anything. Buildings show real states: the studio says "8 new". Nothing decays while you're away.</div></div>
+
+<div class="ph"><div class="phone"><div class="scr nb">
+<div class="island"></div><div class="sb" style="padding:9px 6px 0"><span>8:05</span><span>5G</span></div>
+<h4>What your agents learned</h4><div class="tm">Edit or delete any line. Your swipes beat watch time.</div>
+<div style="display:flex;justify-content:space-between;font-size:9px;font-weight:800"><span>Taste profile</span><span>23 of 40 swipes</span></div>
+<div class="pbar"><b></b></div>
+<div class="paper">
+<div class="ln new"><div>Hooks under 1 second<small>4 rejects: "Hook too slow" · today</small></div><div class="ed">✎</div></div>
+<div class="ln"><div>No fake-sounding voice<small>you said it twice</small></div><div class="ed">✎</div></div>
+<div class="ln"><div>Desk-setup shots work<small>3 of 3 approved</small></div><div class="ed">✎</div></div>
+<div class="ln"><div>Middle section drags<small>2x held at 0:03 to 0:06</small></div><div class="ed">✎</div></div>
+<div class="ln"><div>Keep price under $15<small>2 rejects: "Wrong product"</small></div><div class="ed">✎</div></div>
+</div>
+</div></div><div class="cap"><b>Supermemory you can read and fix</b>Instagram and TikTok now show editable taste lists. Midjourney's style profile started at 40 ratings.</div></div>
+
+<div class="ph"><div class="phone"><div class="scr done">
+<div class="island"></div><div class="sb" style="padding:9px 4px 0"><span>8:06</span><span>5G</span></div>
+<div class="chk">✓</div><h4>You're caught up</h4><div class="sm">8 judged in 3 min 40 s</div>
+<div class="ql"><div class="h">GOING OUT TODAY</div>
+<div class="qr">$9 beats 6 apps<span>9:10</span></div>
+<div class="qr">Stop paying for 6 apps<span>12:30</span></div>
+<div class="qr">Desk tour<span>6:10</span></div></div>
+<div class="two"><div class="ql"><div class="h">BENCH</div><b>2</b><span style="font-size:9px;opacity:.65;white-space:nowrap">for missed days</span></div><div class="ql"><div class="h">NEXT</div><b>6 PM</b><span style="font-size:9px;opacity:.65;white-space:nowrap">results</span></div></div>
+<div class="dbtn"><div style="background:rgba(255,255,255,.1)">Make 4 more</div><div style="background:var(--gold);color:#1A1200">Back to base</div></div>
+</div></div><div class="cap"><b>A clear end, and a bench</b>3 post slots a day. Extra approvals wait on the bench and post on a day you miss, which keeps the streak real.</div></div>
+
+</div>
+</section>
+
+<section>
+<h3>Gesture map</h3>
+<table>
+<tr><th>Gesture</th><th>Does</th><th>Backed by</th></tr>
+<tr><td>Swipe right</td><td>Post. Card flies to "Goes out 6:10 PM"</td><td class="ev">Netflix thumbs: +200% ratings over stars</td></tr>
+<tr><td>Swipe left</td><td>Reject. Next video starts, chips slide up</td><td class="ev">One-tap feedback got 2.2x more use than YouTube's menu</td></tr>
+<tr><td>Hold an edge</td><td>2x while held, swipe down to lock</td><td class="ev">Shipped on TikTok, Reels (Mar 2025), Shorts (Jun 2026)</td></tr>
+<tr><td>Swipe up</td><td>Not sure. Back of the drop, no decision</td><td class="ev">TikTok habit. Midjourney's skip key</td></tr>
+<tr><td>Double tap</td><td>Heart this second</td><td class="ev">Hinge: likes on one part, 2x as likely to lead to a date</td></tr>
+<tr><td>Two buttons</td><td>Reject and Post, always visible</td><td class="ev">Hidden gestures get forgotten</td></tr>
+</table>
+</section>
+
+<section>
+<h3>A day with Outpost</h3>
+<div class="day">
+<div class="dc"><b>8:00 AM</b><span>Drop of 8 lands. Widget updates with overnight results.</span></div>
+<div class="dc"><b>About 2 min</b><span>Away screen, collect, base, drop, done.</span></div>
+<div class="dc"><b>All day</b><span>3 approved videos post at set times. Pull back until they go.</span></div>
+<div class="dc"><b>6:00 PM</b><span>Second results batch. Views, clicks, sales.</span></div>
+<div class="dc"><b>Monday</b><span>Week in review card you can share.</span></div>
+</div>
+</section>
+
+<section>
+<h3>The recorded demo, built on Nomen's skeleton</h3>
+<p class="lead" style="margin-bottom:22px">Nomen's 1:58 video replayed a finished campaign with illustrative numbers. Recording lets us show time passing, so ours shows real overnight results. Every number real, with a receipt.</p>
+<div class="sbar">
+<div style="flex:8;background:#D9D4C7">Cold open</div>
+<div style="flex:10;background:#C9E7D2">One line, base builds</div>
+<div style="flex:12;background:#D7CCF2">Scout up close</div>
+<div style="flex:8;background:#F7C9D4">Studio</div>
+<div style="flex:27;background:#FFE58A"><span class="wm">1</span>The drop: swipe, why, it changes</div>
+<div style="flex:5;background:#B9C4D3">11 PM</div>
+<div style="flex:20;background:#A8E6BC"><span class="wm">2</span>While I slept <span class="wm" style="left:85%">3</span></div>
+<div style="flex:12;background:#FFD23F">Raid stars</div>
+<div style="flex:10;background:#D9D4C7">Sponsors</div>
+<div style="flex:8;background:#E9E3D6">Callback</div>
+</div>
+<div class="sbt2"><div style="flex:8">0:00</div><div style="flex:10">0:08</div><div style="flex:12">0:18</div><div style="flex:8">0:30</div><div style="flex:27">0:38</div><div style="flex:5">1:05</div><div style="flex:20">1:10</div><div style="flex:12">1:30</div><div style="flex:10">1:42</div><div style="flex:8">1:52</div></div>
+<div class="wows">
+<div class="wow"><span class="wn">1</span><b>Swipe left, say why, and it changes</b><span>"Hook too slow", then a new video with a 1-second hook seconds later. The notebook gains a line.</span></div>
+<div class="wow"><span class="wn">2</span><b>It worked while I slept</b><span>Clock cut, 11 PM to 8 AM. Widget, then the away screen with real views and receipts.</span></div>
+<div class="wow"><span class="wn">3</span><b>Real money, no replay</b><span>A real Whop sale from an approved video. If no stranger buys, a known buyer, labeled.</span></div>
+</div>
+<table style="margin-top:16px">
+<tr><th>Nomen did</th><th>We keep or change</th></tr>
+<tr><td>Meme cold open, callback at the end</td><td>Keep. "Six hours a day scrolling, paid me zero" to "Same thumb. Now it pays."</td></tr>
+<tr><td>World as the architecture</td><td>Keep. Buildings are real systems, agents walk between them.</td></tr>
+<tr><td>Numbered stage cards</td><td>Keep. 1 The outpost, 2 The drop, 3 Overnight, 4 The raid.</td></tr>
+<tr><td>Cost counter climbing to $21</td><td>Change. "Your time today 1:52" and "Earned $9".</td></tr>
+<tr><td>Replay, "illustrative" battle</td><td>Change. Every number real, with a corner receipt.</td></tr>
+<tr><td>Laptop, parked cursor</td><td>Change. iPhone screen plus a hand camera for the swipes.</td></tr>
+<tr><td>"(sorry for audio)"</td><td>Change. Videos muted under narration, captions burned in.</td></tr>
+</table>
+</section>
+
+<section class="dec">
+<h3 style="color:var(--foreground)">One decision before building</h3>
+<p style="font-size:13.5px;margin-bottom:8px">You described doomscrolling your own videos. The research points to a finite drop instead. How should the feed work?</p>
+<div class="opt rec"><div class="k">1</div><div><b>Daily drop of 8, plus "Make 4 more" on demand <span class="rec-tag">Recommended</span></b><span>Finite by default, and asking for more is a steering action, which is what brought Sora users back. Each extra batch shows your notes applied.</span></div></div>
+<div class="opt"><div class="k">2</div><div><b>Endless doomscroll of your own videos</b><span>Closest to your idea. Passive AI feeds churned, people grow 27% pickier across a session, and EU regulators are targeting infinite scroll.</span></div></div>
+<div class="opt"><div class="k">3</div><div><b>Strict daily drop, Wordle style</b><span>Strongest scarcity, but no way to see the learning twice in one sitting, which the demo needs.</span></div></div>
+</section>
+
+</div></body></html>

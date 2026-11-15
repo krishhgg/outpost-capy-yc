@@ -1,0 +1,977 @@
+[
+ {
+  "format": "dialogue skit",
+  "story": "The boss quietly moves his shift in the middle of the night, then calls him a no-show at 9. He calmly shows the timestamped message, and the boss has to back down in front of everyone.",
+  "why": "Toxic-manager animated serials (#toxicworkplace, #managerbelike) were the strongest work videos this week, like 'PT-1 She Fired the Wrong Employee... Now She Has to Pay 3X' and 'My Boss Changed My Schedule at 2 AM, Then Marked Me a No-Show'. Viewers stay to watch a bad boss lose.",
+  "hook": "Your boss changed your shift at 2 AM. Then called you a no-show.",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 0,
+  "cast": "boss"
+ },
+ {
+  "format": "what if",
+  "story": "Balances float above everyone's head. He sees his own number blink red in the coffee line, then notices the flashiest guy is at zero. Lesson: stop comparing, start watching your own number.",
+  "why": "'What if' money premises ('What if you had $10 that never ran out', 'Everyone's money shows above their head') kept pulling views all week: one impossible rule, then what happens.",
+  "hook": "What if everyone's bank balance floated above their head?",
+  "set": "city",
+  "buddy": "piggy",
+  "palette": 0
+ },
+ {
+  "format": "dialogue skit",
+  "story": "Vague feedback at a cafe meeting. He asks three specific questions about color, size and mood, the client finally knows what they want, and the revision limit goes in the contract.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "The client says 'can you make the logo pop?'",
+  "set": "cafe",
+  "buddy": "invoice",
+  "palette": 0,
+  "cast": "client"
+ },
+ {
+  "format": "in this town",
+  "story": "In this town, whoever asks for a quick favor pays $20. Suddenly nobody needs quick favors. He realizes his time always had a price.",
+  "why": "'In this town...' stories with blocky 3D characters are one of the top animated storytime formats this week: one strange town rule, played out.",
+  "hook": "In this town, every 'quick favor' costs $20",
+  "set": "city",
+  "buddy": "calendar",
+  "palette": 3
+ },
+ {
+  "format": "POV",
+  "story": "The boss fires the quiet guy who kept everything running. The next day nothing works, and the boss asks him to help for free this week. He replies with a consulting rate.",
+  "why": "'POV: Your boss fires the employee keeping the company running' passed 500K views this month. Second-person POV work stories with a clear villain and a payoff travel well.",
+  "hook": "POV: Your boss fires the only guy who knows the system",
+  "set": "office",
+  "buddy": "mug",
+  "palette": 3,
+  "cast": "boss"
+ },
+ {
+  "format": "what if",
+  "story": "Every price tag shows hours of work instead of dollars. His daily coffee costs 20 minutes. He doesn't quit coffee, but he picks which ones are worth it.",
+  "why": "'What if' money premises ('What if you had $10 that never ran out', 'Everyone's money shows above their head') kept pulling views all week: one impossible rule, then what happens.",
+  "hook": "What if your coffee cost showed up as hours of work?",
+  "set": "city",
+  "buddy": "mug",
+  "palette": 4
+ },
+ {
+  "format": "would you rather",
+  "story": "His friend asks which pay schedule he'd want. They talk discipline and planning. It ends asking viewers to choose.",
+  "why": "Money would-you-rather videos ('$50,000 now or $10,000 every time your friend lies', 'Would you stay for $1 million a minute') pull comments because everyone picks a side.",
+  "hook": "Get paid daily or get paid once a year?",
+  "set": "city",
+  "buddy": "invoice",
+  "palette": 2,
+  "cast": "friend"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "After a 45-minute call the client says they'll think about it. He sends a short written proposal with a yes-by date, and the client signs before it.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "The client says 'let's hop on a call' to say no",
+  "set": "cafe",
+  "buddy": "calendar",
+  "palette": 4,
+  "cast": "client"
+ },
+ {
+  "format": "money habit storytime",
+  "story": "Everyone blames the coffee. The narrator shows the bigger leaks: rent, car and subscriptions. Fix the big three first.",
+  "why": "'Same paycheck, different habits' comparisons (spender vs saver) are trending in money animation this week; viewers comment which one they are.",
+  "hook": "The $6 coffee isn't why you're broke",
+  "set": "city",
+  "buddy": "mug",
+  "palette": 1
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The roommate wants to split utilities by usage, with no way to measure. He suggests an even split plus a cap. They agree in two minutes.",
+  "why": "Second-person everyday stories ('Your girlfriend doesn't feel good', 'Your boyfriend says he cleaned up') were among the fastest-growing animated storytimes this week; this one moves the formula to rent and roommates.",
+  "hook": "Your roommate splits the bill by 'who used more'",
+  "set": "home",
+  "buddy": "invoice",
+  "palette": 3,
+  "cast": "roommate"
+ },
+ {
+  "format": "office comedy",
+  "story": "A one-hour meeting with nine people ends with 'let's take this offline'. The narrator counts what it really cost in time. Next time he sends the email first.",
+  "why": "Corporate humor ('we're not a company, we're a family', office printer skits, 'I point? I'll take tomorrow off too') is a steady #officehumor trend that passed 500K on single videos.",
+  "hook": "When the meeting could have been an email",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 4,
+  "cast": "coworker"
+ },
+ {
+  "format": "POV",
+  "story": "His work friend becomes his manager overnight. Lunch gets awkward. They agree on one rule: friends at lunch, clear feedback at work, and it actually works.",
+  "why": "'POV: Your boss fires the employee keeping the company running' passed 500K views this month. Second-person POV work stories with a clear villain and a payoff travel well.",
+  "hook": "POV: Your work friend just got promoted to your boss",
+  "set": "office",
+  "buddy": "mug",
+  "palette": 4,
+  "cast": "coworker"
+ },
+ {
+  "format": "talking object story",
+  "story": "A month in the life of his piggy bank: full on payday, raided for takeout by day three, empty by day ten. He makes a new rule: feed the piggy first.",
+  "why": "Talking-object dramas (the AI fruit stories) are everywhere this week; here a money object sits at the center of the story.",
+  "hook": "Your piggy bank has seen things",
+  "set": "home",
+  "buddy": "piggy",
+  "palette": 1
+ },
+ {
+  "format": "job interview skit",
+  "story": "A job interview skit. His first answer is a nervous ramble; the narrator rewinds and shows a short answer that ties his goal to the job. The interviewer nods.",
+  "why": "Toxic-manager animated serials (#toxicworkplace, #managerbelike) were the strongest work videos this week, like 'PT-1 She Fired the Wrong Employee... Now She Has to Pay 3X' and 'My Boss Changed My Schedule at 2 AM, Then Marked Me a No-Show'. Viewers stay to watch a bad boss lose.",
+  "hook": "When the interviewer asks 'where do you see yourself in 5 years?'",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 2,
+  "cast": "boss"
+ },
+ {
+  "format": "money habit storytime",
+  "story": "His friend never pays for coffee. He suggests splitting every time with an app, and the friendship gets easier.",
+  "why": "Second-person everyday stories ('Your girlfriend doesn't feel good', 'Your boyfriend says he cleaned up') were among the fastest-growing animated storytimes this week; this one moves the formula to rent and roommates.",
+  "hook": "Your friend always says 'I'll get the next one'",
+  "set": "cafe",
+  "buddy": "piggy",
+  "palette": 3,
+  "cast": "friend"
+ },
+ {
+  "format": "talking object story",
+  "story": "The mug's view of his week: fourth refill by 10 AM, cold coffee at midnight. He sets a hard stop time, and the mug finally gets a rest.",
+  "why": "Talking-object dramas (the AI fruit stories) are everywhere this week; here a money object sits at the center of the story.",
+  "hook": "Your coffee mug knows you're burnt out",
+  "set": "office",
+  "buddy": "mug",
+  "palette": 2
+ },
+ {
+  "format": "dialogue skit",
+  "story": "After a month of silence the client returns needing it by Friday. He sends his rush rate and a deposit link before starting. The client pays both.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "The client ghosted. Then came back asking for a rush job.",
+  "set": "home",
+  "buddy": "calendar",
+  "palette": 3,
+  "cast": "client"
+ },
+ {
+  "format": "cliffhanger choice",
+  "story": "The boss offers 'Senior' in his title, twice the work, same pay. He weighs it: the title helps his next job, the pay doesn't change. It ends by asking viewers what they'd pick.",
+  "why": "Cliffhanger animated stories that end on a choice ('Would you open it?', 'LAB OR STAIRS?') pull comments; this one uses a work-and-money dilemma instead of horror.",
+  "hook": "Your boss offers a new title but no raise. Would you take it?",
+  "set": "office",
+  "buddy": "piggy",
+  "palette": 3,
+  "cast": "boss"
+ },
+ {
+  "format": "expectation vs reality",
+  "story": "Expectation: work from a beach, pick your clients. Reality: chasing an invoice from a client who left him on read. The fix: payment terms before work starts.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "Freelancing: expectation vs reality",
+  "set": "city",
+  "buddy": "invoice",
+  "palette": 3,
+  "cast": "client"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The coworker leaves early and asks him to cover, for the fourth time this month. He agrees once more but only in writing, with them covering his Friday. The favors even out.",
+  "why": "Toxic-manager animated serials (#toxicworkplace, #managerbelike) were the strongest work videos this week, like 'PT-1 She Fired the Wrong Employee... Now She Has to Pay 3X' and 'My Boss Changed My Schedule at 2 AM, Then Marked Me a No-Show'. Viewers stay to watch a bad boss lose.",
+  "hook": "Your coworker asks you to cover for them. Again.",
+  "set": "office",
+  "buddy": "invoice",
+  "palette": 3,
+  "cast": "coworker"
+ },
+ {
+  "format": "money habit storytime",
+  "story": "Taxes come out, benefits come out, and the number is smaller than the offer letter. The fix: plan with what actually lands in your account.",
+  "why": "'Same paycheck, different habits' comparisons (spender vs saver) are trending in money animation this week; viewers comment which one they are.",
+  "hook": "Things nobody tells you about your first paycheck",
+  "set": "home",
+  "buddy": "invoice",
+  "palette": 2
+ },
+ {
+  "format": "office comedy",
+  "story": "His coworker says classic office phrases and the narrator translates each one: per my last email, let's circle back, quick sync. Then the guy tries one himself and it backfires.",
+  "why": "Corporate humor ('we're not a company, we're a family', office printer skits, 'I point? I'll take tomorrow off too') is a steady #officehumor trend that passed 500K on single videos.",
+  "hook": "Office phrases, translated",
+  "set": "office",
+  "buddy": "mug",
+  "palette": 0,
+  "cast": "coworker"
+ },
+ {
+  "format": "would you rather",
+  "story": "A client asks which he'd rather have. They talk risk, workload and freedom. It ends asking viewers which they'd build.",
+  "why": "Money would-you-rather videos ('$50,000 now or $10,000 every time your friend lies', 'Would you stay for $1 million a minute') pull comments because everyone picks a side.",
+  "hook": "One client paying $5,000 or ten clients paying $500?",
+  "set": "cafe",
+  "buddy": "invoice",
+  "palette": 3,
+  "cast": "client"
+ },
+ {
+  "format": "same paycheck comparison",
+  "story": "He and his coworker earn the same. One moves a small amount to savings on payday, one waits for 'later'. A surprise bill shows the difference.",
+  "why": "'Same paycheck, different habits' comparisons (spender vs saver) are trending in money animation this week; viewers comment which one they are.",
+  "hook": "Same job, same salary. One of you has a cushion.",
+  "set": "office",
+  "buddy": "piggy",
+  "palette": 3,
+  "cast": "coworker"
+ },
+ {
+  "format": "POV",
+  "story": "Sunday scaries hit at 7 PM. He writes Monday's top three tasks on Sunday and closes the laptop. Monday feels smaller.",
+  "why": "Freelancer day-in-the-life and expectation-vs-reality posts keep getting shared by people who just went freelance; this one teaches one habit inside the joke.",
+  "hook": "POV: It's Sunday night and you already dread Monday",
+  "set": "home",
+  "buddy": "calendar",
+  "palette": 4
+ },
+ {
+  "format": "would you rather",
+  "story": "His coworker asks which he'd pick. They argue time versus money. It ends asking viewers to pick in the comments.",
+  "why": "Money would-you-rather videos ('$50,000 now or $10,000 every time your friend lies', 'Would you stay for $1 million a minute') pull comments because everyone picks a side.",
+  "hook": "Four-day week or a 20% raise?",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 1,
+  "cast": "coworker"
+ },
+ {
+  "format": "in this town",
+  "story": "Every unpaid invoice glows red in the windows of whoever owes it. His client's office lights up. The client pays by morning.",
+  "why": "'In this town...' stories with blocky 3D characters are one of the top animated storytime formats this week: one strange town rule, played out.",
+  "hook": "In this town, late invoices glow red at night",
+  "set": "city",
+  "buddy": "invoice",
+  "palette": 0
+ },
+ {
+  "format": "office comedy",
+  "story": "The office printer jams right before a big meeting, and the coworker panics. He sends the file to the client's screen instead. Lesson: always have a plan B for the thing that always breaks.",
+  "why": "Corporate humor ('we're not a company, we're a family', office printer skits, 'I point? I'll take tomorrow off too') is a steady #officehumor trend that passed 500K on single videos.",
+  "hook": "The printer jammed five minutes before the client",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 2,
+  "cast": "coworker"
+ },
+ {
+  "format": "POV",
+  "story": "His invoice just says 'thanks!' with no date, and the client takes 90 days. He adds a due date, payment methods and a late fee line. Paid in a week.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "POV: Your invoice has no due date and the client noticed",
+  "set": "city",
+  "buddy": "invoice",
+  "palette": 3,
+  "cast": "client"
+ },
+ {
+  "format": "talking object story",
+  "story": "His calendar is stacked with back-to-back meetings and no lunch. He blocks two hours of focus time every morning, and the calendar breathes again.",
+  "why": "Talking-object dramas (the AI fruit stories) are everywhere this week; here a money object sits at the center of the story.",
+  "hook": "Your calendar has been trying to warn you",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 3
+ },
+ {
+  "format": "would you rather",
+  "story": "His friend asks over coffee. They debate burnout and bills. It ends asking viewers which they'd take.",
+  "why": "Money would-you-rather videos ('$50,000 now or $10,000 every time your friend lies', 'Would you stay for $1 million a minute') pull comments because everyone picks a side.",
+  "hook": "Dream job at half pay or boring job at double pay?",
+  "set": "city",
+  "buddy": "mug",
+  "palette": 4,
+  "cast": "friend"
+ },
+ {
+  "format": "POV",
+  "story": "A coworker accidentally replies all with something embarrassing. The narrator walks through the five stages of the office watching it happen, and the fix: slow down before you hit send.",
+  "why": "Corporate humor ('we're not a company, we're a family', office printer skits, 'I point? I'll take tomorrow off too') is a steady #officehumor trend that passed 500K on single videos.",
+  "hook": "POV: Your coworker replies all to the whole company",
+  "set": "office",
+  "buddy": "mug",
+  "palette": 2,
+  "cast": "coworker"
+ },
+ {
+  "format": "office comedy",
+  "story": "The boss gives the family speech right before asking for an unpaid Saturday. The guy answers that he'll gladly come, at his overtime rate. The boss suddenly remembers they're a company.",
+  "why": "Corporate humor ('we're not a company, we're a family', office printer skits, 'I point? I'll take tomorrow off too') is a steady #officehumor trend that passed 500K on single videos.",
+  "hook": "When your boss says we're not a company, we're a family",
+  "set": "office",
+  "buddy": "mug",
+  "palette": 0,
+  "cast": "boss"
+ },
+ {
+  "format": "freelancer storytime",
+  "story": "A quick list of signs: every client says yes instantly, you're booked solid but broke, you dread new work. The fix: raise your rate for the next new client.",
+  "why": "Freelancer day-in-the-life and expectation-vs-reality posts keep getting shared by people who just went freelance; this one teaches one habit inside the joke.",
+  "hook": "Signs you're undercharging as a freelancer",
+  "set": "cafe",
+  "buddy": "invoice",
+  "palette": 3
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The coworker praises him right before dumping a task. He thanks them and asks which of his deadlines they'll take in return. They find someone else.",
+  "why": "Corporate humor ('we're not a company, we're a family', office printer skits, 'I point? I'll take tomorrow off too') is a steady #officehumor trend that passed 500K on single videos.",
+  "hook": "Your coworker says 'you're so good at this' again",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 1,
+  "cast": "coworker"
+ },
+ {
+  "format": "same paycheck comparison",
+  "story": "He and his friend get the same paycheck. The friend spends first and saves what's left; he saves a slice first. When the laptop breaks, only one of them panics.",
+  "why": "'Same paycheck, different habits' comparisons (spender vs saver) are trending in money animation this week; viewers comment which one they are.",
+  "hook": "Same paycheck, two very different months",
+  "set": "city",
+  "buddy": "piggy",
+  "palette": 1,
+  "cast": "friend"
+ },
+ {
+  "format": "what if",
+  "story": "His friend gets a $10 bill that refills every time it's spent. They spend it on junk, and the narrator shows that the real magic is a small habit that refills every month: paying yourself first.",
+  "why": "'What if' money premises ('What if you had $10 that never ran out', 'Everyone's money shows above their head') kept pulling views all week: one impossible rule, then what happens.",
+  "hook": "What if your $10 never ran out?",
+  "set": "city",
+  "buddy": "piggy",
+  "palette": 4,
+  "cast": "friend"
+ },
+ {
+  "format": "would you rather",
+  "story": "His roommate asks the question while dishes pile up. They weigh savings against peace. It ends asking viewers to pick a side.",
+  "why": "Money would-you-rather videos ('$50,000 now or $10,000 every time your friend lies', 'Would you stay for $1 million a minute') pull comments because everyone picks a side.",
+  "hook": "Cheap rent with a messy roommate or expensive rent alone?",
+  "set": "home",
+  "buddy": "piggy",
+  "palette": 2,
+  "cast": "roommate"
+ },
+ {
+  "format": "job interview skit",
+  "story": "The interviewer asks for his number up front. He answers with a researched range and asks for the budget too. The offer lands at the top of the range.",
+  "why": "Toxic-manager animated serials (#toxicworkplace, #managerbelike) were the strongest work videos this week, like 'PT-1 She Fired the Wrong Employee... Now She Has to Pay 3X' and 'My Boss Changed My Schedule at 2 AM, Then Marked Me a No-Show'. Viewers stay to watch a bad boss lose.",
+  "hook": "When they ask your salary expectations first",
+  "set": "office",
+  "buddy": "piggy",
+  "palette": 3,
+  "cast": "boss"
+ },
+ {
+  "format": "in this town",
+  "story": "Every client must pay half up front. The cafe meeting is suddenly short and friendly. Lesson: you can make this rule yourself.",
+  "why": "'In this town...' stories with blocky 3D characters are one of the top animated storytime formats this week: one strange town rule, played out.",
+  "hook": "In this town, clients pay before the work starts",
+  "set": "cafe",
+  "buddy": "invoice",
+  "palette": 4,
+  "cast": "client"
+ },
+ {
+  "format": "serial drama, part 1",
+  "story": "Part 1. In the big meeting the boss presents his project as his own. He stays quiet, and that night he sends a recap email with every version date. Cliffhanger: the boss reads it.",
+  "why": "Toxic-manager animated serials (#toxicworkplace, #managerbelike) were the strongest work videos this week, like 'PT-1 She Fired the Wrong Employee... Now She Has to Pay 3X' and 'My Boss Changed My Schedule at 2 AM, Then Marked Me a No-Show'. Viewers stay to watch a bad boss lose.",
+  "hook": "Part 1: Your boss took credit for your project",
+  "set": "office",
+  "buddy": "invoice",
+  "palette": 1,
+  "cast": "boss"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "Light roommate comedy: his food vanishes and the Wi-Fi is slow from three new devices. They write a one-page house agreement and things calm down.",
+  "why": "Second-person everyday stories ('Your girlfriend doesn't feel good', 'Your boyfriend says he cleaned up') were among the fastest-growing animated storytimes this week; this one moves the formula to rent and roommates.",
+  "hook": "Your roommate used your oat milk and your Wi-Fi password",
+  "set": "home",
+  "buddy": "mug",
+  "palette": 1,
+  "cast": "roommate"
+ },
+ {
+  "format": "in this town",
+  "story": "Coffee prices match your pay per minute. Some people pay pennies, others a fortune. He realizes knowing your hourly rate changes every choice.",
+  "why": "'In this town...' stories with blocky 3D characters are one of the top animated storytime formats this week: one strange town rule, played out.",
+  "hook": "In this town, your coffee costs what you earn per minute",
+  "set": "city",
+  "buddy": "mug",
+  "palette": 0
+ },
+ {
+  "format": "serial drama, part 2",
+  "story": "Part 2 of the stolen project story. The recap email gets forwarded upstairs, the real author is clear from the dates, and he gets invited to present next time. Lesson: keep a paper trail of your work.",
+  "why": "Part 2 of a serial. 'PT-1 / PT-2' work dramas bring viewers back for the next part and push follows.",
+  "hook": "Part 2: The recap email reached the boss's boss",
+  "set": "office",
+  "buddy": "invoice",
+  "palette": 2,
+  "cast": "boss"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The boss texts late at night with a non-urgent task. He replies in the morning with a time he'll do it. The boss stops texting at night after a week of morning replies.",
+  "why": "Toxic-manager animated serials (#toxicworkplace, #managerbelike) were the strongest work videos this week, like 'PT-1 She Fired the Wrong Employee... Now She Has to Pay 3X' and 'My Boss Changed My Schedule at 2 AM, Then Marked Me a No-Show'. Viewers stay to watch a bad boss lose.",
+  "hook": "Your boss texts 'you up?' at 11 PM. It's about work.",
+  "set": "office",
+  "buddy": "mug",
+  "palette": 4,
+  "cast": "boss"
+ },
+ {
+  "format": "POV",
+  "story": "His friend asks at dinner and he says 'great' while working nights for little pay. He counts his real hourly rate and changes one thing: fewer, better clients.",
+  "why": "Freelancer day-in-the-life and expectation-vs-reality posts keep getting shared by people who just went freelance; this one teaches one habit inside the joke.",
+  "hook": "POV: Your friend asks how the side hustle is going",
+  "set": "home",
+  "buddy": "mug",
+  "palette": 1,
+  "cast": "friend"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "Twenty pages of notes land late Friday with 'need by Monday'. He replies Monday morning with a new timeline. The client accepts it.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "The client sends feedback at 11:59 PM on a Friday",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 0,
+  "cast": "client"
+ },
+ {
+  "format": "POV",
+  "story": "Rent day, but the heater has been broken for weeks. He sends a dated written repair request with photos. The fix gets scheduled.",
+  "why": "Second-person everyday stories ('Your girlfriend doesn't feel good', 'Your boyfriend says he cleaned up') were among the fastest-growing animated storytimes this week; this one moves the formula to rent and roommates.",
+  "hook": "POV: Your landlord wants rent but won't fix the heater",
+  "set": "home",
+  "buddy": "invoice",
+  "palette": 2,
+  "cast": "landlord"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The boss hires an outsider into the role he was promised. He asks what exactly the new hire had that he didn't, and gets a list. He checks it off in three months and asks again, with proof.",
+  "why": "Toxic-manager animated serials (#toxicworkplace, #managerbelike) were the strongest work videos this week, like 'PT-1 She Fired the Wrong Employee... Now She Has to Pay 3X' and 'My Boss Changed My Schedule at 2 AM, Then Marked Me a No-Show'. Viewers stay to watch a bad boss lose.",
+  "hook": "Your boss promised a promotion. Then hired someone else.",
+  "set": "office",
+  "buddy": "invoice",
+  "palette": 2,
+  "cast": "boss"
+ },
+ {
+  "format": "money habit storytime",
+  "story": "Expectation: rich for a week. Reality: rent, bills and subscriptions take most of it in a day. The fix: move savings first, then spend what's left.",
+  "why": "'Same paycheck, different habits' comparisons (spender vs saver) are trending in money animation this week; viewers comment which one they are.",
+  "hook": "Payday: expectation vs reality",
+  "set": "home",
+  "buddy": "piggy",
+  "palette": 4
+ },
+ {
+  "format": "POV",
+  "story": "The company offers unlimited time off, but the boss frowns at every request. He books his days early, in writing, with his work covered. It gets approved.",
+  "why": "'POV: Your boss fires the employee keeping the company running' passed 500K views this month. Second-person POV work stories with a clear villain and a payoff travel well.",
+  "hook": "POV: Your boss says unlimited PTO but nobody takes any",
+  "set": "office",
+  "buddy": "piggy",
+  "palette": 1,
+  "cast": "boss"
+ },
+ {
+  "format": "in this town",
+  "story": "Coffee is free but every hour at the table costs money. The freelancers working there all day suddenly do the math. He realizes his 'cheap office' was costing more than he thought.",
+  "why": "'In this town...' stories with blocky 3D characters are one of the top animated storytime formats this week: one strange town rule, played out.",
+  "hook": "In this town, the cafe charges you by the hour",
+  "set": "cafe",
+  "buddy": "mug",
+  "palette": 0
+ },
+ {
+  "format": "POV",
+  "story": "Two minutes before he leaves, the boss starts a 'quick' request that is clearly an hour. He asks what can wait until morning, and the boss agrees it can.",
+  "why": "'POV: Your boss fires the employee keeping the company running' passed 500K views this month. Second-person POV work stories with a clear villain and a payoff travel well.",
+  "hook": "POV: It's 4:58 and your boss just said 'got a sec?'",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 3,
+  "cast": "boss"
+ },
+ {
+  "format": "cliffhanger choice",
+  "story": "A rush job at twice his rate, due tomorrow, with a client known for changing their mind. He weighs the money against the weekend. It ends asking viewers what they'd do.",
+  "why": "Cliffhanger animated stories that end on a choice ('Would you open it?', 'LAB OR STAIRS?') pull comments; this one uses a work-and-money dilemma instead of horror.",
+  "hook": "A client offers double pay but wants it tomorrow. Do you take it?",
+  "set": "cafe",
+  "buddy": "invoice",
+  "palette": 2,
+  "cast": "client"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "His friend asks for another loan before paying back the last one. He kindly says no and offers help making a budget instead. The friend actually takes it.",
+  "why": "Second-person everyday stories ('Your girlfriend doesn't feel good', 'Your boyfriend says he cleaned up') were among the fastest-growing animated storytimes this week; this one moves the formula to rent and roommates.",
+  "hook": "Your friend asks to borrow money. Again.",
+  "set": "city",
+  "buddy": "piggy",
+  "palette": 2,
+  "cast": "friend"
+ },
+ {
+  "format": "what if",
+  "story": "Salaries appear on name tags. His coworker with the same job earns more, and now everyone can talk about it openly. He uses it to ask for a fair raise.",
+  "why": "'What if' money premises ('What if you had $10 that never ran out', 'Everyone's money shows above their head') kept pulling views all week: one impossible rule, then what happens.",
+  "hook": "What if everyone at work could see your salary?",
+  "set": "office",
+  "buddy": "mug",
+  "palette": 3,
+  "cast": "coworker"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "A 'quick call' runs two hours of rambling. Next time he sends a 30-minute agenda and a note that extra time is billed. The next call takes 25 minutes.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "The client's 'quick call' just hit two hours",
+  "set": "cafe",
+  "buddy": "calendar",
+  "palette": 1,
+  "cast": "client"
+ },
+ {
+  "format": "what if",
+  "story": "A new rule: every quick favor costs the boss real money. Quick favors stop overnight, and he leaves at five. Lesson: your time always had a price.",
+  "why": "'What if' money premises ('What if you had $10 that never ran out', 'Everyone's money shows above their head') kept pulling views all week: one impossible rule, then what happens.",
+  "hook": "What if your boss had to pay for every 'quick favor'?",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 0,
+  "cast": "boss"
+ },
+ {
+  "format": "POV",
+  "story": "Rent is a day late and the landlord is in line right behind him. He says it first: the payment goes out tonight, and he'll set up autopay so it never happens again. The landlord nods.",
+  "why": "Second-person everyday stories ('Your girlfriend doesn't feel good', 'Your boyfriend says he cleaned up') were among the fastest-growing animated storytimes this week; this one moves the formula to rent and roommates.",
+  "hook": "POV: You run into your landlord at the cafe on rent day",
+  "set": "cafe",
+  "buddy": "piggy",
+  "palette": 4,
+  "cast": "landlord"
+ },
+ {
+  "format": "freelancer storytime",
+  "story": "He takes a week off and realizes nobody is paying him for it. The fix: set a little from every payment aside for days off, so a break doesn't hurt.",
+  "why": "Freelancer day-in-the-life and expectation-vs-reality posts keep getting shared by people who just went freelance; this one teaches one habit inside the joke.",
+  "hook": "Nobody tells you freelancing has no paid vacation",
+  "set": "home",
+  "buddy": "calendar",
+  "palette": 2
+ },
+ {
+  "format": "in this town",
+  "story": "Payday is the same for everyone, so the whole town is rich on the 1st and broke on the 20th. He's the one who spreads his money across the month, and his friend asks how.",
+  "why": "'In this town...' stories with blocky 3D characters are one of the top animated storytime formats this week: one strange town rule, played out.",
+  "hook": "In this town, everyone gets paid on the same day",
+  "set": "city",
+  "buddy": "piggy",
+  "palette": 1,
+  "cast": "friend"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The landlord texts a rent increase late at night. He calmly asks for it in writing and checks the notice terms in his lease before replying.",
+  "why": "Second-person everyday stories ('Your girlfriend doesn't feel good', 'Your boyfriend says he cleaned up') were among the fastest-growing animated storytimes this week; this one moves the formula to rent and roommates.",
+  "hook": "Your landlord texts 'small rent update' at 11 PM",
+  "set": "home",
+  "buddy": "calendar",
+  "palette": 0,
+  "cast": "landlord"
+ },
+ {
+  "format": "what if",
+  "story": "A price tag floats above every meeting, counting up per minute. Suddenly every meeting is ten minutes. Lesson: your time has a price even when nobody shows it.",
+  "why": "'What if' money premises ('What if you had $10 that never ran out', 'Everyone's money shows above their head') kept pulling views all week: one impossible rule, then what happens.",
+  "hook": "What if every meeting showed what it cost?",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 2
+ },
+ {
+  "format": "dialogue skit",
+  "story": "Every afternoon the coworker pulls him out for a coffee and a rant about work. He listens once more, then suggests they bring one fix each next time. The rants get shorter and the work gets better.",
+  "why": "Corporate humor ('we're not a company, we're a family', office printer skits, 'I point? I'll take tomorrow off too') is a steady #officehumor trend that passed 500K on single videos.",
+  "hook": "Your coworker wants to grab coffee to vent. Every single day.",
+  "set": "cafe",
+  "buddy": "mug",
+  "palette": 3,
+  "cast": "coworker"
+ },
+ {
+  "format": "money habit storytime",
+  "story": "He checks his bank app at night and finds subscriptions he forgot about. He cancels three and sets a monthly check. The piggy bank goes from broke to saved.",
+  "why": "'Same paycheck, different habits' comparisons (spender vs saver) are trending in money animation this week; viewers comment which one they are.",
+  "hook": "POV: Your subscriptions just ate your rent money",
+  "set": "home",
+  "buddy": "piggy",
+  "palette": 0
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The client wants free samples to decide. He shows his portfolio and offers a paid small first task instead. The client books it.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "The client asks for 'just a few sample designs' for free",
+  "set": "cafe",
+  "buddy": "piggy",
+  "palette": 2,
+  "cast": "client"
+ },
+ {
+  "format": "office comedy",
+  "story": "A deadpan office meme: the boss points at a deadline he moved up by a week, the guy points at the calendar where it was promised, and both stare. He calmly asks which task to drop to make the new date.",
+  "why": "Corporate humor ('we're not a company, we're a family', office printer skits, 'I point? I'll take tomorrow off too') is a steady #officehumor trend that passed 500K on single videos.",
+  "hook": "I point at the deadline? I'll take tomorrow off too.",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 0,
+  "cast": "boss"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "Moving out, the landlord wants to keep the deposit. He shows the move-in photos he took on day one. He gets the deposit back.",
+  "why": "Second-person everyday stories ('Your girlfriend doesn't feel good', 'Your boyfriend says he cleaned up') were among the fastest-growing animated storytimes this week; this one moves the formula to rent and roommates.",
+  "hook": "Your landlord keeps your deposit for 'wear and tear'",
+  "set": "home",
+  "buddy": "piggy",
+  "palette": 0,
+  "cast": "landlord"
+ },
+ {
+  "format": "in this town",
+  "story": "His coworker tries to book an hour-long meeting and gets stopped. Everything becomes a short email and everyone goes home at five.",
+  "why": "'In this town...' stories with blocky 3D characters are one of the top animated storytime formats this week: one strange town rule, played out.",
+  "hook": "In this town, meetings that could be emails are illegal",
+  "set": "office",
+  "buddy": "mug",
+  "palette": 4,
+  "cast": "coworker"
+ },
+ {
+  "format": "same paycheck comparison",
+  "story": "Two roommates, same rent and pay. One orders delivery every night, one cooks twice a week. The narrator shows the difference without judging, and asks which one you are.",
+  "why": "'Same paycheck, different habits' comparisons (spender vs saver) are trending in money animation this week; viewers comment which one they are.",
+  "hook": "Same rent, same pay, one roommate always broke",
+  "set": "home",
+  "buddy": "piggy",
+  "palette": 2,
+  "cast": "roommate"
+ },
+ {
+  "format": "would you rather",
+  "story": "The boss offers him the choice. He weighs the commute against the money. It ends asking viewers what they'd take.",
+  "why": "Money would-you-rather videos ('$50,000 now or $10,000 every time your friend lies', 'Would you stay for $1 million a minute') pull comments because everyone picks a side.",
+  "hook": "Work from home forever or a 15% raise in the office?",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 0,
+  "cast": "boss"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "Third month of 'later'. He sets a rule: everyone pays rent on the 1st into one shared account. The roommate pays on time from then on.",
+  "why": "Second-person everyday stories ('Your girlfriend doesn't feel good', 'Your boyfriend says he cleaned up') were among the fastest-growing animated storytimes this week; this one moves the formula to rent and roommates.",
+  "hook": "Your roommate says 'I'll Venmo you later'",
+  "set": "home",
+  "buddy": "piggy",
+  "palette": 4,
+  "cast": "roommate"
+ },
+ {
+  "format": "would you rather",
+  "story": "His friend asks the question and they argue. The narrator does the simple math: $50 a day is $18,250 a year. They ask viewers which one they'd take.",
+  "why": "Money would-you-rather videos ('$50,000 now or $10,000 every time your friend lies', 'Would you stay for $1 million a minute') pull comments because everyone picks a side.",
+  "hook": "$5,000 today or $50 every day for a year?",
+  "set": "city",
+  "buddy": "piggy",
+  "palette": 0,
+  "cast": "friend"
+ },
+ {
+  "format": "in this town",
+  "story": "The landlord can't raise rent without a year's warning, so he finally plans ahead. The narrator flips it: you can give yourself that notice by saving early.",
+  "why": "'In this town...' stories with blocky 3D characters are one of the top animated storytime formats this week: one strange town rule, played out.",
+  "hook": "In this town, landlords have to give a year's notice",
+  "set": "home",
+  "buddy": "calendar",
+  "palette": 2,
+  "cast": "landlord"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The client pushes back on price. He doesn't drop it; he asks what part of the work they'd cut. The client keeps the full project.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "The client says your rate is 'a bit high'",
+  "set": "city",
+  "buddy": "invoice",
+  "palette": 0,
+  "cast": "client"
+ },
+ {
+  "format": "freelancer storytime",
+  "story": "Day 1: no contract, no deposit, says yes to everything. Day 100: a contract, half up front, and clear due dates. The narrator walks through the three habits that changed.",
+  "why": "Freelancer day-in-the-life and expectation-vs-reality posts keep getting shared by people who just went freelance; this one teaches one habit inside the joke.",
+  "hook": "Day 1 vs day 100 of freelancing",
+  "set": "home",
+  "buddy": "invoice",
+  "palette": 1
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The project is finished and approved, then the client asks for a tiny change that's really a redesign. He sends a change request with a price, and the client picks the smaller version.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "The client wants 'one tiny change' after it's done",
+  "set": "cafe",
+  "buddy": "calendar",
+  "palette": 4,
+  "cast": "client"
+ },
+ {
+  "format": "POV",
+  "story": "The roommate reminds him rent is tomorrow and his balance is low because a client paid late. He sets a rule: rent money moves aside the day any payment lands.",
+  "why": "Second-person everyday stories ('Your girlfriend doesn't feel good', 'Your boyfriend says he cleaned up') were among the fastest-growing animated storytimes this week; this one moves the formula to rent and roommates.",
+  "hook": "POV: Rent is due tomorrow and you just checked your account",
+  "set": "home",
+  "buddy": "calendar",
+  "palette": 4,
+  "cast": "roommate"
+ },
+ {
+  "format": "what if",
+  "story": "Every revision costs the client a little. Suddenly feedback comes all at once, clear and early. Lesson: put a revision limit in your contract and you get the same effect.",
+  "why": "'What if' money premises ('What if you had $10 that never ran out', 'Everyone's money shows above their head') kept pulling views all week: one impossible rule, then what happens.",
+  "hook": "What if clients paid for every revision?",
+  "set": "cafe",
+  "buddy": "calendar",
+  "palette": 1,
+  "cast": "client"
+ },
+ {
+  "format": "would you rather",
+  "story": "A quick money would-you-rather. The narrator weighs which one saves more for most people, and asks viewers to pick.",
+  "why": "Money would-you-rather videos ('$50,000 now or $10,000 every time your friend lies', 'Would you stay for $1 million a minute') pull comments because everyone picks a side.",
+  "hook": "Never pay rent again or never pay for food again?",
+  "set": "home",
+  "buddy": "piggy",
+  "palette": 1
+ },
+ {
+  "format": "POV",
+  "story": "The client shrugs about a two-month-late payment. He sets net 14 terms, a deposit and a reminder three days before the due date. The next invoice arrives on time.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "POV: Your client paid 60 days late and said 'oops'",
+  "set": "home",
+  "buddy": "invoice",
+  "palette": 0,
+  "cast": "client"
+ },
+ {
+  "format": "what if",
+  "story": "His piggy bank gasps at every purchase. He laughs, until the gasps add up at the end of the month. Lesson: notice small spending, not just big spending.",
+  "why": "'What if' money premises ('What if you had $10 that never ran out', 'Everyone's money shows above their head') kept pulling views all week: one impossible rule, then what happens.",
+  "hook": "What if your savings talked back every time you spent?",
+  "set": "city",
+  "buddy": "piggy",
+  "palette": 1
+ },
+ {
+  "format": "POV",
+  "story": "The client wants a full website but has no budget. He offers three sizes of the project at three prices. They pick the middle one.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "POV: The client says 'we don't have a budget for this'",
+  "set": "cafe",
+  "buddy": "invoice",
+  "palette": 4,
+  "cast": "client"
+ },
+ {
+  "format": "what if",
+  "story": "A glowing unpaid invoice floats behind every late client. His client tries to hide it in a meeting. The real fix: due dates and reminders so it never needs to float.",
+  "why": "'What if' money premises ('What if you had $10 that never ran out', 'Everyone's money shows above their head') kept pulling views all week: one impossible rule, then what happens.",
+  "hook": "What if every unpaid invoice followed the client around?",
+  "set": "city",
+  "buddy": "invoice",
+  "palette": 1
+ },
+ {
+  "format": "expectation vs reality",
+  "story": "Expectation: a dream client who loves everything. Reality: a client who wants unlimited edits and pays late. The fix: write the edits and the due date into the first message.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "Your first freelance client: expectation vs reality",
+  "set": "home",
+  "buddy": "invoice",
+  "palette": 1,
+  "cast": "client"
+ },
+ {
+  "format": "POV",
+  "story": "A calendar invite to plan next week's planning meeting. He replies with a three-line written plan instead, and the meeting gets cancelled.",
+  "why": "'POV: Your boss fires the employee keeping the company running' passed 500K views this month. Second-person POV work stories with a clear villain and a payoff travel well.",
+  "hook": "POV: Your boss schedules a meeting to plan a meeting",
+  "set": "office",
+  "buddy": "mug",
+  "palette": 4,
+  "cast": "boss"
+ },
+ {
+  "format": "freelancer storytime",
+  "story": "He sends an invoice and refreshes his bank app all week. The fix: a due date, a polite reminder schedule, and a deposit next time.",
+  "why": "Freelancer day-in-the-life and expectation-vs-reality posts keep getting shared by people who just went freelance; this one teaches one habit inside the joke.",
+  "hook": "POV: You sent the invoice and now you wait",
+  "set": "home",
+  "buddy": "invoice",
+  "palette": 4
+ },
+ {
+  "format": "POV",
+  "story": "His friend wants to quit too. He explains the three things to have first: some savings, a first client, and a simple invoice process.",
+  "why": "Freelancer day-in-the-life and expectation-vs-reality posts keep getting shared by people who just went freelance; this one teaches one habit inside the joke.",
+  "hook": "POV: You quit your job to freelance and your friend asks how",
+  "set": "city",
+  "buddy": "invoice",
+  "palette": 0,
+  "cast": "friend"
+ },
+ {
+  "format": "what if",
+  "story": "Rent comes out weekly instead of monthly. At first it hurts, then he realizes he finally knows where his money goes. Lesson: split big bills into weekly amounts in your head.",
+  "why": "'What if' money premises ('What if you had $10 that never ran out', 'Everyone's money shows above their head') kept pulling views all week: one impossible rule, then what happens.",
+  "hook": "What if your rent was due every Friday?",
+  "set": "home",
+  "buddy": "piggy",
+  "palette": 3
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The coworker casually mentions their salary and it's more than his for the same job. He doesn't get mad; he asks the coworker how they negotiated it, and uses it at his review.",
+  "why": "Toxic-manager animated serials (#toxicworkplace, #managerbelike) were the strongest work videos this week, like 'PT-1 She Fired the Wrong Employee... Now She Has to Pay 3X' and 'My Boss Changed My Schedule at 2 AM, Then Marked Me a No-Show'. Viewers stay to watch a bad boss lose.",
+  "hook": "Your coworker found out you make less than them",
+  "set": "office",
+  "buddy": "invoice",
+  "palette": 3,
+  "cast": "coworker"
+ },
+ {
+  "format": "POV",
+  "story": "He says yes to every request and ends the month exhausted. The narrator shows a simple filter: does it pay, does it teach, or does it matter? If not, say no.",
+  "why": "Freelancer day-in-the-life and expectation-vs-reality posts keep getting shared by people who just went freelance; this one teaches one habit inside the joke.",
+  "hook": "POV: You said yes to everything this month",
+  "set": "home",
+  "buddy": "mug",
+  "palette": 0
+ },
+ {
+  "format": "talking object story",
+  "story": "An invoice sits unpaid in a client's inbox for weeks. The narrator follows it, and shows the three lines that would have got it paid: due date, payment link, late fee.",
+  "why": "Talking-object dramas (the AI fruit stories) are everywhere this week; here a money object sits at the center of the story.",
+  "hook": "This invoice has been waiting 47 days",
+  "set": "city",
+  "buddy": "invoice",
+  "palette": 4
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The client says the work should be cheaper because he's fast at it. He explains that fast comes from years of practice, and offers a smaller scope instead of a smaller price.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "The client asks for a discount because it's 'easy for you'",
+  "set": "cafe",
+  "buddy": "piggy",
+  "palette": 1,
+  "cast": "client"
+ },
+ {
+  "format": "POV",
+  "story": "His coworker takes 'dentist appointments' every week in a nice shirt. He realizes they're interviewing, and that he hasn't updated his own resume in two years. He updates it that night.",
+  "why": "'POV: Your boss fires the employee keeping the company running' passed 500K views this month. Second-person POV work stories with a clear villain and a payoff travel well.",
+  "hook": "POV: Your coworker is quietly job hunting",
+  "set": "office",
+  "buddy": "piggy",
+  "palette": 0,
+  "cast": "coworker"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "His friend asks for a free logo because they're friends. He explains why even friends get an invoice, and the friend respects it and pays a friends rate.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "Your friend asks you to design their logo for free",
+  "set": "cafe",
+  "buddy": "invoice",
+  "palette": 1,
+  "cast": "friend"
+ },
+ {
+  "format": "in this town",
+  "story": "His boss tries to send a 9 PM email and it bounces. Everyone sleeps better and works better. He sets his own phone to do the same.",
+  "why": "'In this town...' stories with blocky 3D characters are one of the top animated storytime formats this week: one strange town rule, played out.",
+  "hook": "In this town, bosses can't email after 6 PM",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 3,
+  "cast": "boss"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "The client says they'll pay him once their own client pays. He points to the due date on the signed invoice, and adds a late fee clause for next time.",
+  "why": "Client-versus-freelancer skits get stitched and shared by every freelancer who has lived them, and the fix ties straight to the invoice template.",
+  "hook": "The client says they'll pay when they get paid",
+  "set": "cafe",
+  "buddy": "invoice",
+  "palette": 2,
+  "cast": "client"
+ },
+ {
+  "format": "serial drama, part 1",
+  "story": "Part 1. He earned the project bonus, and the boss hands it to his favorite employee. Instead of yelling, he asks for the bonus rules in writing. It ends on a cliffhanger as the reply email lands.",
+  "why": "Toxic-manager animated serials (#toxicworkplace, #managerbelike) were the strongest work videos this week, like 'PT-1 She Fired the Wrong Employee... Now She Has to Pay 3X' and 'My Boss Changed My Schedule at 2 AM, Then Marked Me a No-Show'. Viewers stay to watch a bad boss lose.",
+  "hook": "Part 1: Your boss gave your bonus to his favorite",
+  "set": "office",
+  "buddy": "piggy",
+  "palette": 1,
+  "cast": "boss"
+ },
+ {
+  "format": "dialogue skit",
+  "story": "For the third quarter in a row the boss pushes the raise. He brings a one-page list of wins and asks to put a date on the calendar. The boss finally commits to one.",
+  "why": "Toxic-manager animated serials (#toxicworkplace, #managerbelike) were the strongest work videos this week, like 'PT-1 She Fired the Wrong Employee... Now She Has to Pay 3X' and 'My Boss Changed My Schedule at 2 AM, Then Marked Me a No-Show'. Viewers stay to watch a bad boss lose.",
+  "hook": "Your boss says the raise talk is next quarter. Again.",
+  "set": "office",
+  "buddy": "calendar",
+  "palette": 4,
+  "cast": "boss"
+ },
+ {
+  "format": "serial drama, part 2",
+  "story": "Part 2 of the stolen bonus story. The written rules describe exactly his work, he forwards them politely, and the bonus comes back to him. Closing truth: get it in writing.",
+  "why": "Part 2 of a serial. 'PT-1 / PT-2' work dramas bring viewers back for the next part and push follows.",
+  "hook": "Part 2: The bonus rules came back in writing",
+  "set": "office",
+  "buddy": "piggy",
+  "palette": 2,
+  "cast": "boss"
+ }
+]

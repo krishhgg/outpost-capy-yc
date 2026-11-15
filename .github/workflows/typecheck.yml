@@ -1,0 +1,38 @@
+name: Typecheck
+
+on:
+  pull_request:
+    paths: ["outpost/**", ".github/workflows/typecheck.yml"]
+  push:
+    branches: [main]
+    paths: ["outpost/**", ".github/workflows/typecheck.yml"]
+
+# A new push to the same branch replaces the run in progress.
+concurrency:
+  group: typecheck-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: outpost
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: outpost/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: App
+        run: npx tsc --noEmit
+      - name: Convex functions
+        run: npx tsc --noEmit -p convex
+      - name: Studio worker
+        run: node --check studio/worker.mjs

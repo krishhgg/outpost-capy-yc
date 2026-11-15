@@ -1,0 +1,13 @@
+{
+  "name": "outpost-studio",
+  "private": true,
+  "type": "module",
+  "main": "index.tsx",
+  "devDependencies": {
+    "solid-js": "^1.9.10"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "displayName": "outpost-studio"
+}
