@@ -2,6 +2,7 @@ import { ConvexError } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 
+export const BUFFER = 10; // ready test clips the Revyl test kit gives a proof user by default
 export const PLATFORMS = ["youtube", "instagram"] as const;
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
