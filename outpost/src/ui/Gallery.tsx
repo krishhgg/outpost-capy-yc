@@ -16,7 +16,10 @@ type Section = (typeof SECTIONS)[number];
 
 export function Gallery() {
   const param = useLocalSearchParams<{ only?: string }>().only;
-  const [only, setOnly] = useState<Section | null>(SECTIONS.includes(param as Section) ? (param as Section) : null);
+  const linked = SECTIONS.includes(param as Section) ? (param as Section) : null;
+  const [only, setOnly] = useState<Section | null>(linked);
+  // A deep link to the gallery while it's open changes the param on this same screen, so follow it.
+  useEffect(() => setOnly(linked), [param]);
   const toast = useToast();
   const show = (k: Section) => only === null || only === k;
   return (
