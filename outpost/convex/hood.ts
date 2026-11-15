@@ -4,6 +4,7 @@ import { userFor } from "./lib";
 
 // Each outside service, in the order a video moves through them. `env` names the key a service waits on.
 const SERVICES = [
+  { key: "bounties", name: "Whop Bounties", role: "Finds paid bounties, submits your posts", env: "WHOP_CLIENT_ID" },
   { key: "claude", name: "Claude", role: "Writes each script", env: null },
   { key: "kokoro", name: "Kokoro", role: "Reads it aloud", env: null },
   { key: "compound", name: "Compound", role: "Renders the video", env: null },
@@ -11,6 +12,7 @@ const SERVICES = [
   { key: "zernio", name: "Zernio", role: "Posts videos, reads views", env: "ZERNIO_API_KEY" },
   { key: "whop", name: "Whop", role: "Store and checkout", env: "WHOP_API_KEY" },
   { key: "supermemory", name: "Supermemory", role: "Remembers why you skip", env: "SUPERMEMORY_API_KEY" },
+  { key: "kakai", name: "Kakai", role: "Texts you over iMessage", env: "KAKAI_API_KEY" },
 ] as const;
 
 // The under-the-hood page: this user's calls to outside services, live.

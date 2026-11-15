@@ -7,26 +7,31 @@ plan; `BRIEF.md` is the product; `AGENTS.md` is the rules and what is built toda
 Written Sun Nov 15 2026, ~12:15 PT, at the YC Consumer Mobile Hackathon. Demo is tonight. Optimize for a working,
 honest end-to-end demo over breadth.
 
+Patched by T1 to match Charlie's master prompt (`handoffs/COORDINATOR.md` in the Captain's drive): v1 uses
+hard-coded demo accounts with no sign-in or connect UI, T12 is dropped, T14 and T15 are added, and priorities and
+merge order changed. Exact signatures live in [`outpost/docs/contracts.md`](outpost/docs/contracts.md).
+
 ---
 
 ## 1. Goal in one paragraph
 
 Turn today's app (agents make original vertical videos, you swipe to post them to YouTube/Instagram) into the
-brief: **get paid for your taste**. The user signs in with Whop, picks paid bounties in an in-app marketplace,
+brief: **get paid for your taste**. With no sign-in, the user picks paid Whop bounties in an in-app marketplace,
 Outpost's studio makes videos for those bounties, the user swipes (left = kill/remake, chip = tweak, right =
-approve), approved videos post to the user's social account through Zernio, the public post URL is submitted to
-the Whop bounty automatically, and a scoreboard shows views, estimated pending earnings, review status and a taste
-score. An agent texts the user over iMessage (Kakai) when clips are ready or blowing up.
+approve), approved videos post to Outpost's demo Instagram and YouTube through Zernio, the public post URL is
+submitted to the Whop bounty from the demo Whop account, and a scoreboard shows views, estimated pending earnings,
+review status and a taste score. An agent texts the user over iMessage (Kakai) when clips are ready or blowing up.
 
 ## 2. Principle: one platform per job
 
 | Job | Platform | Status |
 |---|---|---|
 | Backend, data, files, crons, webhooks | Convex | Built |
-| AI (scripts, moment picking, rules parsing, agent) | Claude (`claude -p` in studio; Anthropic API from Convex only if needed) | Built (studio) |
+| AI (scripts, generation briefs, moment picking, agent) | Claude (`claude -p` in the studio, which also writes each bounty's generation brief) | Built (studio scripts) |
 | Video making | The existing laptop studio (`outpost/studio/`), extended | Built (original mode) |
 | Posting + view counts | Zernio | Built (YouTube + Instagram) |
-| Login, bounties, submissions, payouts | Whop official API (OAuth + Bounties) | Not built |
+| Bounties, submissions, payouts | Whop official API (Bounties), acting as one demo Whop account | Not built |
+| Source footage download | yt-dlp, gdown, ffprobe on the laptop (T15) | Not built |
 | iMessage agent | Kakai (sponsor) | Not built |
 | Taste memory | Supermemory (already works) | Built |
 
@@ -86,13 +91,13 @@ deep link. Never scrape cookies or automate Whop's web UI.
 
 | # | Decision | Default now | Changes if |
 |---|---|---|---|
-| D1 | Bounty source | Whop Bounties API via user OAuth (primary). Content Rewards board as read-only fallback with deep-link submit | Whop says Content Rewards is in the API (then fallback is dropped) |
+| D1 | Bounty source | Whop Bounties API with the demo Whop account's token (primary). Content Rewards board as read-only fallback with deep-link submit | Whop says Content Rewards is in the API (then fallback is dropped) |
 | D2 | Video type | Two studio modes: `original` (today's pipeline, bounty-aware) and `clip` (cut provided footage). Bounty's mode decides | If chosen demo bounties are all one type, finish that mode first |
 | D3 | Platforms | YouTube + Instagram via Zernio (works today). Add `tiktok` to the platform union now, wire it only if time allows | Human confirms Zernio TikTok views are usable |
-| D4 | Accounts | Demo: builder-linked Zernio accounts (`admin.linkZernio`) on a real account with followers. Per-user Zernio connect is P2 | Time allows |
+| D4 | Accounts | Demo accounts: every user gets Outpost's demo Instagram and YouTube (@lgtmboss, connected in Zernio) automatically, server-side, via `demo.attachDemoAccounts` in `ensureUser` reading `DEMO_CONNECTIONS`. Per-user social connect is out of scope for v1 | After v1 (seam: per-user `connections`) |
 | D5 | Earnings model | Support both `per_submission` (flat, Bounties API) and `per_view` (Content Rewards) | n/a |
 | D6 | iMessage | Kakai behind a `notify` provider interface; log-only provider until Kakai creds arrive | Kakai unavailable: Sendblue |
-| D7 | Identity | Keep `deviceId`; add "Connect Whop" (OAuth) that attaches a Whop user + token to the device's user | n/a |
+| D7 | Identity | Keep `deviceId`. No sign-in and no Connect Whop: one demo Whop account, whose token builders mint once via `GET /whop/oauth/callback` and Convex stores and refreshes server-side. `whopAuth.tokenFor(userId)` returns it for every user. The app shows a small "Demo: posts go to Outpost's demo accounts" note | After v1 (seam: `tokenFor(userId)`) |
 
 ## 6. Architecture after this build
 
@@ -105,14 +110,18 @@ flowchart LR
   Convex -->|post, views| Zernio --> YT[YouTube / Instagram]
   Convex -->|send| Kakai[Kakai iMessage]
   Kakai -->|inbound webhook| Convex
-  Whop -->|OAuth redirect| Convex
+  Whop -->|one-time builder OAuth| Convex
   Convex --> SM[Supermemory]
 ```
 
 Life of a bounty video:
-1. User taps Connect Whop -> Whop OAuth -> Convex HTTP callback stores token (server-only).
-2. Cron `bounties.sync` lists open bounties with the user's token (+ fallback board). Rows in `bounties`.
-3. User opens Bounties screen, taps Take -> `userBounties` row -> `refill` queues videos with `bountyId` and `mode`.
+1. Builders mint the demo Whop token once (Convex HTTP callback, stored server-only). `ensureUser` gives every user
+   the demo Instagram and YouTube connections.
+2. Cron `bounties.sync` lists open bounties with the demo token (+ fallback board). Rows in `bounties`. The laptop
+   studio writes each bounty's generation brief (`bounties.brief`) with `claude -p`; seeded bounties carry a
+   hand-written brief.
+3. User opens Bounties screen, taps Take -> `userBounties` row -> `refill` queues videos with `bountyId` and `mode`;
+   clip bounties also queue source downloads (`sources` rows, fetched on the laptop by T15).
 4. Studio `claim` returns bounty context (title, brand, rules, checklist, source URLs, mode). Worker runs `original`
    or `clip` pipeline, uploads MP4 (unchanged upload path).
 5. Feed shows the bounty tag and reward. Right swipe -> existing `posts` rows -> Zernio -> post goes `live` with URL.
@@ -144,6 +153,7 @@ bounties: defineTable({
   rules: v.string(), checklist: v.optional(v.any()), sourceUrls: v.array(v.string()),
   url: v.string(), status: v.union(v.literal("open"), v.literal("closed")),
   syncedAt: v.number(),
+  brief: v.optional(v.any()),             // generation brief: written by the studio (claude -p), hand-written for seeded bounties
 }).index("by_source_external", ["source", "externalId"]).index("by_status", ["status"]),
 
 userBounties: defineTable({
@@ -172,9 +182,18 @@ messages: defineTable({
   kind: v.string(), body: v.string(), providerId: v.optional(v.string()), at: v.number(),
 }).index("by_user_at", ["userId", "at"]),
 
+sources: defineTable({ // source footage, downloaded once on the laptop (T15)
+  bountyId: v.id("bounties"), url: v.string(),
+  kind: v.union(v.literal("youtube"), v.literal("drive"), v.literal("direct"), v.literal("other")),
+  status: v.union(v.literal("pending"), v.literal("downloading"), v.literal("ready"), v.literal("blocked"), v.literal("failed")),
+  durationS: v.optional(v.number()), width: v.optional(v.number()), height: v.optional(v.number()),
+  localKey: v.optional(v.string()), error: v.optional(v.string()), updatedAt: v.number(),
+}).index("by_bounty", ["bountyId"]).index("by_status", ["status"]),
+
 // users: add phone?: string, tasteScore?: number, baselineViews?: number
 // videos: add bountyId?: Id<"bounties">, mode?: "original" | "clip",
-//   clip?: { sourceUrl: string, startS: number, endS: number, hook: string, captionStyle: string }
+//   clip?: { sourceUrl: string, startS: number, endS: number, hook: string, captionStyle: string },
+//   predicted?: { score: number, reason: string }
 ```
 
 ### 7.2 Function signatures (stubs created in Wave 1, filled by owners)
@@ -184,17 +203,20 @@ messages: defineTable({
 | `bounties.ts` (T2) | `list({deviceId})` | query | `[{id, title, brand, mode, rewardLabel, budgetLabel, spotsLabel, taken, source}]` open bounties, taken first |
 | | `take({deviceId, bountyId})` / `drop(...)` | mutation | upsert `userBounties`, call `refill` |
 | | `sync({})` | internal action | cron every 15 min |
-| `whopAuth.ts` (T3) | `startUrl({deviceId})` | mutation | returns Whop authorize URL with stored `state` |
-| | `status({deviceId})` | query | `{connected, username}` only |
-| | `callback(req)` | used by HTTP route | exchange code, store token, redirect to `outpost://whop-connected` |
-| | `tokenFor(userId)` | internal query | fresh token or null (refresh if expired) |
+| `whopAuth.ts` (T3) | `status({deviceId})` | query | `{connected, username}` of the demo account only, never the token |
+| | `callback(req)` | used by HTTP route | builders mint the demo token once: exchange code, store token server-side |
+| | `tokenFor({userId})` | internal query | the demo account's token for every user, or null. Refresh lives in a T3 action |
+| `demo.ts` (T3) | `attachDemoAccounts(ctx, userId)` | helper | called by `ensureUser` for every user; idempotent; demo connections from `DEMO_CONNECTIONS` |
+| `sources.ts` (T15) | `list({deviceId, bountyId})` | query | the bounty's `sources` rows, no `localKey` |
+| | `enqueue({bountyId})` | internal mutation | `pending` rows for the bounty's `sourceUrls` |
 | `submit.ts` (T4) | `forPost({postId})` | internal action | create submission, idempotent |
 | | `poll({})` | internal action | cron every 10 min, update statuses |
 | | `forVideo({deviceId, videoId})` | query | status + deep link for UI |
 | `earnings.ts` (T9) | `summary({deviceId})` | query | `{pendingCents, approvedCents, perVideo[], tasteScore, tasteTrend, settledCount}` |
 | `agent.ts` (T10) | `tick({})` | internal action | cron every 5 min |
 | | `inbound(req)` | used by HTTP route | Kakai webhook |
-| `studio.ts` (T6) | `claim` | mutation | adds `bounty: {title, brand, mode, rules, checklist, sourceUrls}` and `clip` (for remakes) to its return |
+| `notify.ts` (T10) | `send({userId, kind, body})` | internal action | Kakai or log-only |
+| `studio.ts` (T6) | `claim` | mutation | adds `bounty: {title, brand, mode, rules, checklist, sourceUrls, brief}` and `clip` (for remakes) to its return |
 
 HTTP routes (added in Wave 1 in `http.ts`): `GET /whop/oauth/callback` -> `whopAuth.callback`,
 `POST /kakai/webhook` -> `agent.inbound`. Crons (added in Wave 1 in `crons.ts`): `bounties.sync` 15 min,
@@ -203,14 +225,20 @@ HTTP routes (added in Wave 1 in `http.ts`): `GET /whop/oauth/callback` -> `whopA
 ### 7.3 Env vars (Convex, server-only)
 
 `WHOP_CLIENT_ID`, `WHOP_CLIENT_SECRET`, `WHOP_OAUTH_REDIRECT` (= `<PUBLIC_SITE_URL>/whop/oauth/callback`),
-`WHOP_BOUNTY_ENV` (`sandbox` default | `production`), `KAKAI_API_KEY`, `KAKAI_FROM`, `ANTHROPIC_API_KEY`
-(only if a Convex action needs Claude; prefer doing LLM work in the studio). Existing: `ZERNIO_API_KEY`,
+`WHOP_BOUNTY_ENV` (`sandbox` default | `production`), `DEMO_CONNECTIONS` (JSON array of
+`{platform, accountId, handle}` for the demo accounts), `KAKAI_API_KEY`, `KAKAI_FROM`. No `ANTHROPIC_API_KEY`: LLM
+work, generation briefs included, runs in the studio with `claude -p`. Existing: `ZERNIO_API_KEY`,
 `WHOP_API_KEY` (shop raid sandbox), `SUPERMEMORY_API_KEY`, `WORKER_SECRET`, `PUBLIC_SITE_URL`.
 
 ## 8. Workstreams (threads)
 
 Waves: **Wave 0** humans now (unblocks real data). **Wave 1** one thread, contracts only, must merge before Wave 2.
 **Wave 2** everything in parallel, each thread owns distinct files. **Wave 3** integration and demo.
+
+Priorities (COORDINATOR 3):
+- P0: T1, T3, T2, T6, T7, T8, T4, T9, T14, R0 (Revyl harness). T5 and T15 are P0 if any demo bounty is a clip bounty.
+- P1: T5 and T15 otherwise, T10, T11. P2: T13. T12 is dropped (out of scope for v1).
+- Never start P1/P2 while a P0 thread is blocked on review or a fix the Captain could unblock.
 
 Why this shape: `schema.ts`, `http.ts`, `crons.ts`, `_generated/` are shared files that every feature touches. If
 ten threads edit them in parallel you get ten conflicting PRs. Wave 1 puts all shared edits plus no-op stubs in
@@ -222,11 +250,13 @@ one PR, so Wave 2 threads only touch files they own and merge independently.
   `POST /bounty_submissions` for a user? (c) sandbox bounties to test with? (d) can they create 2-3 demo bounties
   for us? Update D1.
 - H2. Create the Whop OAuth app (client id/secret, redirect `<PUBLIC_SITE_URL>/whop/oauth/callback`, scopes
-  `bounty:basic:read`, `bounty:submission:create`, plus user identity). Set env vars.
+  `bounty:basic:read`, `bounty:submission:create`, plus user identity). Set env vars. Once T3 lands, sign in once
+  as the demo Whop account through the callback to mint its token.
 - H3. Get Kakai API access/docs and a sending number. Set env vars. Paste the API shape into
   `outpost/docs/integrations.md` for T10.
-- H4. Pick the demo: 2-3 real bounties (note mode: original vs clip), a real social account with followers
-  linked in Zernio and on Whop. Post a couple of real videos ASAP so views exist by demo time.
+- H4. Pick the demo: 2-3 real bounties (note mode: original vs clip). The demo Instagram and YouTube (@lgtmboss)
+  are linked in Zernio and on the demo Whop account; set `DEMO_CONNECTIONS`. Post a couple of real videos ASAP so
+  views exist by demo time.
 - H5. Confirm Zernio TikTok view freshness if you want TikTok (D3). Otherwise stay YouTube + Instagram.
 - H6. Keep the studio worker running on the laptop. Only humans run the studio and iOS builds.
 
@@ -234,17 +264,19 @@ one PR, so Wave 2 threads only touch files they own and merge independently.
 
 **T1. Contracts and scaffolding** (blocks Wave 2; keep it small, merge fast)
 - Owns: `convex/schema.ts`, `convex/http.ts`, `convex/crons.ts`, new stub files `bounties.ts`, `whopAuth.ts`,
-  `submit.ts`, `earnings.ts`, `agent.ts`, `notify.ts`, `convex/_generated/*`, `outpost/docs/contracts.md`.
+  `submit.ts`, `earnings.ts`, `agent.ts`, `notify.ts`, `sources.ts`, `demo.ts`, `convex/_generated/*`,
+  `outpost/docs/contracts.md`, `hood.ts` `SERVICES`, the `attachDemoAccounts` call in `feed.ensureUser`, and
+  `refill` in `lib.ts` (Revyl's `revyl-proof-` users rank behind real users).
 - Do: add everything in section 7 exactly. Stubs return empty/no-op values with correct types. Add `tiktok` to
-  the platform union without adding it to `PLATFORMS` in `lib.ts`. Add `bounties` to `SERVICES` in `hood.ts`
-  for Whop Bounties and Kakai (status "waiting on its key").
+  the platform union without adding it to `PLATFORMS` in `lib.ts`. Add Whop Bounties and Kakai to `SERVICES` in
+  `hood.ts` (status "waiting on its key").
 - Done when: three CI checks pass, `_generated` committed, contracts doc lists every signature.
 
 ### Wave 2 (all parallel after T1 merges)
 
 **T2. Bounty sync + marketplace backend** (P0)
 - Owns: `convex/bounties.ts`.
-- Do: `sync` lists `GET /bounties?status=open` per connected user (token from `whopAuth.tokenFor`), filter
+- Do: `sync` lists `GET /bounties?status=open` with the demo account's token (`whopAuth.tokenFor`), filter
   `accepted_deliverable_types` includes `content_url`, map to `bounties` (mode: `clip` if goal type `clipping`,
   else `original`; `rewardKind: per_submission`, `rewardCents` from `net_reward_amount`). Use
   `Api-Version-Date` header and sandbox base when `WHOP_BOUNTY_ENV != production`. Fallback provider: read
@@ -252,25 +284,29 @@ one PR, so Wave 2 threads only touch files they own and merge independently.
   read-only. Mark missing bounties `closed`. `list`, `take`, `drop` per contract. `take` sets `bountyId`/`mode`
   on the refill (coordinate: `refill` lives in `lib.ts`; T2 owns adding an optional bounty-aware branch to
   `refill`, nobody else edits `lib.ts`).
-- Admin: `admin.seedBounties` internal mutation (in `bounties.ts`, not `admin.ts`) that inserts hand-written demo
-  bounties, so the demo never depends on the network.
+- Admin: `seedBounties` internal mutation (in `bounties.ts`, not `admin.ts`) that inserts hand-written demo
+  bounties, each with a hand-written `brief`, so the demo never depends on the network. `setBountySources` lets
+  humans paste source links when footage is only visible after joining on Whop. `take` on a clip bounty schedules
+  `internal.sources.enqueue`.
 - Log every Whop call to `calls`. Never log tokens.
 - Done when: seeded and synced bounties appear via `list`; `take` queues bounty videos.
 
-**T3. Whop OAuth** (P0, on critical path)
-- Owns: `convex/whopAuth.ts`, `src/WhopConnect.tsx` (new), the connect entry point on the You tab (single
-  line added to `You.tsx` render; coordinate with T9 by adding it as a self-contained component).
-- Do: OAuth authorization code flow (with PKCE if Whop supports it). `startUrl` stores `state`; app opens it with
-  `expo-web-browser` `openAuthSessionAsync` (already installed); HTTP callback exchanges the code at Whop's token
-  endpoint, stores token, redirects to the app scheme. Refresh in `tokenFor`. Check Whop OAuth docs
+**T3. Demo Whop credential, server-only** (P0, on critical path)
+- Owns: `convex/whopAuth.ts`, `convex/demo.ts`. No app UI: no Connect Whop button anywhere.
+- Do: builders mint the demo Whop account's token once through `GET /whop/oauth/callback` (authorization code
+  exchange at Whop's token endpoint, PKCE if supported); store it server-side only and refresh it server-side in an
+  action (`tokenFor` is a query and can't call Whop). `tokenFor(userId)` returns the demo token for every user;
+  `status` returns the demo account's username, never the token. `attachDemoAccounts` gives every user the demo
+  Instagram and YouTube `connections` from `DEMO_CONNECTIONS`, idempotently. Check Whop OAuth docs
   (docs.whop.com) for exact endpoints; don't guess.
-- Done when: a device can connect and `status` returns the username; token never leaves Convex.
+- Done when: `tokenFor` returns a working token, `status` shows the username, and a new device gets the demo
+  connections without `admin.linkZernio`.
 
 **T4. Submission** (P0)
 - Owns: `convex/submit.ts`, plus one hook in `convex/post.ts` (`settle`, when a post goes `live` and its video has
   `bountyId`, schedule `submit.forPost`). Nobody else edits `post.ts`.
 - Do: `forPost`: skip unless post `mode == public` (dryRun/private never submit). If bounty source
-  `whop_bounty` and user has token: `POST /bounty_submissions` `{bounty_id, deliverable: {urls: [url], caption}}`
+  `whop_bounty` and `tokenFor` returns the demo token: `POST /bounty_submissions` `{bounty_id, deliverable: {urls: [url], caption}}`
   with `Idempotency-Key = postId`, store `btys_` id, status `submitted`. Else status `manual` with deep link to
   the bounty/campaign URL. `poll`: list the user's submissions, map statuses, set `resolvedAt`,
   `denialReason`. Retry 429/5xx up to 3x.
@@ -279,7 +315,7 @@ one PR, so Wave 2 threads only touch files they own and merge independently.
 
 **T5. Studio clip mode** (P0 if demo bounties are clipping, else P1)
 - Owns: `studio/clip.mjs` (new), the mode switch in `studio/worker.mjs` (only this thread edits `worker.mjs`).
-- Do: for `mode == clip`: download source (`yt-dlp`, cached per URL in `/tmp/outpost/sources`), transcribe with
+- Do: for `mode == clip`: get the downloaded source from T15's `studio/sources.mjs`, transcribe with
   word timestamps (local `whisper.cpp` or `mlx-whisper`; pick whichever installs in one command on the laptop),
   `claude -p --json-schema` picks 1 moment per job `{startS, endS, hook, captionStyle, why}` respecting the
   checklist, `ffmpeg` cuts, reframes to 1080x1920 (center crop with blurred background fill is fine), burns
@@ -292,16 +328,20 @@ one PR, so Wave 2 threads only touch files they own and merge independently.
 
 **T6. Bounty-aware original mode + claim context** (P0, fastest path to a real demo)
 - Owns: `convex/studio.ts` (`claim`), `studio/reel.mjs` (prompt `system()` and schema).
-- Do: `claim` returns `bounty` context and `clip` params per contract. In original mode the writer gets the
-  bounty title, brand, description and checklist and must satisfy it (required mentions, hashtags, CTA, length).
-  Keep the "Made with AI." disclosure and all existing remake behavior.
+- Do: the studio writes each bounty's generation brief (`bounties.brief`) with `claude -p` through a `studio.ts`
+  worker function; seeded bounties already carry a hand-written one. `claim` returns `bounty` context (with the
+  brief) and `clip` params per contract. In original mode the writer gets the bounty title, brand, description
+  and brief and must satisfy its checklist (required mentions, hashtags, CTA, length). The studio also rates each
+  finished video 0-100 against the brief with one short reason and saves it as `videos.predicted`. Adds the
+  `studio.ts` source functions T15 asks for. Keep the "Made with AI." disclosure and all existing remake behavior.
 - Done when: a video queued for a bounty is visibly about that bounty and its caption meets the checklist.
 
 **T7. Bounties screen** (P0)
 - Owns: `src/Bounties.tsx` (new), `src/app/bounties.tsx` (new route) or a new tab via `src/app/(tabs)/` +
   `TabBar.tsx` (T7 is the only thread editing `TabBar.tsx` and `(tabs)/_layout.tsx`).
 - Do: list from `bounties.list`: brand, title, reward ("$X per approved post" or "$Y / 1K views"), budget or
-  spots left, mode badge, Take/Taken button. Empty state with Connect Whop (render T3's component). Match the
+  spots left, mode badge, Take/Taken button. After Take the card shows live progress (`sources` rows, studio
+  stages) without blocking. Designed empty state; no Connect Whop. Build on T14's `src/ui/` primitives and the
   pixel art style (`pixel.tsx`, Jersey fonts). Keep `testID`s.
 - Done when: user can browse and take a bounty from the phone.
 
@@ -337,38 +377,53 @@ one PR, so Wave 2 threads only touch files they own and merge independently.
 - Done when: log-only provider records correct messages; with Kakai keys a real text arrives.
 
 **T11. Docs + hood + demo runbook** (P1, can start right after T1)
-- Owns: `outpost/docs/*`, `README.md`, root `AGENTS.md` status table, `convex/hood.ts` (after T1's edit).
+- Owns: `outpost/docs/*` (except `contracts.md`, the Captain's after T1, and `design.md`, T14's), `README.md`,
+  root `AGENTS.md` status table, `convex/hood.ts` (after T1's edit).
 - Do: describe new flows as they merge; update status table honestly; extend the demo runbook for Wave 3.
 
-**T12. Per-user social connect via Zernio** (P2)
-- Owns: `convex/connect.ts` (new), `src/Connect.tsx` (new).
-- Do: Zernio's hosted connect flow per user/profile (check Zernio docs), replace `admin.linkZernio` for new users.
-  Only if P0 is done.
+**T12. Per-user social connect via Zernio**: dropped. Out of scope for v1 (demo accounts, D4).
 
 **T13. Sponsor proof: Revyl device test + Capy PR proof** (P2)
 - Owns: `.revyl/` or test YAML, CI additions. Only if P0 is done.
 
+**T14. Design system + polish** (P0)
+- Owns: `src/ui/` (new primitives: cards, chips, buttons, badges, number tickers, empty states),
+  `outpost/docs/design.md` (new).
+- Do: start early so screen threads reuse the primitives; match the pixel village, Jersey fonts, sounds and
+  haptics. After the P0 screens merge, one polish pass that files small fixes to the owning threads. Every
+  app-facing PR includes Revyl screenshots.
+
+**T15. Source fetcher** (P0 if any demo bounty is a clip bounty, else P1)
+- Owns: `studio/sources.mjs` (new), `convex/sources.ts`. Never edits `worker.mjs` (T5 does); progress functions
+  the worker calls go in `studio.ts` (T6 adds them on request).
+- Do: on the laptop, download each bounty source once into `/tmp/outpost/sources/<hash>` (`yt-dlp` for YouTube and
+  most hosts, `gdown` or equivalent for Google Drive, plain HTTP for direct links, Dropbox `?dl=1`). Validate with
+  `ffprobe` (duration, resolution, audio). Record status, duration, local key and errors in `sources` rows. Login
+  walls and private Drive files mark the source `blocked` with a reason. Only finished clips upload to Convex.
+- Done when: a taken clip bounty's sources reach `ready` on the laptop and the Bounties card shows the progress.
+
 ### Wave 3: integration (Captain + humans)
 
-1. Merge order for conflicts: T1 -> (T3, T2) -> T6 -> T8 -> T7 -> T4 -> T9 -> T5 -> T10 -> rest.
-2. End-to-end on the laptop + phone with sandbox bounties: connect Whop -> take bounty -> studio makes video ->
+1. Merge order for conflicts: T1 -> T3 -> T2 -> T14 primitives -> T6 -> T15 -> T5 -> T8 -> T7 -> T4 -> T9 -> T10
+   -> rest.
+2. End-to-end on the laptop + phone with sandbox bounties, no sign-in: take bounty -> studio makes video ->
    swipe right -> post (private first, then public on the demo account) -> submission row -> poll -> scoreboard.
-3. Seed demo state: `admin.seedBounties`, pre-generate ~15 videos, at least a few real public posts from this
+3. Seed demo state: `bounties.seedBounties`, pre-generate ~15 videos, at least a few real public posts from this
    morning so views and pending $ are real.
 4. Feature freeze 2 hours before demos. After that, only fixes and the runbook.
 
 ## 9. Critical path and dependencies
 
 ```
-H2 (Whop OAuth app) ─┐
-T1 ──> T3 (OAuth) ──> T2 (bounty sync) ──> T7 (screen) ─┐
+H2 (Whop OAuth app, demo token) ─┐
+T1 ──> T3 (demo Whop credential) ──> T2 (bounty sync) ──> T7 (screen) ─┐
           │                └─> T6 (claim ctx) ──> studio makes bounty videos ──> T8 (feed) ──> post (exists)
           └──────────────> T4 (submit) <─────────────────────────────────────────────────────┘
 T4 + views (exists) ──> T9 (earnings/taste) ──> T10 (texts)
-T5 (clip mode) is parallel and only gates clipping bounties.
+T15 (sources) ──> T5 (clip mode) is parallel and only gates clipping bounties.
 ```
 
-If OAuth or the Bounties API stalls: `admin.seedBounties` + Content Rewards read-only list keep T7/T8/T6/T9
+If the demo token or the Bounties API stalls: `seedBounties` + Content Rewards read-only list keep T7/T8/T6/T9
 moving, and submissions fall back to `manual` deep links. The demo still works end to end except the
 auto-submit, which is shown as one tap.
 
@@ -389,9 +444,9 @@ auto-submit, which is shown as one tap.
 | Unknown | Owner | Impact |
 |---|---|---|
 | Content Rewards in Bounties API? Third-party submit allowed? | H1 | D1, T2, T4 |
-| Whop OAuth endpoints, PKCE, scope names for identity | T3 + H2 | T3 |
+| Whop OAuth endpoints, PKCE, scope names for minting the demo token | T3 + H2 | T3 |
 | How many open `content_url` bounties exist for a normal user | H1/T2 | Marketplace may be thin; seed demo bounties |
-| Do clipping bounties provide downloadable source footage | H4 | T5 |
+| Do clipping bounties provide downloadable source footage | H4 | T5, T15 |
 | Kakai API shape | H3 | T10 |
 | Zernio TikTok analytics freshness | H5 | D3 |
 | Whether bounties reject AI-made or AI-edited content | H1 | Which bounties to show; disclosure stays on |

@@ -14,11 +14,11 @@ export async function userFor(ctx: QueryCtx, deviceId: string): Promise<Doc<"use
 
 // A user's live posts, newest first.
 export async function livePosts(ctx: QueryCtx, userId: Id<"users">) {
-  const rows: Doc<"posts">[] = [];
+  const rows: (Doc<"posts"> & { platform: (typeof PLATFORMS)[number] })[] = [];
   for (const platform of PLATFORMS) {
     const all = await ctx.db.query("posts")
       .withIndex("by_user_platform_slot", q => q.eq("userId", userId).eq("platform", platform)).collect();
-    rows.push(...all.filter(p => p.status === "live"));
+    rows.push(...all.filter(p => p.status === "live").map(p => ({ ...p, platform })));
   }
   return rows.sort((a, b) => (b.liveAt ?? b.slotAt) - (a.liveAt ?? a.slotAt));
 }
@@ -73,7 +73,8 @@ export async function bumpDay(ctx: MutationCtx, userId: Id<"users">, day: string
   else await ctx.db.insert("days", { userId, day, made: 0, approved: 0, remakes: 0, skipped: 0, [field]: 1 });
 }
 
-// Keep BUFFER videos queued, in progress or ready.
+// Keep BUFFER videos queued, in progress or ready. Revyl's proof users queue behind every real user's videos,
+// so the studio renders real users first.
 export async function refill(ctx: MutationCtx, userId: Id<"users">) {
   let have = 0;
   for (const status of ["queued", "making", "ready"] as const) {
@@ -82,8 +83,9 @@ export async function refill(ctx: MutationCtx, userId: Id<"users">) {
     have += rows.length;
   }
   const now = Date.now();
+  const behind = (await ctx.db.get(userId))?.deviceId.startsWith("revyl-proof-") ? 1e12 : 0;
   for (let i = have; i < BUFFER; i++) {
-    await ctx.db.insert("videos", { userId, status: "queued", rank: now + i, attempts: 0, createdAt: now });
+    await ctx.db.insert("videos", { userId, status: "queued", rank: now + i + behind, attempts: 0, createdAt: now });
   }
 }
 

@@ -3,6 +3,7 @@ import { mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { PLATFORMS, bumpDay, dayOf, livePosts, ownVideo, refill, userFor } from "./lib";
 import { place, slotFor } from "./pace";
+import { attachDemoAccounts } from "./demo";
 import { scoutIfLow } from "./scout";
 
 export const REASONS: Record<string, string> = {
@@ -33,6 +34,7 @@ export const ensureUser = mutation({
       // Follow the phone when it changes time zone, so days are counted in the zone the user sees.
       await ctx.db.patch(user._id, { tz });
     }
+    await attachDemoAccounts(ctx, user._id);
     await refill(ctx, user._id);
     await scoutIfLow(ctx, user);
     return { mode: user.postingMode };
@@ -78,8 +80,9 @@ export const status = query({
 
     const posts = [];
     for (const p of PLATFORMS) {
-      posts.push(...await ctx.db.query("posts")
-        .withIndex("by_user_platform_slot", q => q.eq("userId", user._id).eq("platform", p)).order("desc").take(6));
+      posts.push(...(await ctx.db.query("posts")
+        .withIndex("by_user_platform_slot", q => q.eq("userId", user._id).eq("platform", p)).order("desc").take(6))
+        .map(r => ({ ...r, platform: p })));
     }
     const byVideo = new Map<string, typeof posts>();
     for (const p of posts.sort((a, b) => b._creationTime - a._creationTime)) {
