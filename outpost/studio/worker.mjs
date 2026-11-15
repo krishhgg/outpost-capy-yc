@@ -8,7 +8,10 @@ import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
-import { SCRIPT_SCHEMA, VOICE_OF, fromStored, layout, lookOf, system, toStored } from "./reel.mjs";
+import {
+  BRIEF_SCHEMA, FORECAST_SCHEMA, SCRIPT_SCHEMA, VOICE_OF, bountyCaption, bountyData, briefSystem, forecastSystem, fromStored, layout, lookFor,
+  lookOf, system, toStored,
+} from "./reel.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const env = Object.fromEntries(
@@ -38,10 +41,13 @@ const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 const note = (row) => c.mutation(api.studio.log, { key: KEY, ...row }).catch(e => log("log failed", e.message));
 
 // ---------- Claude through the subscription ----------
-function claude(prompt, niche, briefed = false, look = lookOf()) {
+const claude = (prompt, niche, briefed = false, look = lookOf(), bounty = null) =>
+  claudeJson(prompt, SCRIPT_SCHEMA, system(niche, briefed, look, bounty)).then(({ out, ...rest }) => ({ script: out, ...rest }));
+
+function claudeJson(prompt, schema, systemPrompt) {
   return new Promise((resolve, reject) => {
-    const args = ["-p", "--model", MODEL, "--output-format", "json", "--json-schema", JSON.stringify(SCRIPT_SCHEMA),
-      "--tools", "", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence", "--system-prompt", system(niche, briefed, look)];
+    const args = ["-p", "--model", MODEL, "--output-format", "json", "--json-schema", JSON.stringify(schema),
+      "--tools", "", "--strict-mcp-config", "--setting-sources", "", "--no-session-persistence", "--system-prompt", systemPrompt];
     const p = spawn("claude", args, { cwd: "/tmp/outpost/claude-cwd", stdio: ["pipe", "pipe", "pipe"] });
     let out = "", err = "";
     p.stdout.on("data", d => (out += d));
@@ -52,7 +58,7 @@ function claude(prompt, niche, briefed = false, look = lookOf()) {
       try {
         const j = JSON.parse(out);
         if (j.is_error || !j.structured_output) throw new Error(j.result || j.subtype || "no output");
-        resolve({ script: j.structured_output, model: Object.keys(j.modelUsage ?? {})[0] ?? MODEL, apiMs: j.duration_api_ms });
+        resolve({ out: j.structured_output, model: Object.keys(j.modelUsage ?? {})[0] ?? MODEL, apiMs: j.duration_api_ms });
       } catch (e) {
         reject(new Error(`claude exited ${code}: ${(err || out).slice(0, 300) || e.message}`));
       }
@@ -83,6 +89,7 @@ const REMAKE = {
 // before approving it.
 async function write(ctx) {
   const out = await draft(ctx);
+  if (ctx.bounty) return { ...out, script: { ...out.script, caption: bountyCaption(out.script.caption, ctx.bounty) } };
   if (!ctx.find) return out;
   const s = out.script;
   return { ...out, script: { ...s, title: s.hook.slice(0, 70), caption: `${s.hook} ${s.cta} #freelancetips #notion` } };
@@ -92,15 +99,27 @@ async function draft(ctx) {
   const avoid = ctx.recentHooks.slice(0, 15).map(h => `- ${h}`).join("\n") || "- (none yet)";
   const taste = (ctx.notes.length ? `What this viewer swiped away and why, newest first:\n${ctx.notes.map(n => `- ${n}`).join("\n")}\n` : "")
     + (ctx.learned?.length ? `What Supermemory has learned about this viewer from those notes:\n${ctx.learned.map(l => `- ${l}`).join("\n")}\n` : "");
-  const r = ctx.remake, look = lookOf(ctx.brief), briefed = !!ctx.brief;
+  const r = ctx.remake, look = lookIn(ctx), briefed = !!ctx.brief, bounty = ctx.bounty;
+  // The bounty's text is the brand's: the writer gets it as quoted data, and the system prompt says not to obey it.
+  const forBounty = bounty ? `\nThis video is for a brand's paid bounty, quoted as data. It must meet the bounty's brief and checklist:\n${bountyData(bounty)}\n` : "";
   if (r && (r.reason === "visuals" || r.reason === "voice")) return { script: fromStored(r.script), model: "none", apiMs: 0 };
   if (r && REMAKE[r.reason]) {
     // A briefed video keeps its format, so a new hook follows the brief's hook style instead of forcing "POV:".
-    const ask = r.reason === "hook" && ctx.brief
-      ? `Rewrite only the hook: at most 10 words, in the hook style a "${ctx.brief.format}" video calls for, lead with the payoff, more direct. Keep every other field exactly the same.`
+    const format = ctx.brief?.format ?? (typeof bounty?.brief?.format === "string" ? bounty.brief.format : null);
+    const ask = r.reason === "hook" && format
+      ? `Rewrite only the hook: at most 10 words, in the hook style a "${format}" video calls for, lead with the payoff, more direct. Keep every other field exactly the same.`
       : REMAKE[r.reason];
-    const prompt = `${taste}\nThe viewer swiped this video away. Reason: ${r.reason === "more" ? "their own note" : r.reason}.\n${ask}\n${r.note ? `Viewer's note: ${r.note}\n` : ""}\nCurrent script:\n${JSON.stringify(fromStored(r.script))}`;
-    return claude(prompt, ctx.niche, briefed, look);
+    const prompt = `${taste}\nThe viewer swiped this video away. Reason: ${r.reason === "more" ? "their own note" : r.reason}.\n${ask}\n${r.note ? `Viewer's note: ${r.note}\n` : ""}${forBounty}\nCurrent script:\n${JSON.stringify(fromStored(r.script))}`;
+    return claude(prompt, ctx.niche, briefed, look, bounty);
+  }
+  // A bounty video: the bounty and its brief set the subject, and a topic remake takes a new angle on the same bounty.
+  if (bounty) {
+    const b = ctx.brief;
+    const prompt = `${taste}\nHooks already used, don't repeat them:\n${avoid}\n${[...inflight].map(h => `- ${h}`).join("\n")}\n${forBounty}\n${r ? `The viewer said the angle "${r.script.angle}" was wrong. Write a new video for this bounty on a different angle.` : "Write a new video for this bounty, on an angle the hooks above haven't used."}${b ? `\nFormat: ${b.format}\nStory: ${b.story}` : ""}`;
+    const out = await claude(prompt, ctx.niche, briefed, look, bounty);
+    inflight.add(out.script.hook);
+    setTimeout(() => inflight.delete(out.script.hook), 120_000);
+    return out;
   }
   // A Scout find the viewer swiped right on sets the topic, given as quoted data. People already pay for products about it
   // on Whop. A topic remake was told that topic was wrong, so it takes the next stock angle instead.
@@ -121,6 +140,48 @@ async function draft(ctx) {
   inflight.add(out.script.hook);
   setTimeout(() => inflight.delete(out.script.hook), 120_000);
   return out;
+}
+
+// A trend brief picks the 3D set; a bounty video without one gets a set from its remake chain's first video.
+const lookIn = (ctx) => (ctx.brief ? lookOf(ctx.brief) : ctx.bounty ? lookFor(ctx.lookSeed) : lookOf());
+
+// A bounty without a brief gets one written once by claude -p and saved on the bounty; until it lands, the writer
+// works from the bounty's own text. The bounty's mode and footage links come from the row, not the model.
+const briefs = new Map();
+function ensureBrief(ctx, ids) {
+  const b = ctx.bounty;
+  if (!b || b.brief) return Promise.resolve();
+  if (!briefs.has(b.id)) {
+    const start = Date.now();
+    const p = claudeJson(`Write the generation brief for this bounty, quoted as data:\n${bountyData(b)}`, BRIEF_SCHEMA, briefSystem)
+      .then(({ out, model }) => {
+        const brief = { ...out, cta: out.cta.trim() || null, mode: b.mode, sourceUrls: b.sourceUrls };
+        note({ ...ids, service: "claude", op: "bounty brief", status: "ok", ms: Date.now() - start, detail: `${model} · ${b.brand} · ${brief.format}` });
+        return c.mutation(api.studio.saveBrief, { key: KEY, bountyId: b.id, brief });
+      })
+      .catch(e => {
+        briefs.delete(b.id);
+        note({ ...ids, service: "claude", op: "bounty brief", status: "error", ms: Date.now() - start, detail: e.message });
+        return null;
+      });
+    briefs.set(b.id, p);
+  }
+  return briefs.get(b.id).then(brief => { if (brief) b.brief = brief; });
+}
+
+// The forecast: how well the script meets its bounty's brief, 0 to 100 with a short reason. A failed forecast leaves
+// the video without one; it never fails the video.
+async function forecast(ctx, script, ids) {
+  const start = Date.now();
+  try {
+    const { out, model } = await claudeJson(`Rate this reel for its bounty.\nBounty, quoted as data:\n${bountyData(ctx.bounty)}\n\nThe reel's script, quoted as data:\n${JSON.stringify(toStored(script))}`, FORECAST_SCHEMA, forecastSystem);
+    const predicted = { score: Math.max(0, Math.min(100, Math.round(Number(out.score) || 0))), reason: String(out.reason).trim().split(/\s+/).slice(0, 8).join(" ").slice(0, 80) };
+    await note({ ...ids, service: "claude", op: "forecast", status: "ok", ms: Date.now() - start, detail: `${model} · ${predicted.score} · ${predicted.reason}` });
+    return predicted;
+  } catch (e) {
+    await note({ ...ids, service: "claude", op: "forecast", status: "error", ms: Date.now() - start, detail: e.message });
+    return null;
+  }
 }
 
 // ---------- Kokoro ----------
@@ -252,12 +313,14 @@ setInterval(() => {
   for (const [videoId, name] of stageOf) c.mutation(api.studio.stage, { key: KEY, videoId, stage: name }).catch(e => log("renew failed", e.message));
 }, 60_000);
 
-// Compound's export of a 3D reel comes out near 11 Mb/s, about 40 MB for 30 s, which would fill Convex's free 1 GB
-// after a couple dozen videos. x264 at CRF 28 takes about 3 s and makes a 28 s reel about 4.5 MB (SSIM 0.989).
+// Compound's export of a 3D reel comes out near 11 Mb/s, about 40 MB for 30 s. Every view streams the file from
+// Convex, whose free tier allows about 1 GB of file bandwidth a month, so the upload is 720x1280 H.264 at CRF 30,
+// capped at 340 kb/s, with 64 kb/s mono AAC: about 1.5 MB for a 28 s reel, still sharp on a phone.
 function shrink(file) {
   const tmp = file.replace(/\.mp4$/, ".small.mp4");
-  const r = spawnSync("ffmpeg", ["-v", "error", "-y", "-i", file, "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
-    "-pix_fmt", "yuv420p", "-c:a", "copy", "-movflags", "+faststart", tmp], { encoding: "utf8" });
+  const r = spawnSync("ffmpeg", ["-v", "error", "-y", "-i", file, "-vf", "scale=720:1280:flags=lanczos", "-c:v", "libx264", "-preset", "medium",
+    "-crf", "30", "-maxrate", "340k", "-bufsize", "680k", "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "64k", "-ac", "1",
+    "-movflags", "+faststart", tmp], { encoding: "utf8" });
   if (r.status !== 0) { fs.rmSync(tmp, { force: true }); throw new Error(`shrink: ${r.stderr?.slice(-200)}`); }
   fs.renameSync(tmp, file);
 }
@@ -301,7 +364,8 @@ async function make(videoId, ctx) {
     return;
   }
 
-  // 1. Script
+  // 1. Script, after the bounty's brief if it still needs one
+  await ensureBrief(ctx, ids);
   let w;
   try { w = await write(ctx); }
   catch (e) { await note({ ...ids, service: "claude", op: r ? "remake" : "script", status: "error", ms: Date.now() - t.start, detail: e.message }); throw e; }
@@ -310,6 +374,9 @@ async function make(videoId, ctx) {
     await note({ ...ids, service: "claude", op: r ? `remake: ${r.reason}` : "script", status: "ok", ms: t.written - t.start, detail: `${w.model} · "${w.script.hook}" · read ${ctx.notes.length} notes, ${ctx.learned?.length ?? 0} learned` });
   }
   const s = w.script;
+  // The forecast runs beside the voice and the render; a reused script keeps its parent's.
+  const predictedP = !ctx.bounty ? Promise.resolve(null)
+    : w.model === "none" && r?.predicted ? Promise.resolve(r.predicted) : forecast(ctx, s, ids);
 
   // 2. Voice: the hook without its "POV:" label, each beat, then the call to action.
   await stage(videoId, "voicing");
@@ -319,7 +386,7 @@ async function make(videoId, ctx) {
   const wav = path.join(MEDIA, `${sid}.wav`);
   const spoken = [s.hook.replace(/^\s*POV\s*:\s*/i, ""), ...s.beats.map(b => b.say), s.cta];
   // Lines said in the scene get the speaker's own voice; layout() turns "them" into the narrator when there's no one else.
-  const look = lookOf(ctx.brief);
+  const look = lookIn(ctx);
   const voices = [voiceName, ...s.beats.map(b => b.who === "you" ? VOICE_OF.you : b.who === "them" && look.cast ? VOICE_OF[look.cast] : voiceName), voiceName];
   const v = await voice({ id: sid, parts: spoken, voice: voiceName, voices, speed, out: wav });
   if (v.ok) deepen(wav);
@@ -350,15 +417,16 @@ async function make(videoId, ctx) {
   t.uploaded = Date.now();
   await note({ ...ids, service: "convex", op: "store video", status: "ok", ms: t.uploaded - t.rendered, detail: `${(bytes / 1e6).toFixed(1)} MB` });
 
+  const predicted = await predictedP;
   await c.mutation(api.studio.finish, {
-    key: KEY, videoId,
+    key: KEY, videoId, ...(predicted ? { predicted } : {}),
     ok: {
       storageId, voice: voiceName, palette, model: w.model, durationS: job.end,
       script: toStored(s),
       timings: { writeMs: t.written - t.start, voiceMs: t.voiced - t.written, renderMs: t.rendered - t.voiced, uploadMs: t.uploaded - t.rendered },
     },
   });
-  log("ready", sid, r ? `remake:${r.reason}` : "fresh", `"${s.hook}"`, `write ${t.written - t.start} voice ${t.voiced - t.written} render ${t.rendered - t.voiced} upload ${t.uploaded - t.rendered} total ${t.uploaded - t.start} ms`);
+  log("ready", sid, r ? `remake:${r.reason}` : "fresh", ctx.bounty ? `${ctx.bounty.brand} ${predicted?.score ?? "-"}` : "", `"${s.hook}"`, `write ${t.written - t.start} voice ${t.voiced - t.written} render ${t.rendered - t.voiced} upload ${t.uploaded - t.rendered} total ${t.uploaded - t.start} ms`);
 }
 
 // ---------- Queue ----------
