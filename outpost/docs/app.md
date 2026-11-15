@@ -82,7 +82,7 @@ Under them, **CREATE** ("Pick a prompt, get a video") opens `/create`.
 
 ## Create (`/create`) and Progress (`/generations`)
 
-A chat-style screen for the stage demo. The writer offers up to six prompts from `generate.suggestions`, one per ready pregenerated library video the user doesn't have yet, one bounty each first. The text box picks the suggestion sharing the most words with what was typed, or a random one. Picking one calls `generate.start`, then plays the stage timeline from `generate.list` (Script, Voice, Render, Done, about 12 s). When the server's scheduled `finish` has cloned the video to the front of the Feed, the card offers Open Feed and New chat. The finished card and every staged row on the progress page carry the PREGENERATED tag ("Pregenerated for the demo").
+A chat-style screen for the stage demo. The writer offers up to six prompts from `generate.suggestions`, one per ready pregenerated library video the user doesn't have yet, one bounty each first. The text box picks the suggestion sharing the most words with what was typed, or a random one. Picking one calls `generate.start`, then plays the stage timeline from `generate.list` (Script, Voice, Render, Done, about 12 s). When the server's scheduled `finish` has cloned the video to the front of the Feed, the card offers Open Feed and New chat. Each suggestion card shows the video's hook and its brand. The finished card and every staged row on the progress page carry one dashed PREGENERATED FOR DEMO tag.
 
 `/generations` lists the staged generations with their live step and where the video is now (in the Feed, approved, sent back), then the user's real queued and making videos with the studio worker's stage.
 

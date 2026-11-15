@@ -186,7 +186,7 @@ Staged on-stage generation over the pregenerated library. Each generation row is
 
 | Function | Kind | What it does |
 |---|---|---|
-| `suggestions` | query | Up to 6 prompts (`{id, prompt, brand}`), one per ready library video of an open bounty the user has neither in the Feed nor generated, one per bounty first |
+| `suggestions` | query | Up to 6 prompts (`{id, prompt, hook, brand}`), one per ready library video of an open bounty the user has neither in the Feed nor generated, one per bounty first |
 | `start({deviceId, suggestionId, prompt?})` | mutation | Records a generation and schedules `finish` after `TOTAL_MS` (the sum of `STAGES`, 12 s). Idempotent per user and library video |
 | `finish` | internal mutation | Clones that one library video to the front of the Feed with `bounties.cloneInto` (same storage file, `pregenerated`, `sourceVideoId`) and marks the row done |
 | `list` | query | The stage timeline, the user's 20 newest generations with their clone's status, and their queued and making videos with the worker's `stage` |
