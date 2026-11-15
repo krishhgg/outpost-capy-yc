@@ -2,10 +2,10 @@
 
 _meta:
     remote_id: 097433ea-29de-4a80-a2ae-7c86440cdfbc
-    remote_version: 1
-    local_version: 1
-    last_synced_at: "2026-11-15T22:08:56Z"
-    checksum: e5157a5ea0a9b60bc0eeb2b6f65535c7aa2e66db9a126f172331643a1a28a59d
+    remote_version: 2
+    local_version: 2
+    last_synced_at: "2026-11-15T22:24:51Z"
+    checksum: 0546c38c13b98aa4f5a6829063014d45ca5b4720893db09ef42ba656ca895ffb
 test:
     metadata:
         name: outpost-bounties-take
@@ -32,13 +32,15 @@ test:
         - type: validation
           step_description: The BOUNTIES screen lists bounty cards. Each card shows a brand name, a gold reward, and either a green TAKE button or a green TAKEN badge. It is not blank and shows no error.
         - type: if
-          condition: Does any bounty card on the board show a green TAKE button?
+          condition: Does the header under BOUNTIES show that some bounties are still open, either as "N more open" with N above 0 or as "Take one and its videos land in your Feed"?
           then:
             - type: instructions
-              step_description: Tap TAKE on the first bounty card that shows one and wait 3 seconds.
+              step_description: Scroll down the board until a bounty card with a green TAKE button is in view.
             - type: instructions
-              step_description: Scroll to the top of the board.
+              step_description: Tap that TAKE button and wait 3 seconds.
             - type: validation
-              step_description: The bounty just taken now shows a green TAKEN badge instead of its TAKE button, and no "That didn't go through" error is showing.
+              step_description: The header under BOUNTIES now shows one more taken bounty than before the tap, for example "3 taken · 5 more open" after "2 taken · 6 more open", or "1 taken · 7 more open" after "Take one and its videos land in your Feed". No "That didn't go through" error is showing.
+        - type: instructions
+          step_description: Scroll to the top of the board.
         - type: validation
           step_description: The header under BOUNTIES counts the taken bounties, such as "3 taken · 5 more open", and the top card shows a green TAKEN badge, a progress pill such as "2 of 5 ready", "All 5 ready in your Feed" or "No pregenerated videos yet", and a Swipe them button.
