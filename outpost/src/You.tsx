@@ -5,7 +5,8 @@ import { router } from "expo-router";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useClock } from "./Feed";
-import { Counter, ICON, type IconName } from "./Hud";
+import { Counter, ICON, PendingCounter, ScoreCounter, useTicker, type IconName } from "./Hud";
+import type { FunctionReturnType } from "convex/server";
 import { Block, DEEP, FONT, INK, Outlined, PARCH, PixelButton, Plaque, POP, Sea, UNDER_PLAQUE, WoodHeader } from "./pixel";
 
 const { width: W } = Dimensions.get("window");
@@ -41,6 +42,7 @@ export function localDay(t: number) {
 export function You({ device }: { device: string }) {
   const phoneDay = localDay(useClock(60_000));
   const data = useQuery(api.you.summary, { deviceId: device, phoneDay });
+  const earnings = useQuery(api.earnings.summary, { deviceId: device });
   const [month, setMonth] = useState(false);
   const [allPosts, setAllPosts] = useState(false);
   if (!data) return <View style={s.fill} />;
@@ -59,15 +61,25 @@ export function You({ device }: { device: string }) {
   // A platform with posts but not one count yet says so once above the list, and its chips just say "soon".
   const waiting = data.waiting;
   const dryRun = data.mode === "dryRun";
+  // Each live video's verdict against the user's baseline, from the same rows as the list.
+  const verdicts = new Map((earnings?.posts ?? []).map(p => [p.videoId as string, p]));
 
   return (
     <View style={s.fill}>
       <Sea />
       {/* Views stay in view here as on the Base and the Feed. The streak card right below is the streak, so it isn't
           repeated in the header. */}
-      <WoodHeader title="YOU" sub={line}
-        right={<Counter icon="eye" value={compact(totals.views)} testID="you-hud-views" label={`${totals.views} views`} />} />
+      <WoodHeader title="YOU" sub={line} below={
+        <View style={s.hud}>
+          <Counter icon="eye" value={compact(totals.views)} testID="you-hud-views" label={`${totals.views} views`} />
+          <PendingCounter device={device} testID="you-hud-pending" />
+          <ScoreCounter device={device} testID="you-hud-score" />
+        </View>
+      } />
       <ScrollView style={s.flex} contentContainerStyle={{ paddingBottom: 28 }} testID="you">
+        <Taste e={earnings} />
+        <Earnings e={earnings} />
+
         <Block style={s.card} lift={4} testID="you-streak">
           <View style={s.heroRow}>
             <Flame />
@@ -174,6 +186,7 @@ export function You({ device }: { device: string }) {
               <View style={s.postHead}>
                 {i === 0 && v.views > 0 && <View style={s.topTag} testID="you-post-top"><Text style={s.topText}>TOP</Text></View>}
                 <Text style={s.postTitle} numberOfLines={1}>{v.title}</Text>
+                <Verdict post={verdicts.get(v.id)} />
               </View>
               <View style={s.plats}>
                 {v.platforms.map(p => (
@@ -211,6 +224,174 @@ export function You({ device }: { device: string }) {
 
       </ScrollView>
     </View>
+  );
+}
+
+type Earn = FunctionReturnType<typeof api.earnings.summary>;
+type Post = Earn["posts"][number];
+
+const pct = (x: number | null | undefined) => (x === null || x === undefined ? "–" : `${Math.round(x * 100)}%`);
+const cash = (cents: number) => `${(cents / 100).toFixed(2)}`;
+export const ESTIMATE = "Estimated, not guaranteed, pending Whop review.";
+const TIER_COLOR: Record<string, string> = { Settler: "#46567A", Curator: "#2EB8A6", Showrunner: "#F07A2A", Tastemaker: GOLD };
+
+// Hit, Solid or Miss against the user's baseline, with the multiple. Under two days old it says "so far", since views
+// still climb. A video without a verdict yet shows nothing here; the card above says what it is waiting for.
+export function Verdict({ post }: { post: Pick<Post, "verdict" | "ratio" | "early"> | undefined | null }) {
+  if (!post?.verdict || post.ratio === null) return null;
+  const look = VERDICT[post.verdict];
+  return (
+    <View style={[s.verdict, { backgroundColor: look.bg }]} testID={`verdict-${post.verdict}`}
+      accessible accessibilityLabel={`${look.name}, ${post.ratio.toFixed(1)} times baseline${post.early ? ", so far" : ""}`}>
+      <Text style={[s.verdictText, { color: look.ink }]}>{`${look.name} ${post.ratio.toFixed(1)}x${post.early ? " · so far" : ""}`}</Text>
+    </View>
+  );
+}
+const VERDICT = {
+  hit: { name: "HIT", bg: "#A6EC7C", ink: "#1E5A1C" },
+  solid: { name: "SOLID", bg: "#C9D4F2", ink: "#2C3650" },
+  miss: { name: "MISS", bg: "#F0B2A8", ink: "#8A3A32" },
+} as const;
+
+// The taste score, its tier and the way to the next one, then the three percentages it comes from. Until five posts
+// are scored against the baseline the score is provisional and says so, with the count.
+function Taste({ e }: { e: Earn | undefined }) {
+  const t = e?.taste;
+  const shown = useTicker(t?.score ?? undefined);
+  if (!t) return <Block style={s.card} lift={4} testID="you-taste"><Text style={s.emptyText}>Loading your taste score…</Text></Block>;
+  const tier = t.tier;
+  const color = tier ? TIER_COLOR[tier.name] ?? GOLD : PARCH.bottom;
+  const pick = t.pickiness;
+  const pickNote = pick === null ? "Swipe a few clips to see it."
+    : t.seenClips >= 5 && pick >= 0.9 ? "You approve almost everything. Skip the weak ones; it's what scores you."
+    : t.seenClips >= 5 && pick <= 0.1 ? "You're turning almost everything down. Approve the ones you'd watch."
+    : pick >= 0.2 && pick <= 0.5 ? "Healthy: 20-50% is the sweet spot."
+    : pick > 0.5 ? "A bit generous. 20-50% is the sweet spot." : "Very picky. 20-50% is the sweet spot.";
+  return (
+    <Block style={s.card} lift={4} testID="you-taste">
+      <View style={s.tasteHead}>
+        <View>
+          <Text style={s.tasteLabel}>TASTE SCORE</Text>
+          <View style={s.scoreRow}>
+            <Outlined size={56} width={3} color={GOLD}>{shown === undefined ? "–" : String(shown)}</Outlined>
+            {t.score !== null && <Text style={s.outOf}>/100</Text>}
+          </View>
+        </View>
+        <View style={s.tierCol}>
+          {tier && (
+            <View style={[s.tierBadge, { backgroundColor: color }]} testID="you-tier">
+              <Image source={ICON.star} style={s.tierIcon} />
+              <Outlined size={18}>{tier.name.toUpperCase()}</Outlined>
+            </View>
+          )}
+          {e.tasteTrend !== 0 && (
+            <Text style={[s.trend, { color: e.tasteTrend > 0 ? "#2F8A2C" : "#8A3A32" }]} testID="you-trend">
+              {`${e.tasteTrend > 0 ? "▲ +" : "▼ "}${e.tasteTrend} today`}
+            </Text>
+          )}
+        </View>
+      </View>
+      {tier && (
+        <>
+          <View style={s.bar}><View style={[s.barFill, { width: `${Math.round(tier.progress * 100)}%`, backgroundColor: color }]} /></View>
+          <Text style={s.barLine}>{tier.next ? `${tier.next.min - (t.score ?? 0)} to ${tier.next.name}` : "Top tier. Keep your eye sharp."}</Text>
+        </>
+      )}
+      {t.state === "empty" ? (
+        <Text style={s.tasteNote} testID="you-taste-empty">
+          No score yet. Swipe 3 clips for a provisional score from your pickiness; it turns real as your posts get views.
+        </Text>
+      ) : t.state === "calibrating" ? (
+        <View style={s.calRow} testID="you-calibrating">
+          <View style={s.provTag}><Text style={s.provText}>PROVISIONAL</Text></View>
+          <Text style={s.calText}>{`Calibrating · ${t.scored} of ${t.needed} posts scored`}</Text>
+        </View>
+      ) : null}
+      {t.state === "calibrating" && (
+        <Text style={s.tasteNote}>
+          {t.scored === 0 ? "From your pickiness for now. Each post with views, compared with your earlier posts, makes it real."
+            : "Your pickiness, blended with the posts scored so far."}
+        </Text>
+      )}
+      <View style={s.stats}>
+        <Stat label="Hit rate" value={pct(t.hitRate)} testID="you-hit-rate"
+          sub={t.scored ? `${t.hits} of ${t.scored} beat your baseline 1.5x` : "No posts scored yet"} />
+        <Stat label="Approval" value={pct(t.approvalRate)} testID="you-approval-rate"
+          sub={t.settledSubmissions ? `Whop approved ${t.approvedSubmissions} of ${t.settledSubmissions}` : "Waiting on Whop"} />
+        <Stat label="Pickiness" value={pct(pick)} testID="you-pickiness"
+          sub={pick === null ? "No swipes yet" : `Approved ${t.approvedClips} of ${t.seenClips}`} />
+      </View>
+      <Text style={[s.tasteNote, pick !== null && (pick >= 0.9 || pick <= 0.1) && t.seenClips >= 5 && s.warn]} testID="you-pickiness-note">{pickNote}</Text>
+      <Text style={s.fine}>
+        {`Score = approval rate × views vs your baseline (median of your earlier posts${t.baselineFrom === "account" ? ", set for this account" : ""}). Hit is 1.5x or more, Miss under 0.8x.`}
+      </Text>
+    </Block>
+  );
+}
+
+function Stat({ label, value, sub, testID }: { label: string; value: string; sub: string; testID: string }) {
+  return (
+    <View style={s.stat} testID={testID}>
+      <Text style={s.statValue}>{value}</Text>
+      <Text style={s.statLabel}>{label}</Text>
+      <Text style={s.statSub}>{sub}</Text>
+    </View>
+  );
+}
+
+const STATUS: Record<string, { text: string; bg: string }> = {
+  manual: { text: "Submit on Whop", bg: "#FFB070" },
+  pending: { text: "Submitting", bg: "#FFE88C" },
+  submitted: { text: "Submitted", bg: "#C9D4F2" },
+  approved: { text: "Approved", bg: "#A6EC7C" },
+  denied: { text: "Denied", bg: "#F0B2A8" },
+  failed: { text: "Failed", bg: "#F0B2A8" },
+};
+
+// Estimated pending and approved money from bounty posts, each with its views, estimate and Whop status.
+function Earnings({ e }: { e: Earn | undefined }) {
+  const pending = useTicker(e?.pendingCents);
+  const approved = useTicker(e?.approvedCents);
+  const rows = e?.perVideo ?? [];
+  return (
+    <>
+      <Plaque title="Earnings" style={s.plaque} />
+      <Block style={[s.card, UNDER_PLAQUE]} lift={4} testID="you-earnings">
+        <View style={s.moneyRow}>
+          <View>
+            <Outlined size={40} width={2.5} color={GOLD}>{pending === undefined ? "…" : cash(pending)}</Outlined>
+            <Text style={s.moneyLabel}>pending (est.)</Text>
+          </View>
+          <View style={s.moneyRight}>
+            <Text style={s.approvedValue}>{approved === undefined ? "…" : cash(approved)}</Text>
+            <Text style={s.moneyLabel}>approved</Text>
+          </View>
+        </View>
+        <View style={s.estTag} testID="you-earnings-label"><Text style={s.estText}>{ESTIMATE}</Text></View>
+        {rows.length === 0 ? (
+          <Text style={s.emptyText}>No bounty posts live yet. Take a bounty, approve a clip, and its views earn here.</Text>
+        ) : rows.map(r => {
+          const st = r.status ? STATUS[r.status] : null;
+          return (
+            <Pressable key={r.videoId} style={({ pressed }) => [s.earnRow, pressed && { opacity: 0.7 }]} disabled={!r.url}
+              onPress={() => r.url && Linking.openURL(r.url)} testID="you-earning">
+              <View style={s.earnHead}>
+                <Text style={s.brand} numberOfLines={1}>{r.brand || "Bounty"}</Text>
+                <Verdict post={{ verdict: r.verdict, ratio: r.ratio, early: Date.now() - r.liveAt < 2 * 86_400_000 }} />
+                <Text style={s.earnCents}>{cash(r.estCents)}</Text>
+              </View>
+              <View style={s.earnHead}>
+                <Text style={s.earnTitle} numberOfLines={1}>{r.title}</Text>
+                <Image source={ICON.eye} style={s.postEye} />
+                <Text style={s.earnViews}>{compact(r.views)}</Text>
+                {st ? <View style={[s.status, { backgroundColor: st.bg }]}><Text style={s.statusText}>{st.text}</Text></View>
+                  : <View style={[s.status, { backgroundColor: PARCH.bottom }]}><Text style={s.statusText}>Not submitted</Text></View>}
+              </View>
+            </Pressable>
+          );
+        })}
+      </Block>
+    </>
   );
 }
 
@@ -298,6 +479,46 @@ function Tile({ icon, label, value }: { icon: IconName; label: string; value: st
 
 const s = StyleSheet.create({
   fill: { flex: 1, backgroundColor: DEEP },
+  hud: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  tasteHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  tasteLabel: { color: PARCH.soft, fontSize: 16, fontFamily: FONT.bold },
+  scoreRow: { flexDirection: "row", alignItems: "flex-end" },
+  outOf: { color: PARCH.soft, fontSize: 20, fontFamily: FONT.bold, marginBottom: 10, marginLeft: 3 },
+  tierCol: { alignItems: "flex-end", gap: 6 },
+  tierBadge: { flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 2, borderColor: INK, paddingHorizontal: 8, paddingVertical: 3 },
+  tierIcon: { width: 22, height: 22 },
+  trend: { fontSize: 17, fontFamily: FONT.bold },
+  bar: { height: 14, marginTop: 6, backgroundColor: PARCH.bottom, borderWidth: 2, borderColor: INK, overflow: "hidden" },
+  barFill: { height: "100%" },
+  barLine: { color: PARCH.ink, fontSize: 16, fontFamily: FONT.semi, marginTop: 4 },
+  calRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" },
+  provTag: { backgroundColor: "#E8DCFF", borderWidth: 2, borderColor: INK, paddingHorizontal: 5 },
+  provText: { color: "#4A2E7A", fontSize: 13, fontFamily: FONT.bold },
+  calText: { color: PARCH.ink, fontSize: 16, fontFamily: FONT.bold },
+  tasteNote: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi, marginTop: 8 },
+  warn: { color: "#B04A10" },
+  stats: { flexDirection: "row", gap: 8, marginTop: 12 },
+  stat: { flex: 1, backgroundColor: PARCH.top, borderWidth: 2, borderColor: PARCH.bottom, paddingHorizontal: 6, paddingVertical: 6, alignItems: "center" },
+  statValue: { color: PARCH.ink, fontSize: 28, fontFamily: FONT.bold },
+  statLabel: { color: PARCH.ink, fontSize: 15, fontFamily: FONT.bold, marginTop: -4 },
+  statSub: { color: PARCH.soft, fontSize: 12, fontFamily: FONT.semi, textAlign: "center", marginTop: 2 },
+  fine: { color: PARCH.soft, fontSize: 13, fontFamily: FONT.semi, marginTop: 10, lineHeight: 16 },
+  verdict: { borderWidth: 2, borderColor: INK, paddingHorizontal: 5 },
+  verdictText: { fontSize: 13, fontFamily: FONT.bold },
+  moneyRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
+  moneyRight: { alignItems: "flex-end" },
+  moneyLabel: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi, marginTop: -4 },
+  approvedValue: { color: "#2F8A2C", fontSize: 30, fontFamily: FONT.bold },
+  estTag: { alignSelf: "flex-start", backgroundColor: "#E8DCFF", borderWidth: 2, borderColor: INK, paddingHorizontal: 6, paddingVertical: 1, marginTop: 8, marginBottom: 6 },
+  estText: { color: "#4A2E7A", fontSize: 13, fontFamily: FONT.bold },
+  earnRow: { paddingVertical: 8, gap: 4, borderTopWidth: 2, borderTopColor: PARCH.bottom },
+  earnHead: { flexDirection: "row", alignItems: "center", gap: 6 },
+  brand: { color: PARCH.ink, fontSize: 18, fontFamily: FONT.bold, flexShrink: 1 },
+  earnCents: { marginLeft: "auto", color: "#2F8A2C", fontSize: 18, fontFamily: FONT.bold },
+  earnTitle: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi, flex: 1 },
+  earnViews: { color: PARCH.ink, fontSize: 15, fontFamily: FONT.bold },
+  status: { borderWidth: 2, borderColor: INK, paddingHorizontal: 5 },
+  statusText: { color: INK, fontSize: 13, fontFamily: FONT.bold },
   flex: { flex: 1 },
   card: { marginHorizontal: 12, marginTop: 14, padding: 14, paddingBottom: 18 },
   heroRow: { flexDirection: "row", alignItems: "center", gap: 10 },
