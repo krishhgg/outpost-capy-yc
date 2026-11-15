@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Dimensions, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Dimensions, Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
+import * as WebBrowser from "expo-web-browser";
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from "react-native-reanimated";
 import { router } from "expo-router";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useClock } from "./Feed";
 import { Counter, ICON, PendingCounter, ScoreCounter, useTicker, type IconName } from "./Hud";
@@ -78,7 +79,7 @@ export function You({ device }: { device: string }) {
       } />
       <ScrollView style={s.flex} contentContainerStyle={{ paddingBottom: 28 }} testID="you">
         <Taste e={earnings} />
-        <Earnings e={earnings} />
+        <Earnings e={earnings} device={device} />
 
         <Block style={s.card} lift={4} testID="you-streak">
           <View style={s.heroRow}>
@@ -340,7 +341,7 @@ function Stat({ label, value, sub, testID }: { label: string; value: string; sub
 }
 
 const STATUS: Record<string, { text: string; bg: string }> = {
-  manual: { text: "Submit on Whop", bg: "#FFB070" },
+  manual: { text: "Not on Whop yet", bg: "#FFB070" },
   pending: { text: "Submitting", bg: "#FFE88C" },
   submitted: { text: "Submitted", bg: "#C9D4F2" },
   approved: { text: "Approved", bg: "#A6EC7C" },
@@ -349,7 +350,7 @@ const STATUS: Record<string, { text: string; bg: string }> = {
 };
 
 // Estimated pending and approved money from bounty posts, each with its views, estimate and Whop status.
-function Earnings({ e }: { e: Earn | undefined }) {
+function Earnings({ e, device }: { e: Earn | undefined; device: string }) {
   const pending = useTicker(e?.pendingCents);
   const approved = useTicker(e?.approvedCents);
   const rows = e?.perVideo ?? [];
@@ -368,30 +369,64 @@ function Earnings({ e }: { e: Earn | undefined }) {
           </View>
         </View>
         <View style={s.estTag} testID="you-earnings-label"><Text style={s.estText}>{ESTIMATE}</Text></View>
+        {!!e?.unsubmittedCents && (
+          <Text style={s.tasteNote} testID="you-earnings-unsubmitted">{`+${cash(e.unsubmittedCents)} more (est.) once you submit your posts on Whop.`}</Text>
+        )}
         {rows.length === 0 ? (
           <Text style={s.emptyText}>No bounty posts live yet. Take a bounty, approve a clip, and its views earn here.</Text>
-        ) : rows.map(r => {
-          const st = r.status ? STATUS[r.status] : null;
-          return (
-            <Pressable key={r.videoId} style={({ pressed }) => [s.earnRow, pressed && { opacity: 0.7 }]} disabled={!r.url}
-              onPress={() => r.url && Linking.openURL(r.url)} testID="you-earning">
-              <View style={s.earnHead}>
-                <Text style={s.brand} numberOfLines={1}>{r.brand || "Bounty"}</Text>
-                <Verdict post={{ verdict: r.verdict, ratio: r.ratio, early: Date.now() - r.liveAt < 2 * 86_400_000 }} />
-                <Text style={s.earnCents}>{cash(r.estCents)}</Text>
-              </View>
-              <View style={s.earnHead}>
-                <Text style={s.earnTitle} numberOfLines={1}>{r.title}</Text>
-                <Image source={ICON.eye} style={s.postEye} />
-                <Text style={s.earnViews}>{compact(r.views)}</Text>
-                {st ? <View style={[s.status, { backgroundColor: st.bg }]}><Text style={s.statusText}>{st.text}</Text></View>
-                  : <View style={[s.status, { backgroundColor: PARCH.bottom }]}><Text style={s.statusText}>Not submitted</Text></View>}
-              </View>
-            </Pressable>
-          );
-        })}
+        ) : rows.map(r => <EarnRow key={r.videoId} r={r} device={device} />)}
       </Block>
     </>
+  );
+}
+
+// One bounty video: brand, verdict, estimate, views and where its submission stands. A manual submission carries the
+// "Submit on Whop" flow: the post URL to paste there, the campaign page, then "I submitted it". A video posted to both
+// platforms has a row per post, so the flow repeats until none is left. A submission the user reported themselves is a
+// label, not a Whop-confirmed status.
+function EarnRow({ r, device }: { r: Earn["perVideo"][number]; device: string }) {
+  const sub = useQuery(api.submit.forVideo, { deviceId: device, videoId: r.videoId });
+  const mark = useMutation(api.submit.markSubmitted);
+  const [busy, setBusy] = useState(false);
+  const status = sub?.status ?? r.status;
+  const st = status ? STATUS[status] : null;
+  return (
+    <View style={s.earnRow} testID="you-earning">
+      <View style={s.earnHead}>
+        <Text style={s.brand} numberOfLines={1}>{r.brand || "Bounty"}</Text>
+        <Verdict post={{ verdict: r.verdict, ratio: r.ratio, early: Date.now() - r.liveAt < 2 * 86_400_000 }} />
+        <Text style={s.earnCents}>{cash(r.estCents)}</Text>
+      </View>
+      <Pressable style={({ pressed }) => [s.earnHead, pressed && { opacity: 0.7 }]} disabled={!r.url}
+        onPress={() => r.url && Linking.openURL(r.url)} accessibilityRole={r.url ? "link" : undefined}>
+        <Text style={s.earnTitle} numberOfLines={1}>{r.title}</Text>
+        <Image source={ICON.eye} style={s.postEye} />
+        <Text style={s.earnViews}>{compact(r.views)}</Text>
+        {status === "submitted" && sub?.selfReported ? <Text style={s.selfReported} testID="you-earning-self">Submitted by you</Text>
+          : st ? <View style={[s.status, { backgroundColor: st.bg }]}><Text style={s.statusText}>{st.text}</Text></View>
+          : <View style={[s.status, { backgroundColor: PARCH.bottom }]}><Text style={s.statusText}>Not submitted</Text></View>}
+      </Pressable>
+      {status === "denied" && sub?.denialReason ? <Text style={s.denied}>{`Denied: ${sub.denialReason}`}</Text> : null}
+      {sub?.status === "manual" && (
+        <View style={s.submitBox} testID="you-submit">
+          <Text style={s.submitLead}>{`Paste this post's link on ${sub.brand}'s campaign:`}</Text>
+          <View style={s.urlRow}>
+            <Text style={s.url} numberOfLines={1} selectable testID="you-submit-url">{sub.postUrl}</Text>
+            <Pressable onPress={() => Share.share({ url: sub.postUrl, message: sub.postUrl }).catch(() => {})} hitSlop={6}
+              accessibilityRole="button" accessibilityLabel="Copy or share the post link" testID="you-submit-copy">
+              <Text style={s.copy}>Copy link</Text>
+            </Pressable>
+          </View>
+          <View style={s.submitButtons}>
+            <PixelButton label="Submit on Whop" size={18} bevel="green" style={s.flex}
+              onPress={() => WebBrowser.openBrowserAsync(sub.deepLink).catch(() => {})} testID="you-submit-whop" />
+            <PixelButton label={busy ? "Saving…" : "I submitted it"} size={18} bevel="parch" style={s.flex} disabled={busy}
+              onPress={() => { setBusy(true); mark({ deviceId: device, videoId: r.videoId }).finally(() => setBusy(false)); }}
+              testID="you-submit-done" />
+          </View>
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -519,6 +554,14 @@ const s = StyleSheet.create({
   earnViews: { color: PARCH.ink, fontSize: 15, fontFamily: FONT.bold },
   status: { borderWidth: 2, borderColor: INK, paddingHorizontal: 5 },
   statusText: { color: INK, fontSize: 13, fontFamily: FONT.bold },
+  selfReported: { color: PARCH.soft, fontSize: 14, fontFamily: FONT.semi, fontStyle: "italic" },
+  denied: { color: "#8A3A32", fontSize: 15, fontFamily: FONT.semi },
+  submitBox: { marginTop: 6, gap: 6, backgroundColor: PARCH.top, borderWidth: 2, borderColor: PARCH.bottom, padding: 8 },
+  submitLead: { color: PARCH.ink, fontSize: 15, fontFamily: FONT.semi },
+  urlRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  url: { flex: 1, color: PARCH.soft, fontSize: 14, fontFamily: FONT.semi },
+  copy: { color: "#B04A10", fontSize: 16, fontFamily: FONT.bold },
+  submitButtons: { flexDirection: "row", gap: 8 },
   flex: { flex: 1 },
   card: { marginHorizontal: 12, marginTop: 14, padding: 14, paddingBottom: 18 },
   heroRow: { flexDirection: "row", alignItems: "center", gap: 10 },

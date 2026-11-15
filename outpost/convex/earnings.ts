@@ -150,9 +150,11 @@ export const summary = query({
       item.url ??= p.url ?? null;
     }
 
-    // Earnings per submitted post: approved counts as approved, denied and failed as nothing, the rest as pending.
+    // Earnings per submitted post: approved counts as approved, submitted and pending as pending, denied and failed as
+    // nothing. A manual row isn't on Whop until the user submits it there, so its estimate waits apart.
     let pendingCents = 0;
     let approvedCents = 0;
+    let unsubmittedCents = 0;
     const money = new Map<Id<"videos">, { estCents: number; statuses: Status[]; url: string | null }>();
     for (const p of live) {
       const item = items.get(p.videoId)!;
@@ -168,6 +170,7 @@ export const summary = query({
       const cents = estimate(bounty, p.views);
       row.estCents += cents;
       if (sub.status === "approved") approvedCents += cents;
+      else if (sub.status === "manual") unsubmittedCents += cents;
       else pendingCents += cents;
     }
 
@@ -204,6 +207,8 @@ export const summary = query({
     return {
       pendingCents,
       approvedCents,
+      // Estimated from posts still waiting for the user to submit them on Whop.
+      unsubmittedCents,
       perVideo,
       tasteScore: score ?? 0,
       tasteTrend: score !== null && dayAgo.score !== null ? score - dayAgo.score : 0,
