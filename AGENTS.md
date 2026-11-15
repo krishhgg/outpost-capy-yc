@@ -13,25 +13,27 @@ pending earnings and a taste score; the agent texts the user over iMessage.
 ## Direction vs today
 
 The product direction is Charlie's brief, [BRIEF.md](BRIEF.md); read it before product work. The code in
-`outpost/` is an earlier version: agents write, voice and render original 3D explainer videos and post them to YouTube and Instagram. **Code is the
-truth about what is built. Never describe a planned feature as working.**
+`outpost/` is the starting point the brief's features get built on: today agents write, voice and render original 3D
+explainer videos and post them to YouTube and Instagram. **Code is the truth about what is built. Never describe a
+planned feature as working.**
 
 | Feature | Status today | Where |
 |---|---|---|
 | Full-screen swipe feed (right = post, left = send back) | Built | `src/Feed.tsx`, `convex/feed.ts` |
 | Posting | Built via Zernio to YouTube + Instagram, paced, `dryRun` / `private` / `public` modes. Brief wants TikTok/Reels/Shorts via an aggregator | `convex/post.ts`, `convex/pace.ts` |
 | Views polling | Built: cron reads Zernio analytics every 20 min | `convex/views.ts`, `convex/crons.ts` |
-| Bounty board (Whop Content Rewards campaigns) | Planned. Today's Scout searches Whop *products*, not campaigns | `convex/scout.ts` (legacy) |
+| Bounty board (Whop Content Rewards campaigns) | Planned. Today's Scout searches Whop *products*, not campaigns | `convex/scout.ts` |
 | Whop join + submit post URL | Planned. Nothing built | |
 | Clip engine (cut brand footage into 9:16 clips) | Planned. Today's studio makes original reels | |
 | Director edit chips | Partial: left-swipe reasons ("Hook too slow", "Too long"...) queue a full remake. One-tap param tweak + fast re-render is planned | `convex/feed.ts` (`REASONS`) |
 | Scoreboard | Partial: total and per-video views, streak, You tab. No pending earnings or Whop review status | `convex/you.ts`, `src/You.tsx` |
 | Taste score (approval rate x performance) | Planned. "Taste" today means Supermemory notes from left-swipe reasons | `convex/memory.ts` |
 | iMessage agent | Planned. Nothing built | |
-| Original-video studio (claude -p + Kokoro + Compound) | Built, legacy | `studio/` |
-| Whop sandbox "shop raid" ($9 Notion template), pixel-art Base village, streaks, widget | Built, legacy | `convex/raids.ts`, `convex/whop.ts`, `src/Base.tsx` |
+| Studio (claude -p script + Kokoro voice + Compound render) | Built: today's video pipeline, Convex job queue to MP4 upload. Starting point for the clip engine | `studio/`, `convex/studio.ts` |
+| Shop raid | Built, Whop sandbox only: creates a $9 Notion template product + checkout, records test payments. Starting point for Whop bounty work | `convex/raids.ts`, `convex/whop.ts` |
+| Pixel-art Base village, streaks, widget | Built. The home screen and daily loop that bounty features plug into | `src/Base.tsx`, `convex/you.ts`, `src/widgets/` |
 
-Ask before deleting legacy code; the team may still demo it.
+Don't delete or rip out the studio, shop raid or village. Extend or adapt them to the brief instead.
 
 ## Repo map
 
@@ -41,7 +43,7 @@ Ask before deleting legacy code; the team may still demo it.
 | `outpost/src/` | Expo app. Routes in `outpost/src/app/`, components beside it |
 | `outpost/convex/` | Convex backend. Schema in `convex/schema.ts`; `_generated/` is generated |
 | `outpost/studio/` | Laptop studio worker (`worker.mjs`) and its Compound template |
-| `outpost/docs/` | Architecture, app, backend, integrations, demo runbook (describe the legacy product) |
+| `outpost/docs/` | Architecture, app, backend, integrations, demo runbook (describe today's code, not the brief) |
 | `research/`, `visuals/`, `engagement-research.md` | Background only, not specs |
 | `hackathon.md` | Convex hackathon build log (`.agents/skills/convex-hackathon-skill`) |
 
@@ -83,6 +85,7 @@ suite configured.
 - Don't build a clip engine from scratch: use OpenShorts (MIT) or yt-dlp + Whisper/Deepgram + FFmpeg. No AGPL code
   (e.g. SupoClip).
 - Don't change Convex deployment config or env files in unrelated PRs; the deployment is being migrated.
+- Don't delete or rip out the studio, shop raid or village; extend or adapt them.
 - Never merge PRs or push to `main`.
 
 ## Conventions

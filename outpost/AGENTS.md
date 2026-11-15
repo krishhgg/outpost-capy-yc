@@ -35,6 +35,7 @@ https://docs.expo.dev/llms.txt before touching an Expo or RN API.
 
 ## Studio (`studio/`)
 
+- The studio is today's video pipeline and the base for the clip engine: extend or adapt it, never delete it.
 - `worker.mjs` has hardcoded macOS paths (`PROJECT_DIR`, `COMPOUND`, `PY`) for one laptop. It cannot run in a
   cloud sandbox; verify edits with `node --check studio/worker.mjs` and say so in the PR.
 - It reads `EXPO_PUBLIC_CONVEX_URL` from `.env.local` and `WORKER_SECRET` from `.env.worker` (shell vars win).
