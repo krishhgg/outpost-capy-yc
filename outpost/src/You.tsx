@@ -7,7 +7,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useClock } from "./Feed";
 import { Counter, ICON, useTicker, type IconName } from "./Hud";
-import { Badge, Button, Card, HonestyLabel, NumberTicker, TierProgress, TIERS, tierFor, VerdictBadge, money, type Tone } from "./ui";
+import { Badge, Button, Card, HonestyLabel, NumberTicker, TierProgress, TIERS, tierFor, TYPE, VerdictBadge, money, type Tone } from "./ui";
 import type { FunctionReturnType } from "convex/server";
 import { Block, DEEP, FONT, INK, Outlined, PARCH, PixelButton, Plaque, POP, Sea, UNDER_PLAQUE, WoodHeader } from "./pixel";
 
@@ -49,9 +49,6 @@ export function You({ device }: { device: string }) {
   const [allPosts, setAllPosts] = useState(false);
   if (!data) return <View style={s.fill} />;
   const { streak, todayDone, freezesLeft, calendar, totals } = data;
-  const line = todayDone ? "Today counts. Come back tomorrow."
-    : streak > 0 ? "Approve one video today to keep it going."
-    : "Approve a video to start a streak.";
   // The calendar ends with the week that holds today, Sunday first.
   const week = calendar.slice(-7);
   const earlier = calendar.slice(0, -7);
@@ -60,7 +57,7 @@ export function You({ device }: { device: string }) {
   const firstMarked = earlier.findIndex(c => c.approved > 0 || c.frozen);
   const past = firstMarked < 0 ? [] : earlier.slice(firstMarked - (firstMarked % 7));
   const posts = data.posts;
-  // A platform with posts but not one count yet says so once above the list, and its chips just say "soon".
+  // A platform with posts but not one count yet says "soon" on its chips, instead of "counting".
   const waiting = data.waiting;
   const dryRun = data.mode === "dryRun";
   // Each live video's verdict against the user's baseline, from the same rows as the list.
@@ -69,9 +66,9 @@ export function You({ device }: { device: string }) {
   return (
     <View style={s.fill}>
       <Sea />
-      {/* Views stay in view here as on the Base and the Feed. The streak card right below is the streak, so it isn't
-          repeated in the header. */}
-      <WoodHeader title="YOU" sub={line} below={
+      {/* Views stay in view here as on the Base and the Feed. The streak card's chip says what today needs, so neither the
+          streak nor that line is repeated in the header. */}
+      <WoodHeader title="YOU" below={
         <View style={s.hud}>
           <Counter icon="eye" value={compact(totals.views)} testID="you-hud-views" label={`${totals.views} views`} />
           <PendingCounter device={device} testID="you-hud-pending" />
@@ -106,9 +103,8 @@ export function You({ device }: { device: string }) {
 
           <View style={s.freezeRow} testID="you-freezes">
             {Array.from({ length: freezesLeft }, (_, i) => <Image key={i} source={ICON.ice} style={s.ice} />)}
-            <Text style={s.freeze}>
-              {freezesLeft > 0 ? `${freezesLeft} freeze${freezesLeft === 1 ? "" : "s"} left. One covers a day you miss.`
-                : "No freezes left. Miss a day and the streak resets."}
+            <Text style={s.freeze} accessibilityLabel={freezesLeft > 0 ? `${freezesLeft} streak freezes left. One covers a day you miss.` : undefined}>
+              {freezesLeft > 0 ? `${freezesLeft} freeze${freezesLeft === 1 ? "" : "s"} left` : "No freezes left"}
             </Text>
           </View>
 
@@ -143,45 +139,24 @@ export function You({ device }: { device: string }) {
           )}
         </Block>
 
-        {/* What it all added up to, right under the streak, so the totals are on the first screen. A dry run never posts,
-            so live posts and views would sit at zero. It shows what did happen instead. */}
-        {dryRun ? (
-          <>
-            <View style={s.tiles} testID="you-totals">
-              <Tile icon="check" label="Approved" value={String(totals.approved)} />
-              <Tile icon="play" label="Made" value={String(totals.made)} />
-            </View>
-            <Text style={s.footnote}>{`${totals.remakes} sent back · ${totals.skipped} skipped`}</Text>
-          </>
-        ) : (
-          <>
-            <View style={s.tiles} testID="you-totals">
-              <Tile icon="check" label="Approved" value={String(totals.approved)} />
-              {/* Videos, not posts, so it matches the Live now list below. The posts and the approvals that never went
-                  out are counted in the line under the tiles. */}
-              <Tile icon="play" label="Videos live" value={String(totals.videos)} />
-              <Tile icon="eye" label="Views" value={compact(totals.views)} />
-            </View>
-            <Text style={s.footLead}>
-              {totals.videos === totals.live ? `${totals.live} post${totals.live === 1 ? "" : "s"} live`
-                : `${totals.videos} video${totals.videos === 1 ? "" : "s"} live as ${totals.live} post${totals.live === 1 ? "" : "s"}`}
-            </Text>
-            <Text style={s.footnote}>
-              {`${totals.made} made · ${totals.remakes} sent back · ${totals.skipped} skipped\n`
-                + (totals.dryRun ? `${totals.dryRun} approved in a dry run · ` : "") + "views update about hourly"}
-            </Text>
-          </>
-        )}
+        {/* What it all added up to, right under the streak, so the totals are on the first screen: the tiles, then one line
+            of the rest. A dry run never posts, so live videos and views would sit at zero. It shows what was made instead. */}
+        <View style={s.tiles} testID="you-totals">
+          <Tile icon="check" label="Approved" value={String(totals.approved)} />
+          {dryRun ? <Tile icon="play" label="Made" value={String(totals.made)} /> : <>
+            {/* Videos, not posts, so it matches the Live now list below. */}
+            <Tile icon="play" label="Videos live" value={String(totals.videos)} />
+            <Tile icon="eye" label="Views" value={compact(totals.views)} />
+          </>}
+        </View>
+        <Text style={s.footnote}>
+          {(dryRun ? "" : `${totals.made} made · `) + `${totals.remakes} sent back · ${totals.skipped} skipped`}
+        </Text>
 
         {/* No count here: the rows are videos and the totals above count posts, so a count here would disagree with one. */}
         <Plaque title="Live now" style={s.plaque} />
         <Block style={[s.card, UNDER_PLAQUE]} lift={4} testID="you-posts">
           {posts.length > 0 ? <>
-            {waiting.length > 0 && (
-              <Text style={s.waiting} testID="you-posts-waiting">
-                {`${waiting.map(pl => PLAT[pl].name).join(" and ")} views: Zernio hasn't sent counts yet.`}
-              </Text>
-            )}
             {/* The top three, most viewed first, with the rest one tap away. */}
             {(allPosts ? posts : posts.slice(0, 3)).map((v, i) => (
             <View key={v.id} style={[s.post, i === 0 && s.firstPost]} testID="you-post">
@@ -216,9 +191,7 @@ export function You({ device }: { device: string }) {
             )}
           </> : (
             <View style={s.empty}>
-              <Text style={s.emptyText}>
-                {dryRun ? "Posting is a dry run, so approved videos don't go live." : "Nothing live yet. Approve a video and it posts at the next slot."}
-              </Text>
+              <Text style={s.emptyText}>{dryRun ? "Dry run: approved videos don't go live." : "Nothing live yet."}</Text>
               {!dryRun && <PixelButton label="Open the Feed" size={20} bevel="green" onPress={() => router.navigate("/feed")} testID="you-open-feed" />}
             </View>
           )}
@@ -265,62 +238,60 @@ export function Verdict({ post }: { post: Pick<Post, "verdict" | "ratio" | "live
   return <VerdictBadge verdict={post.verdict} ratio={post.ratio} size="sm" reason={Date.now() - post.liveAt < FRESH_MS ? "so far" : undefined} />;
 }
 
-// The taste score, its tier and the way to the next one, then the three percentages it comes from. Until five posts
-// are scored against the baseline the score is provisional and says so, with the count.
+// The taste score, its tier and the way to the next one, then the three percentages it comes from as bare numbers. How
+// they're worked out is one tap away rather than printed under them. Until five posts are scored against the baseline
+// the score is provisional, and TierProgress says so once.
 function Taste({ e }: { e: Earn | undefined }) {
+  const [how, setHow] = useState(false);
   const t = e?.taste;
   if (!t || !e) return <Card loading testID="you-taste" style={s.cardGap} />;
   const pick = t.pickiness;
+  // Only a lopsided swipe habit gets a line, since that's the one worth changing.
   const extreme = pick !== null && t.seenClips >= 5 && (pick >= 0.9 || pick <= 0.1);
-  const pickNote = pick === null ? "Swipe a few clips to see it."
-    : extreme && pick >= 0.9 ? "You approve almost everything. Skip the weak ones; that's what scores you."
-    : extreme ? "You're turning almost everything down. Approve the ones you'd watch."
-    : pick >= 0.2 && pick <= 0.5 ? "Healthy: 20-50% is the sweet spot."
-    : pick > 0.5 ? "A bit generous. 20-50% is the sweet spot." : "Very picky. 20-50% is the sweet spot.";
   return (
-    <Card style={s.cardGap} testID="you-taste">
-      <Text style={s.tasteLabel}>TASTE SCORE</Text>
+    <Card title="Taste score" style={s.cardGap} testID="you-taste">
       {t.score === null ? (
-        <Text style={s.tasteNote} testID="you-taste-empty">
-          No score yet. Swipe 3 clips for a provisional score from your pickiness; it turns real as your posts get views.
-        </Text>
+        <Text style={s.tasteNote} testID="you-taste-empty">Swipe 3 clips to get a score.</Text>
       ) : (
         <TierProgress score={t.score} testID="you-tier"
           calibrating={t.state === "calibrating" ? { scored: t.scored, needed: t.needed } : undefined} />
       )}
       {e.tasteTrend !== 0 && (
         <Text style={[s.trend, { color: e.tasteTrend > 0 ? "#2F8A2C" : "#8A3A32" }]} testID="you-trend">
-          {`${e.tasteTrend > 0 ? "▲ +" : "▼ "}${e.tasteTrend} since you last collected`}
-        </Text>
-      )}
-      {t.state === "calibrating" && (
-        <Text style={s.tasteNote}>
-          {t.scored === 0 ? "From your pickiness for now. Each post with views, compared with your earlier posts, makes it real."
-            : "Your pickiness, blended with the posts scored so far."}
+          {`${e.tasteTrend > 0 ? "▲ +" : "▼ "}${e.tasteTrend} since last visit`}
         </Text>
       )}
       <View style={s.stats}>
         <Stat label="Hit rate" value={pct(t.hitRate)} testID="you-hit-rate"
-          sub={t.scored ? `${t.hits} of ${t.scored} beat your baseline 1.5x` : "No posts scored yet"} />
+          a11y={t.scored ? `${t.hits} of ${t.scored} beat your baseline 1.5x` : "No posts scored yet"} />
         <Stat label="Approval" value={pct(t.approvalRate)} testID="you-approval-rate"
-          sub={t.settledSubmissions ? `Whop approved ${t.approvedSubmissions} of ${t.settledSubmissions}` : "Waiting on Whop"} />
+          a11y={t.settledSubmissions ? `Whop approved ${t.approvedSubmissions} of ${t.settledSubmissions}` : "Waiting on Whop"} />
         <Stat label="Pickiness" value={pct(pick)} testID="you-pickiness"
-          sub={pick === null ? "No swipes yet" : `Approved ${t.approvedClips} of ${t.seenClips} clips`} />
+          a11y={pick === null ? "No swipes yet" : `Approved ${t.approvedClips} of ${t.seenClips} clips`} />
       </View>
-      <Text style={[s.tasteNote, extreme && s.warn]} testID="you-pickiness-note">{pickNote}</Text>
-      <Text style={s.fine}>
-        {`Score = approval rate × views vs your baseline (the median of your earlier posts${t.baselineFrom === "account" ? ", set for this account" : ""}). Hit is 1.5x or more, Miss under 0.8x. Tiers: ${TIERS.map(x => x.name).join(", ")}.`}
-      </Text>
+      {extreme && (
+        <Text style={[s.tasteNote, s.warn]} testID="you-pickiness-note">
+          {pick >= 0.9 ? "Skip the weak ones: approving everything lowers it." : "Approve the ones you'd watch."}
+        </Text>
+      )}
+      <Pressable onPress={() => setHow(h => !h)} hitSlop={8} testID="you-taste-how" accessibilityRole="button">
+        <Text style={s.monthLink}>{how ? "Hide how it's scored" : "How it's scored"}</Text>
+      </Pressable>
+      {how && (
+        <Text style={s.fine} testID="you-taste-fine">
+          {`Approval rate × views against your baseline, the median of your earlier posts${t.baselineFrom === "account" ? " (set for this account)" : ""}. A hit is 1.5x baseline, a miss under 0.8x. Approving 20–50% of clips is the sweet spot. Tiers: ${TIERS.map(x => x.name).join(", ")}.`}
+        </Text>
+      )}
     </Card>
   );
 }
 
-function Stat({ label, value, sub, testID }: { label: string; value: string; sub: string; testID: string }) {
+// A number over its name, centered on the card itself rather than boxed. The detail behind it goes to VoiceOver.
+function Stat({ label, value, a11y, testID }: { label: string; value: string; a11y: string; testID: string }) {
   return (
-    <View style={s.stat} testID={testID}>
+    <View style={s.stat} testID={testID} accessible accessibilityLabel={`${label} ${value}. ${a11y}`}>
       <Text style={s.statValue}>{value}</Text>
       <Text style={s.statLabel}>{label}</Text>
-      <Text style={s.statSub}>{sub}</Text>
     </View>
   );
 }
@@ -342,19 +313,21 @@ function Earnings({ e, device }: { e: Earn | undefined; device: string }) {
       <View style={s.moneyRow}>
         <View>
           <NumberTicker value={e?.pendingCents} format={money} size={40} outlined={false} color="#2F8A2C" testID="you-pending" />
-          <Text style={s.moneyLabel}>pending</Text>
+          <View style={s.pendingRow}>
+            <Text style={s.moneyLabel}>pending</Text>
+            <HonestyLabel kind="estimated" testID="you-earnings-label" />
+          </View>
         </View>
         <View style={s.moneyRight}>
           <NumberTicker value={e?.approvedCents} format={money} size={26} outlined={false} delta={false} testID="you-approved" />
           <Text style={s.moneyLabel}>approved</Text>
         </View>
       </View>
-      <View style={s.honesty}><HonestyLabel kind="estimated" detail testID="you-earnings-label" /></View>
       {!!e?.unsubmittedCents && (
-        <Text style={s.tasteNote} testID="you-earnings-unsubmitted">{`+${money(e.unsubmittedCents)} more (est.) once you submit your posts on Whop.`}</Text>
+        <Text style={s.tasteNote} testID="you-earnings-unsubmitted">{`+${money(e.unsubmittedCents)} once submitted on Whop`}</Text>
       )}
       {rows.length === 0 ? (
-        <Text style={s.emptyText}>No bounty posts live yet. Take a bounty, approve a clip, and its views earn here.</Text>
+        <Text style={[s.emptyText, s.earnEmpty]}>No bounty posts live yet.</Text>
       ) : rows.map(r => <EarnRow key={r.videoId} r={r} device={device} />)}
     </Card>
   );
@@ -386,9 +359,9 @@ function EarnRow({ r, device }: { r: Earn["perVideo"][number]; device: string })
           : <Badge label={st?.text ?? "NOT SUBMITTED"} tone={st?.tone ?? "parch"} size="sm" />}
       </Pressable>
       {status === "denied" && sub?.denialReason ? <Text style={s.denied}>{`Denied: ${sub.denialReason}`}</Text> : null}
+      {/* The post link to paste on the brand's campaign, then the two steps. No box: the row's rule already sets it apart. */}
       {sub?.status === "manual" && (
-        <View style={s.submitBox} testID="you-submit">
-          <Text style={s.submitLead}>{`Paste this post's link on ${sub.brand}'s campaign:`}</Text>
+        <View style={s.submit} testID="you-submit">
           <View style={s.urlRow}>
             <Text style={s.url} numberOfLines={1} selectable testID="you-submit-url">{sub.postUrl}</Text>
             <Pressable onPress={() => Share.share({ url: sub.postUrl, message: sub.postUrl }).catch(() => {})} hitSlop={6}
@@ -495,20 +468,19 @@ const s = StyleSheet.create({
   fill: { flex: 1, backgroundColor: DEEP },
   hud: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
   cardGap: { marginHorizontal: 12, marginTop: 14 },
-  tasteLabel: { color: PARCH.soft, fontSize: 16, fontFamily: FONT.bold, marginBottom: 6 },
   trend: { fontSize: 17, fontFamily: FONT.bold, marginTop: 8 },
-  tasteNote: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi, marginTop: 8 },
+  tasteNote: { color: PARCH.soft, fontSize: 16, fontFamily: FONT.semi, marginTop: 8 },
   warn: { color: "#B04A10" },
-  stats: { flexDirection: "row", gap: 8, marginTop: 12 },
-  stat: { flex: 1, backgroundColor: PARCH.top, borderWidth: 2, borderColor: PARCH.bottom, paddingHorizontal: 6, paddingVertical: 6, alignItems: "center" },
-  statValue: { color: PARCH.ink, fontSize: 28, fontFamily: FONT.bold },
-  statLabel: { color: PARCH.ink, fontSize: 15, fontFamily: FONT.bold, marginTop: -4 },
-  statSub: { color: PARCH.soft, fontSize: 12, fontFamily: FONT.semi, textAlign: "center", marginTop: 2 },
-  fine: { color: PARCH.soft, fontSize: 13, fontFamily: FONT.semi, marginTop: 10, lineHeight: 16 },
-  moneyRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
+  stats: { flexDirection: "row", marginTop: 14, paddingTop: 10, borderTopWidth: 2, borderTopColor: PARCH.bottom },
+  stat: { flex: 1, alignItems: "center" },
+  statValue: { color: PARCH.ink, fontSize: 30, fontFamily: FONT.bold },
+  statLabel: { color: PARCH.soft, fontSize: 16, fontFamily: FONT.semi, marginTop: -4 },
+  fine: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi, marginTop: 8, lineHeight: 19 },
+  moneyRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 6 },
   moneyRight: { alignItems: "flex-end" },
-  moneyLabel: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi, marginTop: -4 },
-  honesty: { marginTop: 8, marginBottom: 6 },
+  moneyLabel: { color: PARCH.soft, fontSize: 16, fontFamily: FONT.semi },
+  pendingRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: -2 },
+  earnEmpty: { marginTop: 6 },
   earnRow: { paddingVertical: 8, gap: 4, borderTopWidth: 2, borderTopColor: PARCH.bottom },
   earnHead: { flexDirection: "row", alignItems: "center", gap: 6 },
   brand: { color: PARCH.ink, fontSize: 18, fontFamily: FONT.bold, flexShrink: 1 },
@@ -517,10 +489,9 @@ const s = StyleSheet.create({
   earnViews: { color: PARCH.ink, fontSize: 15, fontFamily: FONT.bold },
   selfReported: { color: PARCH.soft, fontSize: 14, fontFamily: FONT.semi, fontStyle: "italic" },
   denied: { color: "#8A3A32", fontSize: 15, fontFamily: FONT.semi },
-  submitBox: { marginTop: 6, gap: 8, backgroundColor: PARCH.top, borderWidth: 2, borderColor: PARCH.bottom, padding: 8 },
-  submitLead: { color: PARCH.ink, fontSize: 15, fontFamily: FONT.semi },
+  submit: { marginTop: 4, gap: 8 },
   urlRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  url: { flex: 1, color: PARCH.soft, fontSize: 14, fontFamily: FONT.semi },
+  url: { flex: 1, color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi },
   copy: { color: "#B04A10", fontSize: 16, fontFamily: FONT.bold },
   submitButtons: { flexDirection: "row", gap: 8 },
   flex: { flex: 1 },
@@ -554,7 +525,7 @@ const s = StyleSheet.create({
   future: { opacity: 0.35 },
   otherMonth: { opacity: 0.45 },
   monthTitle: { color: PARCH.ink, fontSize: 19, fontFamily: FONT.bold, marginTop: 10 },
-  monthTag: { color: PARCH.ink, fontSize: 10, fontFamily: FONT.bold, marginBottom: -3 },
+  monthTag: { color: PARCH.ink, fontSize: TYPE.tag, fontFamily: FONT.bold, marginBottom: -3 },
   today: { borderWidth: 3, borderColor: "#F07A2A" },
   date: { color: PARCH.ink, fontSize: 16, fontFamily: FONT.bold },
   plaque: { marginTop: 24 },
@@ -572,7 +543,6 @@ const s = StyleSheet.create({
   postViews: { color: "#2F8A2C", fontSize: 16, fontFamily: FONT.bold },
   zero: { color: PARCH.soft },
   pending: { color: PARCH.soft, fontSize: 14, fontFamily: FONT.semi },
-  waiting: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi, marginBottom: 8 },
   empty: { gap: 12, paddingTop: 4 },
   emptyText: { color: PARCH.soft, fontSize: 17, fontFamily: FONT.semi },
   tiles: { flexDirection: "row", gap: 8, marginHorizontal: 12, marginTop: 14 },
@@ -591,13 +561,9 @@ const s = StyleSheet.create({
   mileFlame: { position: "absolute", top: -20, width: 20, height: 20 },
   mileNum: { color: PARCH.ink, fontSize: 18, fontFamily: FONT.bold },
   mileLine: { color: PARCH.ink, fontSize: 17, fontFamily: FONT.semi, marginTop: 8 },
-  // The small print under the tiles sits on the water with a hard ink shadow, quieter than the tiles above it.
-  footLead: {
-    alignSelf: "center", color: "#FFFFFF", fontSize: 18, fontFamily: FONT.bold, marginHorizontal: 12, marginTop: 12,
-    textAlign: "center", textShadowColor: INK, textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 0,
-  },
+  // The one line under the tiles sits on the water with a hard ink shadow, quieter than the tiles above it.
   footnote: {
-    alignSelf: "center", color: "#F5E6C8", fontSize: 14, fontFamily: FONT.semi, marginHorizontal: 12, marginTop: 4,
-    textAlign: "center", lineHeight: 18, textShadowColor: INK, textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 0,
+    alignSelf: "center", color: "#F5E6C8", fontSize: 16, fontFamily: FONT.semi, marginHorizontal: 12, marginTop: 10,
+    textAlign: "center", textShadowColor: INK, textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 0,
   },
 });

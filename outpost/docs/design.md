@@ -35,7 +35,9 @@ the water behind every screen. `COLOR` adds:
 | `foam` | `#F5E6C8` | Small print on water (always with a hard ink text shadow) |
 
 **Type.** Two faces: `FONT.bold` (Jersey 10) for titles, buttons, numbers and tags; `FONT.semi` (Jersey 15) for
-everything else. Sizes in `TYPE`: `hero` 64, `title` 34, `heading` 22, `body` 17, `label` 15, `tiny` 13.
+everything else. Sizes in `TYPE`: `hero` 64, `title` 34, `heading` 22, `body` 16, `label` 15, `tiny` 13, `tag` 11.
+Nothing a person must read goes under 13 pt on a phone; 11 pt is only for a short all-caps tag inside a tile (the
+month's three letters in the streak calendar). Body text runs 15 to 17.
 `Outlined` draws 1.22x its `size`, so `<Outlined size={22}>` matches a 27 pt plain `Text`. White outlined type goes
 on the water, wood and colored blocks; ink type goes on parchment.
 
@@ -103,7 +105,7 @@ Badges are flat (fill + 2 pt ink outline), never beveled, so nobody tries to pre
 <Badge label="Submitted" tone="slate" />
 <ModeBadge mode={bounty.mode} />                         // CLIP (teal) or ORIGINAL (orange)
 <VerdictBadge verdict={verdictFor(views / baseline)} ratio={views / baseline} reason={likelyReason} />
-<HonestyLabel kind="estimated" detail />                  // ESTIMATED  Not guaranteed, pending Whop review
+<HonestyLabel kind="estimated" />                         // ESTIMATED, beside the number it qualifies
 ```
 
 - `Badge`: `label`, `tone` (`gold`, `green`, `red`, `slate`, `teal`, `orange`, `violet`, `parch`, `ink`), `icon`,
@@ -114,6 +116,7 @@ Badges are flat (fill + 2 pt ink outline), never beveled, so nobody tries to pre
   If the server already computes the verdict, pass it straight in.
 - `HonestyLabel`: `kind` (`forecast`, `estimated`, `seeded`, `provisional`), `detail` (`true` for the standard
   line, or your own string), `on` (`card` / `water`, so the line stays readable). Dashed outline = not final.
+  Prefer the tag alone: the line under it is one more sentence on the card.
 
 Do: label every forecast, estimate, seeded row and provisional score, right next to the number. Don't: write "(est.)"
 in plain text, or color a Miss bright red.
@@ -169,7 +172,7 @@ Taste tiers, renamed from the brief so they don't collide with the village's own
 ```
 
 `TierProgress`: `score` (`undefined` shows skeletons), `calibrating` (`{ scored, needed }` adds a PROVISIONAL label
-and "Calibrating · 3 of 5 posts scored"). It shows the tier, the score with a ticker, a bar to the next tier and "6 to
+and "3 of 5 posts scored"). It shows the tier, the score with a ticker, a bar to the next tier and "6 to
 Showrunner". `tierFor(score)` and `nextTier(score)` give the tier objects (`key`, `name`, `min`, `bevel`, `icon`,
 `color`). Use them rather than hard-coding names.
 
@@ -235,6 +238,17 @@ is `demo-note`.
 `delay`) is a breathing parchment bar for sketching a loading layout.
 
 ## Rules of thumb
+
+Copy (from Charlie's review: no text-heavy boxes, no stacked text, nothing too small on a phone):
+
+- A card gets one headline and at most one short supporting line. Say it with a number, an icon or a badge before a
+  sentence. An explanation goes behind a tap ("How it's scored") or out of the app, not under the number.
+- One honesty label per card. A badge, a caption, a `DemoNote` and a footnote saying the same "demo" or
+  "estimated" is three too many. `DemoNote` goes once per screen, never on every card.
+- Don't nest a card in a card. Inside a `Card`, separate parts with whitespace or a 2 pt parchment rule, not a
+  second bordered box.
+- Check every screen at 390 pt wide: titles hold to two lines, rows to one.
+
 
 - Bevels mean "press me". Buttons, chips and cards with `onPress` are beveled or edged; badges, pills and labels are
   flat.

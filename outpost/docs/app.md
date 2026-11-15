@@ -92,14 +92,14 @@ A chat-style screen for the stage demo. The writer offers up to six prompts from
 
 ### Raid picker
 
-A sheet with one raid to start, **Open a shop**, which sells a $9 Notion template through Whop. It shows the three stars and a Start button. Five more raids are shown as locked: Double down, Whop affiliate, Content Rewards, Dropshipping and Whop Bounties. None of them can start.
+A sheet with one raid to start, **Open a shop**, which sells a $9 Notion template through Whop. It shows the three stars and a Start button. Five more raids are shown as locked, each a lock and a name: Double down, Whop affiliate, Content Rewards, Dropshipping and Whop Bounties. None of them can start.
 
 ### Raid card
 
-Once a raid exists, a card at the bottom of the Base shows it. It is titled "Opening a shop" during setup and "Your shop" once live.
+Once a raid exists, a card at the bottom of the Base shows it. It is titled "Opening a shop" during setup and "Your shop" once live, with a dashed "TEST MODE" tag in the Whop sandbox.
 
 - **Stars.** Halfway, First sale and Goal. A star that lights while you watch plays a sound and a haptic, and the card names it. A star that lit while you were elsewhere pops when you come back.
-- **Progress bar.** Net money toward the $25 goal, after Whop's fees, with a notch at halfway.
+- **Progress bar.** Net money toward the $25 goal, after Whop's fees, with a notch at halfway. The line under it is the net total and the sale count ("$8.18 · 1 sale"); the goal is the last star's label.
 - **Setup steps.** Product, Checkout and Sale alerts, until all three are done. A step in error shows **Try again**.
 - **Share link** shares the checkout URL.
 - **Test checkout** (or **Open store** outside sandbox) opens the checkout in an in-app browser. A sale made there waits until the browser closes before its star, chime and banner play.
@@ -164,7 +164,7 @@ When the newest approved video changes state (approved, posting, live), a tray d
 
 ### Streak banner
 
-The first approval of the day keeps the streak. While the Feed is open, that brings up the streak banner (`src/Payoff.tsx`): "DAY n", "Streak kept. Day n+1 starts tomorrow.", and the milestone path. On a milestone day (3, 7, 14 or 30), the banner says "n-DAY STREAK", turns gold rays behind it, rains pixel bits, and pops the milestone on the path with a chime.
+The first approval of the day keeps the streak. While the Feed is open, that brings up the streak banner (`src/Payoff.tsx`): "DAY n", "Streak kept", and the milestone path. On a milestone day (3, 7, 14 or 30), the banner says "n-DAY STREAK", turns gold rays behind it, rains pixel bits, and pops the milestone on the path with a chime.
 
 ### All caught up
 
@@ -174,13 +174,13 @@ With no cards left, the Feed shows "ALL CAUGHT UP": the streak if today is kept,
 
 The You tab (`src/You.tsx`) shows the streak and what the posts did. It reads `you.summary`.
 
-- **Header.** Total views, and a line: "Today counts. Come back tomorrow.", "Approve one video today to keep it going." or "Approve a video to start a streak."
+- **Header.** Total views, estimated pending earnings and the taste score. What today needs is the streak card's chip, so the header has no line of its own.
 - **Streak card.** The streak number with a flame, a "Done today" or "Approve 1 today" chip, and this week's days (kept days show a flame, frozen days show ice, today pulses until kept).
 - **Milestones.** A path through 3, 7, 14 and 30 days with "n more days to a 7-day streak".
-- **Freezes.** How many are left. Each covers one missed day. A new user has 2.
+- **Freezes.** How many are left ("2 freezes left"). Each covers one missed day. A new user has 2.
 - **See month.** A grid of the weeks before this one, starting at the first kept week. Hidden until there is one.
-- **Totals.** In a dry run: Approved and Made, with sent back and skipped below. Otherwise: Approved, Videos live and Views, with posts, made, sent back, skipped and approvals that went out in a dry run.
-- **Live now.** The top 3 live videos by views, each with a pill per platform that opens the post. "Show all" lists up to 8. A platform that hasn't counted any views yet says so once above the list. With nothing live it says why, and offers **Open the Feed** outside a dry run.
+- **Totals.** In a dry run: Approved and Made, with sent back and skipped in one line below. Otherwise: Approved, Videos live and Views, with made, sent back and skipped in one line below.
+- **Live now.** The top 3 live videos by views, each with a pill per platform that opens the post. "Show all" lists up to 8. A platform that hasn't counted any views yet says "soon" on its pill. With nothing live it says "Nothing live yet." (or that posting is a dry run), and offers **Open the Feed** outside a dry run.
 
 ## Under the hood (`/hood`)
 

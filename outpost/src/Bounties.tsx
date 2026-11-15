@@ -13,12 +13,11 @@ import { ICON } from "./Hud";
 import { Outlined, Sea, WoodHeader } from "./pixel";
 import { Badge, Button, Card, COLOR, DEEP, DemoNote, EmptyState, FONT, INK, ModeBadge, PARCH, ProgressPill, feel } from "./ui";
 
-// T2's list adds what the studio makes for a bounty, its campaign page and its demo library's progress. They are
-// optional here so the board still draws from a list without them.
+// T2's list adds the bounty's campaign page and its demo library's progress. They are optional here so the board still
+// draws from a list without them.
 type Bounty = FunctionReturnType<typeof api.bounties.list>[number] & Partial<{
   pregenerated: boolean;
   progress: { ready: number; total: number };
-  makes: string;
   url: string;
 }>;
 
@@ -65,33 +64,40 @@ export function Bounties({ device }: { device: string }) {
         ) : list.length === 0 ? (
           <View style={s.slot}>
             <EmptyState who="courier" title="The board is empty" testID="bounties-empty"
-              body="No open campaigns right now. New Whop Content Rewards campaigns show up here as the board refreshes."
+              body="New campaigns land here as the board refreshes."
               action={{ label: "Back to Base", onPress: () => router.navigate("/"), testID: "bounties-empty-base" }} />
           </View>
         ) : list.map(b => <BountyCard key={b.id} b={b} failed={failed === b.id} onTake={() => onTake(b)} />)}
-        {list && list.length > 0 && (
-          <Text style={s.footnote}>Real campaigns from Whop Content Rewards. Rates and budgets are the brand's own.</Text>
-        )}
       </ScrollView>
     </View>
   );
 }
 
+// One headline (the campaign title) and one row of numbers. What the studio makes is the mode badge, and the campaign's
+// rules are a tap away on its page. The screen's demo note covers every card, so no card repeats it; an untaken card
+// says only how many videos are already made for it.
 function BountyCard({ b, failed, onTake }: { b: Bounty; failed: boolean; onTake: () => void }) {
-  const library = b.pregenerated && b.progress && b.progress.total > 0 ? b.progress.total : 0;
+  const library = !b.taken && b.pregenerated && b.progress && b.progress.total > 0 ? b.progress.total : 0;
   return (
     <Animated.View layout={LinearTransition.springify().damping(16)} entering={FadeIn.duration(220)} style={s.slot}>
-      <Card title={b.brand} sub={b.source === "content_rewards" ? "Content Rewards" : "Whop bounty"} style={s.card}
-        testID={`bounty-card-${b.id}`}>
+      <Card title={b.brand} style={s.card} testID={`bounty-card-${b.id}`}>
         <View style={s.row}>
           <ModeBadge mode={b.mode} testID={`bounty-mode-${b.id}`} />
-          {library > 0 && (
-            <Badge label={`${library} videos pregenerated for the demo`} tone="violet" icon="play" dashed
-              testID={`bounty-pregenerated-${b.id}`} style={s.shrink} />
-          )}
+          {library > 0 && <Badge label={`${library} pregenerated`} tone="violet" icon="play" dashed testID={`bounty-pregenerated-${b.id}`} />}
+          {b.url ? (
+            <Pressable onPress={() => { feel("tap"); WebBrowser.openBrowserAsync(b.url!).catch(() => {}); }} hitSlop={10} style={s.linkWrap}
+              accessibilityRole="link" accessibilityLabel={`Open the ${b.brand} campaign page`} testID={`bounty-link-${b.id}`}>
+              {({ pressed }) => (
+                <View style={[s.linkRow, pressed && s.pressed]}>
+                  <Image source={ICON.glass} style={s.linkIcon} />
+                  <Text style={s.link}>Campaign</Text>
+                </View>
+              )}
+            </Pressable>
+          ) : null}
         </View>
 
-        <Text style={s.title} numberOfLines={3}>{b.title}</Text>
+        <Text style={s.title} numberOfLines={2}>{b.title}</Text>
 
         <View style={s.row}>
           <View style={s.reward} accessible accessibilityLabel={`Reward ${b.rewardLabel}`} testID={`bounty-reward-${b.id}`}>
@@ -102,40 +108,21 @@ function BountyCard({ b, failed, onTake }: { b: Bounty; failed: boolean; onTake:
           {b.spotsLabel && <Badge label={b.spotsLabel} tone="parch" icon="person" testID={`bounty-spots-${b.id}`} />}
         </View>
 
-        {b.makes ? (
-          <View style={s.makes} testID={`bounty-makes-${b.id}`}>
-            <Text style={s.makesHead}>OUTPOST MAKES</Text>
-            <Text style={s.makesText}>{b.makes}</Text>
-          </View>
-        ) : null}
-
         {b.taken ? <Taken b={b} /> : (
           <Button label="TAKE" bevel="green" feel="commit" onPress={onTake} testID={`bounty-take-${b.id}`}
             accessibilityLabel={`Take ${b.brand}: ${b.title}`} style={s.take} />
         )}
-        {failed && <Text style={s.failed}>That didn't go through. Tap Take to try again.</Text>}
-
-        {b.url ? (
-          <Pressable onPress={() => { feel("tap"); WebBrowser.openBrowserAsync(b.url!).catch(() => {}); }} hitSlop={8}
-            accessibilityRole="link" accessibilityLabel={`Open the ${b.brand} campaign page`} testID={`bounty-link-${b.id}`}>
-            {({ pressed }) => (
-              <View style={[s.row, pressed && s.pressed]}>
-                <Image source={ICON.glass} style={s.linkIcon} />
-                <Text style={s.link}>See the campaign page</Text>
-              </View>
-            )}
-          </Pressable>
-        ) : null}
+        {failed && <Text style={s.failed}>Didn't go through. Try again.</Text>}
       </Card>
     </Animated.View>
   );
 }
 
-// After Take: a TAKEN badge, how many of the bounty's pregenerated videos are in the Feed so far, and a way there.
+// After Take: a TAKEN badge, how many of the bounty's videos are in the Feed so far, and a way there.
 function Taken({ b }: { b: Bounty }) {
   const p = b.progress;
-  const pill = !p || p.total === 0 ? <ProgressPill label="No pregenerated videos yet" state="waiting" testID={`bounty-progress-${b.id}`} />
-    : p.ready >= p.total ? <ProgressPill label={`All ${p.total} ready in your Feed`} state="done" testID={`bounty-progress-${b.id}`} />
+  const pill = !p || p.total === 0 ? <ProgressPill label="No videos yet" state="waiting" testID={`bounty-progress-${b.id}`} />
+    : p.ready >= p.total ? <ProgressPill label={`All ${p.total} ready`} state="done" testID={`bounty-progress-${b.id}`} />
     : <ProgressPill label={`${p.ready} of ${p.total} ready`} state="working" done={p.ready} total={p.total} testID={`bounty-progress-${b.id}`} />;
   return (
     <View style={s.taken}>
@@ -155,7 +142,6 @@ const s = StyleSheet.create({
   slot: { marginTop: 14 },
   card: { gap: 10 },
   row: { flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 8 },
-  shrink: { flexShrink: 1 },
   title: { color: PARCH.ink, fontSize: 23, fontFamily: FONT.bold, lineHeight: 25 },
   reward: { height: 40, justifyContent: "center" },
   rewardBar: {
@@ -163,18 +149,13 @@ const s = StyleSheet.create({
     backgroundColor: COLOR.night, borderWidth: 2, borderColor: INK,
   },
   rewardCoin: { position: "absolute", left: 0, width: 38, height: 38 },
-  makes: { backgroundColor: PARCH.top, borderLeftWidth: 4, borderLeftColor: COLOR.orange, paddingHorizontal: 10, paddingVertical: 6 },
-  makesHead: { color: COLOR.orangeDeep, fontSize: 13, fontFamily: FONT.bold, letterSpacing: 0.5 },
-  makesText: { color: PARCH.ink, fontSize: 17, fontFamily: FONT.semi, lineHeight: 21 },
   take: { marginTop: 4 },
   failed: { color: COLOR.redDeep, fontSize: 16, fontFamily: FONT.semi },
   taken: { gap: 10, marginTop: 2 },
   swipe: { alignSelf: "flex-start" },
+  linkWrap: { marginLeft: "auto" },
+  linkRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   linkIcon: { width: 20, height: 20 },
   link: { color: COLOR.orangeDeep, fontSize: 17, fontFamily: FONT.bold, textDecorationLine: "underline" },
   pressed: { opacity: 0.6 },
-  footnote: {
-    alignSelf: "center", color: COLOR.foam, fontSize: 14, fontFamily: FONT.semi, marginTop: 16, textAlign: "center",
-    lineHeight: 18, textShadowColor: INK, textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 0,
-  },
 });
