@@ -9,7 +9,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { FunctionReturnType } from "convex/server";
 import { useClock } from "./Feed";
-import { compact, localDay, MILESTONES } from "./You";
+import { compact, localDay, MILESTONES, PendingCounter, ScoreCounter } from "./You";
 import { Agent, type Pt, type Who } from "./Agents";
 import { Block, DEEP, FONT, INK, Outlined, PARCH, PixelButton, POP, WOOD, WoodHeader } from "./pixel";
 import { Bubble, Counter, ICON } from "./Hud";
@@ -183,6 +183,12 @@ export function Base({ device }: { device: string }) {
             label={status ? `${shownViews} views` : "Views loading"} />
           <Counter icon="coin" value={mine ? money(shownCents) : "…"} tag={testOnly ? "test" : undefined} testID="hud-vault" onPress={toVault}
             label={mine ? `${money(shownCents)}${testOnly ? " in test sales" : " earned"}` : "Vault loading"} />
+        </View>
+      } below={
+        // The bounty numbers get their own row: three counters and the gear already fill the first one on a phone.
+        <View style={[s.counters, s.counterRow]}>
+          <ScoreCounter device={device} onPress={toYou} testID="hud-score" />
+          <PendingCounter device={device} onPress={toYou} testID="hud-pending" />
         </View>
       } right={
         <Link href="/hood" asChild>
@@ -601,6 +607,7 @@ const s = StyleSheet.create({
   hoodIcon: { width: 24, height: 24 },
   hoodText: { color: "#fff", fontSize: 18, fontFamily: FONT.bold },
   counters: { flexDirection: "row", gap: 6 },
+  counterRow: { marginTop: 8 },
   actions: { flexDirection: "row", gap: 10 },
   action: { alignItems: "center", paddingTop: 10, paddingBottom: 12, paddingHorizontal: 8 },
   actionSub: { color: INK, fontSize: 16, fontFamily: FONT.semi, marginTop: -2 },

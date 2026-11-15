@@ -9,9 +9,11 @@ The app is an Expo Router app in `outpost/src/`. Routes are files under `src/app
 | `/` | `src/app/(tabs)/index.tsx` | Base (the app opens here) | `src/Base.tsx` |
 | `/feed` | `src/app/(tabs)/feed.tsx` | Feed | `src/Feed.tsx` |
 | `/you` | `src/app/(tabs)/you.tsx` | You | `src/You.tsx` |
+| `/bounties` | `src/app/(tabs)/bounties.tsx` | Bounties board | `src/Bounties.tsx` |
 | `/hood` | `src/app/hood.tsx` | Under the hood, full-screen modal | `src/Hood.tsx` |
 | `/create` | `src/app/create.tsx` | Create: suggestion prompts and the staged generation | `src/Create.tsx` |
 | `/generations` | `src/app/generations.tsx` | Progress of staged and studio videos | `src/Generations.tsx` |
+| `/ui-gallery` | `src/app/ui-gallery.tsx` | Every design-system primitive in its states (`?only=<section>` for one). Reached only by the `outpost://ui-gallery` link | `src/ui/Gallery.tsx` |
 
 `src/app/_layout.tsx` is the root. It loads the Jersey pixel fonts, creates the Convex client from `EXPO_PUBLIC_CONVEX_URL`, sets the audio session to play with the ring switch off, and wraps everything in `Session`. The Away card (`src/Away.tsx`) and the widget sync (`src/WidgetSync.tsx`) mount here too, so they work over any tab.
 
@@ -30,13 +32,15 @@ The Base is a pixel-art village (`assets/base/`, drawn by the scripts in `outpos
 
 ### Header
 
-Three counters, each a button:
+Five counters in two rows, each a button:
 
 | Counter | Shows | Tap goes to |
 |---|---|---|
 | Flame | The streak. Lit once today is kept | You |
 | Eye | Total views on live posts | You |
 | Coin | Real earnings. With only test sales, the raid's test total with a "test" tag | The raid card, or the raid picker if no raid exists |
+| Star (second row) | The taste score with its tier name, or a "prov" tag while it's provisional (`ScoreCounter` in `src/You.tsx`) | You |
+| Coin (second row) | Estimated pending bounty earnings, always tagged "est" (`PendingCounter` in `src/You.tsx`) | You |
 
 The gear at the right opens `/hood`.
 
@@ -110,9 +114,8 @@ The Feed is a deck of the studio's videos. Swipe each one to post it or send it 
 
 ### Header strip
 
-- Two counters: the streak and the videos ready.
-- A mode tag: "Dry run · nothing posts", "Private test" or "Posting live".
-- One line under them. It says "Studio offline · the laptop is asleep" when the worker's last heartbeat is more than 25 seconds old. If today isn't kept, it says what one post does, for example "Post 1 video to keep your 4-day streak" or "Post 1 video to reach a 7-day streak". Otherwise it names the studio's steps ("Studio · voicing, rendering"), the queue ("Studio · 3 queued") or "Studio · resting".
+- Four counters: the streak, the videos ready, the taste score (no tier name, to save room; "prov" while provisional) and estimated pending earnings tagged "est". The last two open the You tab.
+- Under them, a mode tag ("Dry run · nothing posts", "Private test" or "Posting live") and one line beside it. It says "Studio offline · the laptop is asleep" when the worker's last heartbeat is more than 25 seconds old. If today isn't kept, it says what one post does, for example "Post 1 video to keep your 4-day streak" or "Post 1 video to reach a 7-day streak". Otherwise it names the studio's steps ("Studio · voicing, rendering"), the queue ("Studio · 3 queued") or "Studio · resting".
 
 ### The deck
 
@@ -214,7 +217,8 @@ The widget can't fetch, so `src/WidgetSync.tsx` pushes a new timeline whenever t
 |---|---|
 | `src/pixel.tsx` | Colors, fonts, the bevelled `Block`, `PixelButton`, `Outlined` text, `WoodHeader` and the sea background |
 | `src/Hud.tsx` | Header `Counter`, roof `Bubble` and the icon set |
-| `src/Payoff.tsx` | Swipe feedback: the APPROVED pop, toasts and the streak banner |
+| `src/Payoff.tsx` | Swipe feedback: the APPROVED pop, toasts and the streak banner. A bounty post's "Posting + submitting to <brand>" banner is the Feed's own `Sending` |
+| `src/ui/` | The design-system primitives (cards, buttons, chips, badges, tickers, progress, tiers, empty states, toasts, the demo note). See [design.md](design.md) |
 | `src/Portrait.tsx` | Agent portraits for speech bubbles and cards |
 | `src/collect.ts` | Shared state between the Away card and the Base header counters |
 | `src/click.ts` | The click and tick sounds |

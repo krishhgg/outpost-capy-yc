@@ -238,12 +238,13 @@ export const ESTIMATE = "Estimated, not guaranteed, pending Whop review.";
 // The taste score and estimated pending earnings as header counters, for any screen's resource bar. Both count to a new
 // value and bump. The pending figure is an estimate, so it always wears "est"; a provisional score wears "prov" instead
 // of its tier. They live here rather than in Hud.tsx because src/ui imports Hud.
-export function ScoreCounter({ device, onPress, testID = "hud-score" }: { device: string; onPress?: () => void; testID?: string }) {
+// `compact` drops the tier name from the tag (a provisional score still says "prov"), for a header that's short on room.
+export function ScoreCounter({ device, onPress, compact, testID = "hud-score" }: { device: string; onPress?: () => void; compact?: boolean; testID?: string }) {
   const t = useQuery(api.earnings.summary, { deviceId: device })?.taste;
   const n = useTicker(t?.score ?? undefined);
   const tier = t?.score === null || t?.score === undefined ? null : tierFor(t.score);
   return <Counter icon="star" value={!t ? "…" : n === undefined ? "–" : String(n)} testID={testID} onPress={onPress}
-    tag={!tier ? undefined : t?.state === "calibrating" ? "prov" : tier.name}
+    tag={!tier ? undefined : t?.state === "calibrating" ? "prov" : compact ? undefined : tier.name}
     label={!t ? "Taste score loading" : !tier ? "No taste score yet"
       : `Taste score ${t.score}, ${tier.name}${t.state === "calibrating" ? ", provisional" : ""}`} />;
 }

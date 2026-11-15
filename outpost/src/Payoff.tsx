@@ -33,12 +33,11 @@ export function usePayoff() {
   const drop = (id: number) => setShots(list => list.filter(x => x.id !== id));
 
   return {
-    // With a bounty, the toast says where the post is going, and the studio's forecast rides under it, labeled as one.
-    post: (bounty?: { brand: string; forecast?: number | null }) => {
+    // A bounty post's "Posting + submitting to <brand>" line is the Feed's own Sending banner, which knows the posting
+    // mode (a dry run never submits) and carries the forecast and the demo note, so the payoff adds no second toast.
+    post: () => {
       play(postSound);
       add({ kind: "pop", text: "+1 APPROVED" });
-      if (bounty) add({ kind: "toast", text: `Posting + submitting to ${bounty.brand}`, who: "courier",
-        sub: typeof bounty.forecast === "number" ? `Forecast ${bounty.forecast}/100 · a guess, not a result` : undefined });
     },
     remake: (reason: string) => { play(remakeSound); add({ kind: "toast", text: `Remaking it · ${reason}`, sub: "It comes back in a few cards", who: "director" }); },
     skip: () => add({ kind: "toast", text: "Skipped" }),

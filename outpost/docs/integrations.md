@@ -14,8 +14,8 @@ Each outside service Outpost uses: what it does for the app, where the code is, 
 | Whop marketplace | The Scout's product search | Convex | Live. Public API, no key |
 | Whop shop | Product, checkout and payments for the shop raid | Convex | Sandbox only. Production is refused in code |
 | Supermemory | Remembers why the user sends videos back | Convex | Live when `SUPERMEMORY_API_KEY` is set |
-| Revyl | Device tests | | Planned. Not integrated |
-| Capy | Proof of changes on pull requests | | Planned. Not integrated |
+| Revyl | Builds each pull request for the iOS simulator and proves it on a cloud iPhone | Revyl cloud, configured by `outpost/.revyl/` | Live. iPhone only |
+| Capy | The coding agents that open pull requests and attach the Revyl proof | Capy | Live |
 
 The `/hood` screen in the app lists the first seven with their role ("Writes each script", "Reads it aloud", "Renders the video", "Stores videos, runs the feed", "Posts videos, reads views", "Store and checkout", "Remembers why you skip"). The list lives in `SERVICES` in `convex/hood.ts`.
 
@@ -121,10 +121,13 @@ Learns the user's taste from the reasons they give for sending videos back.
 
 ## Revyl
 
-- **Status.** Planned, not integrated. The app has no Revyl config and CI does not run Revyl.
-- **Intended use.** YAML tests on cloud iPhones with a report video.
+- **What it does.** Builds every app-facing pull request for the iOS simulator, then on a cloud iPhone runs a proof-of-changes agent on the diff and the `outpost-regression` workflow (`.revyl/tests/`). It posts one verdict comment per pull request, with screenshots and a report link.
+- **Code.** `outpost/.revyl/config.yaml` (the `pull-request` build profile, triggers, the proof prompt and workflow) and `outpost/.revyl/tests/`. Config changes are published with `revyl config push`.
+- **Test user.** Proof builds pin `EXPO_PUBLIC_DEVICE_ID`, so every run is one dry-run user on the production backend. `convex/testkit.ts` seeds and purges test users.
+- **Needs.** The Revyl GitHub App on the repository, and `REVYL_API_KEY` for the CLI (`revyl device start`, `revyl build list`).
+- **Status.** Live, iPhone only. See [testing.md](testing.md).
 
 ## Capy
 
-- **Status.** Planned, not integrated. Nothing in the repo uses it.
-- **Intended use.** Revyl hands each pull request to Capy, which checks the change on a Revyl device and posts a write-up on the pull request.
+- **What it does.** Capy threads write the code, open the pull requests, and attach the Revyl proof to them. Nothing in the app calls Capy.
+- **Status.** Live.
