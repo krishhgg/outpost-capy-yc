@@ -9,6 +9,7 @@ import type { Who } from "./Agents";
 import { Portrait } from "./Portrait";
 import { Flame, Milestones, MILESTONES } from "./You";
 import { ICON } from "./Hud";
+import { HonestyLabel } from "./ui";
 
 // What a swipe pays back, the way a game answers every tap: a sound, a number that flies up, a line saying what the
 // studio does next, and a banner the first time a day's streak is kept. Every number shown is a real count.
@@ -34,7 +35,7 @@ export function usePayoff() {
 
   return {
     // A bounty post's "Posting + submitting to <brand>" line is the Feed's own Sending banner, which knows the posting
-    // mode (a dry run never submits) and carries the forecast and the demo note, so the payoff adds no second toast.
+    // mode (a dry run never submits) and carries its honesty line, so the payoff adds no second toast.
     post: () => {
       play(postSound);
       add({ kind: "pop", text: "+1 APPROVED" });
@@ -213,8 +214,8 @@ function Streak({ days, onDone, onReach }: { days: number; onDone: () => void; o
         <Block bevel="gold" depth={5} lift={4} style={s.streak}>
           <Flame size={56} />
           <Outlined size={milestone ? 34 : 40} width={3}>{milestone ? `${days}-DAY STREAK` : `DAY ${days}`}</Outlined>
-          <Text style={s.streakSub}>{`${milestone ? "Milestone reached." : "Streak kept."} Day ${days + 1} starts tomorrow.`}</Text>
-          <Block depth={3} style={s.path}><Milestones streak={days} reached={milestone ? days : undefined} onReach={onReach} /></Block>
+          <Text style={s.streakSub}>{milestone ? "Milestone reached" : "Streak kept"}</Text>
+          <View style={s.path}><Milestones streak={days} reached={milestone ? days : undefined} onReach={onReach} /></View>
         </Block>
       </Animated.View>
     </View>
@@ -243,7 +244,7 @@ export function TierUp({ name, provisional, onDone }: { name: string; provisiona
             <Image source={ICON.star} style={s.tierStar} />
             <Outlined size={30} width={3}>TIER UP</Outlined>
             <Outlined size={44} width={3} color="#FFF4C4">{name.toUpperCase()}</Outlined>
-            <Text style={s.streakSub}>{provisional ? "Provisional: your score is still calibrating." : "Your taste score reached a new tier."}</Text>
+            {provisional ? <View style={s.tierTag}><HonestyLabel kind="provisional" size="md" /></View> : null}
           </Block>
         </Animated.View>
       </Pressable>
@@ -280,4 +281,5 @@ const s = StyleSheet.create({
   // Wide enough that a ray reaches the deck area's corners at any angle.
   rays: { position: "absolute", width: 780, height: 780 },
   streakSub: { color: PARCH.ink, fontSize: 17, fontFamily: FONT.semi, marginTop: 4 },
+  tierTag: { marginTop: 8 },
 });

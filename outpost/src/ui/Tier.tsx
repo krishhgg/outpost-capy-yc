@@ -71,7 +71,7 @@ export function TierProgress({ score, calibrating, testID = "tier-progress" }:
       {calibrating ? (
         <View style={s.calibrating}>
           <HonestyLabel kind="provisional" />
-          <Text style={s.calText}>{`Calibrating · ${calibrating.scored} of ${calibrating.needed} posts scored`}</Text>
+          <Text style={s.calText}>{`${calibrating.scored} of ${calibrating.needed} posts scored`}</Text>
         </View>
       ) : null}
     </View>

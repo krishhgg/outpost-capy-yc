@@ -31,13 +31,16 @@ export const COLOR = {
 } as const;
 
 // Point sizes. Outlined titles take these as `size` and draw 1.22x larger; plain Text uses them as is.
+// On a phone nothing a person must read goes under `tiny` (13). Only a short all-caps tag inside a tile, like a month's
+// three letters in the streak calendar, may drop to `tag` (11).
 export const TYPE = {
   hero: 64, // the one big number on a screen
   title: 34, // WoodHeader titles
   heading: 22, // section headers, card titles
-  body: 17, // most text
-  label: 15, // tags, captions
-  tiny: 13, // the smallest tag text
+  body: 16, // most text, 15 to 17
+  label: 15, // badges, captions
+  tiny: 13, // the smallest readable text
+  tag: 11, // tiny all-caps tags only
 } as const;
 
 export const SPACE = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24 } as const;

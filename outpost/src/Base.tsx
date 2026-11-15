@@ -481,7 +481,7 @@ function RaidCard({ device, raid, held, onBrowse }: { device: string; raid: Raid
       )}
       <View style={s.cardTop}>
         <Text style={s.cardTitle}>{live ? "Your shop" : "Opening a shop"}</Text>
-        {raid.test && <View style={s.testChip}><Text style={s.testText}>Whop test mode · test card</Text></View>}
+        {raid.test && <View style={s.testChip} accessible accessibilityLabel="Whop test mode, paid with the test card"><Text style={s.testText}>TEST MODE</Text></View>}
       </View>
       <Text style={s.cardSub}>{raid.offer ? `${raid.offer.title} · ${money(raid.offer.priceCents)}` : ""}</Text>
 
@@ -497,9 +497,9 @@ function RaidCard({ device, raid, held, onBrowse }: { device: string; raid: Raid
         <View style={[s.barFill, { width: `${fill * 100}%` }]}><View style={s.barShine} /></View>
         <View style={s.barNotch} />
       </View>
-      <Text style={s.progress} testID="raid-progress">
-        {raid.sales === 0 ? `No sales yet · goal ${money(raid.goalCents)}`
-          : `${money(raid.netCents)} of ${money(raid.goalCents)} after Whop fees · ${raid.sales} sale${raid.sales === 1 ? "" : "s"}`}
+      {/* The goal is the last star's label, so the line under the bar is only where the money stands, after Whop's fees. */}
+      <Text style={s.progress} testID="raid-progress" accessibilityLabel={`${money(raid.netCents)} of ${money(raid.goalCents)} after Whop fees`}>
+        {raid.sales === 0 ? "No sales yet" : `${money(raid.netCents)} · ${raid.sales} sale${raid.sales === 1 ? "" : "s"}`}
       </Text>
 
       {/* Setup steps matter until they're all done. After that they'd only take a row. */}
@@ -533,7 +533,8 @@ function RaidCard({ device, raid, held, onBrowse }: { device: string; raid: Raid
 }
 
 // The one raid you can start today, and the ones that aren't built yet. The locked ones stay on the sheet so you can
-// see where this goes, but small, so the open one is the obvious tap.
+// see where this goes, but small (a lock and a name, with the reason left to VoiceOver), so the open one is the obvious
+// tap. The open one sits on the sheet itself rather than in a box of its own.
 const SHOP_GOAL = 2500; // GOAL_CENTS in convex/raids.ts
 const LOCKED: { key: string; name: string; why: string }[] = [
   { key: "double", name: "Double down", why: "Coming next" },
@@ -587,10 +588,7 @@ function Picker({ device, onClose }: { device: string; onClose: () => void }) {
           {LOCKED.map(r => (
             <View key={r.key} style={s.locked} testID={`raid-locked-${r.key}`} accessible accessibilityLabel={`${r.name}, locked. ${r.why}`}>
               <Image source={ICON.lock} style={s.lockIcon} />
-              <View style={s.flex}>
-                <Text style={s.lockedName} numberOfLines={1}>{r.name}</Text>
-                <Text style={s.lockedWhy} numberOfLines={1}>{r.why}</Text>
-              </View>
+              <Text style={[s.lockedName, s.flex]} numberOfLines={1}>{r.name}</Text>
             </View>
           ))}
         </View>
@@ -632,7 +630,7 @@ const s = StyleSheet.create({
   cardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   cardTitle: { color: PARCH.ink, fontSize: 27, fontFamily: FONT.bold },
   cardSub: { color: PARCH.soft, fontSize: 16, fontFamily: FONT.semi, marginTop: 4 },
-  testChip: { borderColor: "#7A4FD0", borderWidth: 2, paddingHorizontal: 6, paddingVertical: 2 },
+  testChip: { borderColor: "#7A4FD0", borderWidth: 2, borderStyle: "dashed", paddingHorizontal: 6, paddingVertical: 2 },
   testText: { color: "#7A4FD0", fontSize: 15, fontFamily: FONT.bold },
   stars: { flexDirection: "row", justifyContent: "space-between", marginTop: 14 },
   star: { flex: 1, alignItems: "center" },
@@ -657,7 +655,7 @@ const s = StyleSheet.create({
   pickGrain: { position: "absolute", left: 0, right: 0, height: 2, backgroundColor: WOOD.grain },
   pickEdge: { position: "absolute", left: 0, right: 0, bottom: 0, height: 6, borderTopWidth: 3, borderTopColor: INK, backgroundColor: WOOD.lip },
   pickX: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
-  hero: { backgroundColor: PARCH.top, borderWidth: 3, borderColor: INK, borderBottomWidth: 6, padding: 14, gap: 4 },
+  hero: { paddingTop: 4, gap: 4 },
   heroTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   heroIcon: { width: 44, height: 44 },
   heroName: { color: PARCH.ink, fontSize: 26, fontFamily: FONT.bold },
@@ -669,5 +667,4 @@ const s = StyleSheet.create({
   locked: { width: "48.5%", flexDirection: "row", alignItems: "center", gap: 8, padding: 8, borderWidth: 2, borderColor: INK, backgroundColor: PARCH.bottom, opacity: 0.75 },
   lockIcon: { width: 24, height: 24 },
   lockedName: { color: PARCH.ink, fontSize: 16, fontFamily: FONT.bold },
-  lockedWhy: { color: PARCH.soft, fontSize: 14, fontFamily: FONT.regular },
 });

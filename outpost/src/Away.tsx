@@ -288,7 +288,6 @@ function Sheet({ s, taste, ready, onBase, onCollect, onDone }:
 
               <PixelButton label={ready > 0 ? `Collect and review ${ready}` : "Collect"} size={24} onPress={press}
                 testID="away-collect" style={st.collect} />
-              <Text style={st.next}>Views refresh about every hour.</Text>
             </View>
           </Block>
         </Animated.View>
@@ -355,7 +354,7 @@ function Views({ gained, skip, hero }: { gained: number; skip: boolean; hero?: b
   return (
     <View style={hero && st.heroBody}>
       <Outlined size={size} width={size > 40 ? 3 : 2} color={GOLD}>{`+${views.toLocaleString()}`}</Outlined>
-      <Text style={st.bigLabel}>{hero ? "views on your live posts" : "views"}</Text>
+      <Text style={st.bigLabel}>views</Text>
     </View>
   );
 }
@@ -381,7 +380,6 @@ const st = StyleSheet.create({
   heroEye: { width: 40, height: 40, marginBottom: 2 },
   heroBody: { alignItems: "center" },
   collect: { marginTop: 20 },
-  next: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.regular, textAlign: "center", marginTop: 10 },
   scoreLine: { flexDirection: "row", alignItems: "center", gap: 12 },
   star: { width: 44, height: 44 },
   scoreRow: { flexDirection: "row", alignItems: "baseline", gap: 8 },

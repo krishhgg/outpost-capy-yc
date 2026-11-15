@@ -67,7 +67,7 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
   // The video whose remake reason is being picked, or whose note is being written from the Note chip.
   const [asking, setAsking] = useState<{ clip: Clip; note: boolean } | null>(null);
   // The bounty an approved video is going to, shown over the deck for a moment after the swipe lands.
-  const [sent, setSent] = useState<{ id: string; brand: string; mode: Mode; forecast: number | null } | null>(null);
+  const [sent, setSent] = useState<{ id: string; brand: string; mode: Mode } | null>(null);
   const toast = useToast();
   // This session's swipes, for the segments along the top of the video. A session starts each time the Feed comes into view.
   const [outcomes, setOutcomes] = useState<{ id: Id<"videos">; o: Outcome }[]>([]);
@@ -112,7 +112,7 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
       payoff.post();
       if (!clip.bounty || !status) return;
       feel("success");
-      setSent({ id: clip.id, brand: clip.bounty.brand, mode: status.mode, forecast: clip.predicted ? Math.round(clip.predicted.score) : null });
+      setSent({ id: clip.id, brand: clip.bounty.brand, mode: status.mode });
     });
     else if (edit) remake(clip, dwellMs, edit, EDITS.find(([k]) => k === edit)?.[1] ?? edit);
     else { dwell.current = dwellMs; setAsking({ clip, note: false }); }
@@ -242,7 +242,7 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
                 onFind={find && find.id !== findGone ? () => setSinceFind(FIND_EVERY) : undefined} />)
           : box && <Deck clips={clips} done={outcomes.map(x => x.o)} onSwipe={onSwipe} onNote={onNote} active={active && !asking && !showFind}
               box={box} behind={!showFind} tucked={!!latest && now < trayUntil} />}
-        {sent && <Sending key={sent.id} brand={sent.brand} mode={sent.mode} forecast={sent.forecast} onDone={() => setSent(null)} />}
+        {sent && <Sending key={sent.id} brand={sent.brand} mode={sent.mode} onDone={() => setSent(null)} />}
         {showFind && find && (
           <FindCard key={find.id} find={find} onSwipe={dir => {
             setFindGone(find.id);
@@ -316,7 +316,7 @@ function CaughtUp({ approved, remakes, streak, making, stages, queued, offline, 
           <View style={s.caughtTile}><Text style={s.caughtNum}>{shown}</Text><Text style={s.caughtLabel}>approved today</Text></View>
           <View style={s.caughtTile}><Text style={s.caughtNum}>{remakes}</Text><Text style={s.caughtLabel}>sent back</Text></View>
         </View>
-        {streak > 0 ? <Block depth={3} style={s.caughtPath}><Milestones streak={streak} /></Block> : null}
+        {streak > 0 ? <View style={s.caughtPath}><Milestones streak={streak} /></View> : null}
         <View style={s.caughtStudio}>
           {making > 0 && <View style={s.caughtCrew}><Portrait who="writer" /><Portrait who="director" /></View>}
           <Text style={s.caughtNext}>{studio}</Text>
@@ -334,8 +334,8 @@ function CaughtUp({ approved, remakes, streak, making, stages, queued, offline, 
 function NoVideos({ making }: { making: number }) {
   return (
     <Animated.View entering={ZoomIn.springify().damping(12).mass(1).stiffness(180)} style={s.caughtWrap}>
-      <EmptyState icon="coin" title="Take a paid bounty and its videos land here" testID="feed-empty"
-        body={`Approve the ones worth posting. The brand pays per 1K views on Whop.${making > 0 ? `\nStudio · remaking ${making} for you` : ""}`}
+      <EmptyState icon="coin" title="No videos yet" testID="feed-empty"
+        body={making > 0 ? `Studio · remaking ${making} for you` : "Take a bounty and its videos land here."}
         action={{ label: "Browse bounties", onPress: () => router.navigate("/bounties"), testID: "empty-bounties" }} />
       <DemoNote style={s.demoNote} />
     </Animated.View>
@@ -343,8 +343,9 @@ function NoVideos({ making }: { making: number }) {
 }
 
 // The moment after a bounty video is approved: where it's going, in the words the posting mode allows. Only public
-// posts submit to the bounty, so a dry run or a private test says so instead.
-function Sending({ brand, mode, forecast, onDone }: { brand: string; mode: Mode; forecast: number | null; onDone: () => void }) {
+// posts submit to the bounty, so a dry run or a private test says so instead. It carries one honesty line: the mode's
+// own, or the demo note when the post is public.
+function Sending({ brand, mode, onDone }: { brand: string; mode: Mode; onDone: () => void }) {
   useEffect(() => { const t = setTimeout(onDone, 2600); return () => clearTimeout(t); }, []);
   const [line, sub] = mode === "public" ? ["Posting + submitting to", null]
     : mode === "private" ? ["Posting a private test for", "Private posts aren't submitted"]
@@ -355,19 +356,14 @@ function Sending({ brand, mode, forecast, onDone }: { brand: string; mode: Mode;
       <Block bevel="green" depth={3} lift={4} style={s.sendingCard}>
         <Outlined size={18} width={1.5}>{line}</Outlined>
         <Outlined size={28} color={COLOR.goldPale}>{brand}</Outlined>
-        {sub || forecast !== null ? (
-          <View style={s.sendingRow}>
-            {sub ? <Text style={s.sendingSub}>{sub}</Text> : null}
-            {forecast !== null ? <Badge label={`FORECAST ${forecast}`} tone="violet" size="sm" dashed /> : null}
-          </View>
-        ) : null}
-        <DemoNote style={s.sendingNote} />
+        {sub ? <Text style={s.sendingSub}>{sub}</Text> : <DemoNote style={s.sendingNote} />}
       </Block>
     </Animated.View>
   );
 }
 
-// The studio's 0-100 guess at how well the video meets its bounty's brief, labeled as a guess. Tap for the whole reason.
+// The studio's 0-100 guess at how well the video meets its bounty's brief, labeled as a guess: the tag and the number,
+// so it doesn't cover the video. Tap for the reason.
 function Forecast({ score, reason }: { score: number; reason: string }) {
   const [open, setOpen] = useState(false);
   return (
@@ -375,7 +371,7 @@ function Forecast({ score, reason }: { score: number; reason: string }) {
       accessibilityLabel={`Forecast ${Math.round(score)} out of 100: ${reason}`}>
       <Badge label={HONESTY.forecast.label} tone={HONESTY.forecast.tone} size="sm" dashed />
       <Text style={s.forecastScore}>{Math.round(score)}</Text>
-      <Text style={s.forecastReason} numberOfLines={open ? 4 : 1}>{reason}</Text>
+      {open ? <Text style={s.forecastReason} numberOfLines={3}>{reason}</Text> : null}
     </Pressable>
   );
 }
@@ -616,7 +612,9 @@ function Deck({ clips, done, onSwipe, onNote, active, box, behind, tucked }:
               <View style={s.screenIn}>
                 <VideoView key={top.id} player={cur} style={s.video} nativeControls={false} contentFit="cover" />
                 <Segments key={`p${top.id}`} done={done} left={clips.length} player={cur} />
-                {/* What the video is for and how it was made, stacked down the top-left corner under the segments. */}
+                {/* What the video is for and how it was made, stacked down the top-left corner under the segments: the
+                    bounty, a remake's reason, the pregenerated label (contracts.md) and the forecast as a tag and a number,
+                    its reason a tap away so it doesn't cover the video. */}
                 <View style={s.tags} pointerEvents="box-none">
                   {top.bounty ? (
                     <Badge label={`${top.bounty.brand} · ${top.bounty.rewardLabel}`} tone="gold" icon="coin" testID="bounty-tag" style={s.tagMax} />
@@ -809,8 +807,7 @@ const s = StyleSheet.create({
   editCell: { flexGrow: 1 },
   sending: { position: "absolute", left: 24, right: 24, bottom: EDIT_ROW + OVERHANG + 40, alignItems: "center" },
   sendingCard: { alignItems: "center", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 14 },
-  sendingRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
-  sendingSub: { color: INK, fontSize: 16, fontFamily: FONT.semi },
+  sendingSub: { color: INK, fontSize: 16, fontFamily: FONT.semi, marginTop: 4 },
   sendingNote: { marginTop: 8 },
   demoNote: { marginTop: 14 },
   stamp: { position: "absolute", top: 56 },
