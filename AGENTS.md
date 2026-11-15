@@ -12,9 +12,8 @@ pending earnings and a taste score; the agent texts the user over iMessage.
 
 ## Direction vs today
 
-The product direction is Charlie's brief (in the team's Capy drive at `captain-project-direction/plans/brief.md`,
-not in the repo). The code in `outpost/` is an earlier version:
-agents write, voice and render original 3D explainer videos and post them to YouTube and Instagram. **Code is the
+The product direction is Charlie's brief, [BRIEF.md](BRIEF.md); read it before product work. The code in
+`outpost/` is an earlier version: agents write, voice and render original 3D explainer videos and post them to YouTube and Instagram. **Code is the
 truth about what is built. Never describe a planned feature as working.**
 
 | Feature | Status today | Where |

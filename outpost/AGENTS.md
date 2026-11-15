@@ -1,7 +1,7 @@
 # outpost/AGENTS.md
 
-Start with the root [AGENTS.md](../AGENTS.md): what Outpost is, built vs planned, hard rules and commands. This
-file adds what is specific to the app, Convex and the studio.
+Start with the root [AGENTS.md](../AGENTS.md): what Outpost is, built vs planned, hard rules and commands. The
+product direction is [BRIEF.md](../BRIEF.md). This file adds what is specific to the app, Convex and the studio.
 
 ## Expo app (`src/`)
 
