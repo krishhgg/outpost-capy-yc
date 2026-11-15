@@ -2,7 +2,6 @@ import { ConvexError } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 
-export const BUFFER = 10; // videos ready or in progress per user
 export const PLATFORMS = ["youtube", "instagram"] as const;
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -73,21 +72,9 @@ export async function bumpDay(ctx: MutationCtx, userId: Id<"users">, day: string
   else await ctx.db.insert("days", { userId, day, made: 0, approved: 0, remakes: 0, skipped: 0, [field]: 1 });
 }
 
-// Keep BUFFER videos queued, in progress or ready. Revyl's proof users queue behind every real user's videos,
-// so the studio renders real users first.
-export async function refill(ctx: MutationCtx, userId: Id<"users">) {
-  let have = 0;
-  for (const status of ["queued", "making", "ready"] as const) {
-    const rows = await ctx.db.query("videos")
-      .withIndex("by_user_status_rank", q => q.eq("userId", userId).eq("status", status)).take(BUFFER);
-    have += rows.length;
-  }
-  const now = Date.now();
-  const behind = (await ctx.db.get(userId))?.deviceId.startsWith("revyl-proof-") ? 1e12 : 0;
-  for (let i = have; i < BUFFER; i++) {
-    await ctx.db.insert("videos", { userId, status: "queued", rank: now + i + behind, attempts: 0, createdAt: now });
-  }
-}
+// Feeds fill from taken bounties now: bounties.take clones a bounty's pregenerated library videos into the user's
+// Feed, and feed.swipe queues remakes. So refill no longer queues generic videos; its callers stay as they are.
+export async function refill(_ctx: MutationCtx, _userId: Id<"users">) {}
 
 export async function logCall(ctx: MutationCtx, row: Omit<Doc<"calls">, "_id" | "_creationTime" | "at"> & { at?: number }) {
   await ctx.db.insert("calls", { ...row, detail: row.detail?.slice(0, 400), at: row.at ?? Date.now() });

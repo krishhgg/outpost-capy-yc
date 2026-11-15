@@ -11,6 +11,7 @@
 import type * as admin from "../admin.js";
 import type * as away from "../away.js";
 import type * as bounties from "../bounties.js";
+import type * as bountySeed from "../bountySeed.js";
 import type * as crons from "../crons.js";
 import type * as demo from "../demo.js";
 import type * as earnings from "../earnings.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   away: typeof away;
   bounties: typeof bounties;
+  bountySeed: typeof bountySeed;
   crons: typeof crons;
   demo: typeof demo;
   earnings: typeof earnings;
