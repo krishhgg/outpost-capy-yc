@@ -27,6 +27,7 @@ import type * as scout from "../scout.js";
 import type * as sources from "../sources.js";
 import type * as studio from "../studio.js";
 import type * as submit from "../submit.js";
+import type * as testkit from "../testkit.js";
 import type * as views from "../views.js";
 import type * as whop from "../whop.js";
 import type * as whopAuth from "../whopAuth.js";
@@ -58,6 +59,7 @@ declare const fullApi: ApiFromModules<{
   sources: typeof sources;
   studio: typeof studio;
   submit: typeof submit;
+  testkit: typeof testkit;
   views: typeof views;
   whop: typeof whop;
   whopAuth: typeof whopAuth;
