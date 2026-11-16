@@ -7,7 +7,7 @@ export { Chip, ChipRow, type ChipProps } from "./Chip";
 export { Badge, HonestyLabel, HONESTY, HIT_AT, MISS_UNDER, ModeBadge, VerdictBadge, verdictFor, type BadgeProps, type Honesty, type Tone, type Verdict } from "./Badge";
 export { NumberTicker, type NumberTickerProps } from "./NumberTicker";
 export { ProgressBar, ProgressPill, ProgressSteps, Segments, type PillState } from "./Progress";
-export { TIERS, TierBadge, TierProgress, nextTier, tierFor, type Tier } from "./Tier";
+export { TIERS, TierBadge, TierProgress, nextTier, tierFor, unlockLabel, type Tier } from "./Tier";
 export { Card, CardRow, SectionHeader, type CardProps } from "./Card";
 export { EmptyState, type EmptyStateProps } from "./EmptyState";
 export { Toast, useToast, type ToastOptions } from "./Toast";
