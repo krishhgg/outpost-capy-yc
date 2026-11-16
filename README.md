@@ -1,41 +1,59 @@
+<p align="center"><img src="assets/readme/banner.png" alt="Outpost: get paid to doomscroll" width="100%"></p>
+
 # Outpost
 
-Outpost is an iOS app where AI agents run a small content business for you. A studio on a laptop writes, voices and renders short vertical videos. You swipe through them in the Feed: right posts a video to YouTube and Instagram, left sends it back with a reason and the studio remakes it. The Base shows the agents at work in a pixel-art village and runs a shop "raid" that sells a $9 Notion invoice template through Whop. The You tab tracks your daily streak, milestones and views.
+**Get paid to doomscroll.** Outpost is an iOS app where AI agents make short videos for real brand bounties, you swipe to decide which ones post, and your taste score rises or falls with the real views.
 
-It was built for the YC Consumer Mobile Hackathon, with the demo on Sunday, November 15, 2026.
+## Why
 
-## Demo flow
-
-1. Open the app. A "While you were away" card counts what the agents did since you last looked: videos made, posts live, views and sales. Tap Collect.
-2. On the Base, tap an agent to hear what it is doing, then tap REVIEW.
-3. In the Feed, swipe right on a video. It goes out to YouTube and Instagram, and the first approval of the day keeps your streak.
-4. Swipe left on another and pick "Hook too slow". A few cards later it comes back with a new hook.
-5. Every few swipes, the Scout shows a paid product from the Whop marketplace. Tap MAKE IT and the next video is about the problem it solves.
-6. Back on the Base, start the shop raid. Outpost creates the product and checkout on Whop's sandbox. A test payment lights the first-sale star and raises the Shop.
-7. Tap the gear to see every outside call as it happens.
-
-The full runbook is in [outpost/docs/demo-runbook.md](outpost/docs/demo-runbook.md).
+- You already judge thousands of videos a day by stopping or scrolling past. You do it for free, and the platforms keep the money.
+- AI can now make endless videos for almost nothing. It still can't tell which ones people want to watch. That takes a person.
+- So Outpost pays people for their taste and scores them on whether they were right.
 
 ## How it works
 
-| Part | What it does | Code |
-|---|---|---|
-| App | Expo SDK 58, React Native, Expo Router. Talks only to Convex | `outpost/src/` |
-| Backend | Convex: data, video files, the Feed, posting, payments, crons | `outpost/convex/` |
-| Studio | A Node worker on the laptop. Claude writes the script, Kokoro voices it, Compound renders it, and the MP4 goes to Convex | `outpost/studio/` |
+<table>
+<tr>
+<td align="center" width="33%"><img src="assets/readme/bounties.png" alt="Bounties tab" height="520"></td>
+<td align="center" width="33%"><img src="assets/readme/feed.png" alt="Feed" height="520"></td>
+<td align="center" width="33%"><img src="assets/readme/you.png" alt="You tab with the taste score" height="520"></td>
+</tr>
+<tr>
+<td valign="top"><b>1. Take a bounty.</b> Real paid campaigns from brands on Whop. Your agents read the brief and make the videos.</td>
+<td valign="top"><b>2. Swipe.</b> Left sends a video back with a reason, like "Hook too slow", and the agents remake it. Right posts it, and one tap submits it to the brand on Whop.</td>
+<td valign="top"><b>3. Get scored.</b> Each post is a Hit, Solid or Miss against your usual views. Your score sets your tier, and higher tiers unlock bounties that pay more per 1K views. Approve junk and they lock again.</td>
+</tr>
+</table>
 
-Outside services:
+Nothing posts until a person swipes right. Your swipes train the agents, and real view counts train you.
 
-| Service | Used for | Status |
+| Tier | Taste score | Unlocks |
 |---|---|---|
-| Convex | Backend | Live |
-| Claude (`claude -p`) | Scripts | Live |
-| Kokoro | Voice, run locally | Live |
-| Compound | Video rendering | Live |
-| Zernio | Posting to YouTube and Instagram, view counts | Live |
-| Whop | Marketplace search, and the shop raid's product, checkout and payments | Search live, shop in sandbox only |
-| Supermemory | Remembering why you send videos back | Live |
-| Revyl, Capy | Device tests and pull request proof | Planned, not integrated |
+| Settler | 0+ | Bounties open to everyone |
+| Curator | 40+ | $2 per 1K views bounties |
+| Showrunner | 60+ | $4 per 1K views bounties |
+| Tastemaker | 80+ | $6 per 1K views bounties |
+
+## How the sponsors fit together
+
+<p align="center"><img src="assets/readme/architecture.png" alt="Architecture: the phone and the laptop studio meet in Convex; Capy and Revyl build and prove every change" width="100%"></p>
+
+| Sponsor | What it does in Outpost |
+|---|---|
+| **Convex** | The whole backend: users, bounties, the Feed, the studio's job queue, video files, posting, payments and crons. The phone and the laptop studio only talk through it. |
+| **Whop** | The money. Bounties come from Whop Content Rewards and Whop Bounties. Content Rewards posts are submitted with one tap, and Whop Bounties are submitted automatically with their review status tracked. |
+| **Supermemory** | Taste memory. It learns your taste from why you send videos back, and the studio writes the next scripts with what it learned. |
+| **Revyl** | Every pull request is built and proven on a cloud iPhone before it merges. |
+| **Capy** | The agents that built it. Almost every pull request in this repo came from Capy agents, each on a `capy/` branch. |
+
+<table>
+<tr>
+<td align="center" width="50%"><img src="assets/readme/revyl-proof.png" alt="Revyl proof of changes on a pull request" width="100%"><br><sub><b>Revyl</b>: proof of changes on a pull request, with the iPhone screens it checked</sub></td>
+<td align="center" width="50%"><img src="assets/readme/capy-pr.png" alt="A pull request opened and merged by Capy" width="100%"><br><sub><b>Capy and Whop</b>: the Whop Bounties integration, built and merged by Capy</sub></td>
+</tr>
+</table>
+
+The studio runs on a laptop: Claude writes each script, Kokoro voices it, Compound renders it in 3D, and the worker uploads it to Convex. Zernio posts approved videos to YouTube and Instagram and brings back the view counts.
 
 ## Repo map
 
