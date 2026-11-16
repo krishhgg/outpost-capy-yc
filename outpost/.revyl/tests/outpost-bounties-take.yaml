@@ -30,17 +30,17 @@ test:
           step_type: wait
           step_description: "3"
         - type: validation
-          step_description: The BOUNTIES screen lists bounty cards. Each card shows a brand name, a gold reward, and either a green TAKE button or a green TAKEN badge. It is not blank and shows no error.
+          step_description: The BOUNTIES screen lists bounty cards. Each card shows a brand name, a gold reward, and either a green TAKE button, a green TAKEN plate, or a grey lock plate naming a taste tier (such as SHOWRUNNER) on a higher-paying bounty. It is not blank and shows no error.
         - type: if
-          condition: Does the header under BOUNTIES show that some bounties are still open, either as "N more open" with N above 0 or as "Take one and its videos land in your Feed"?
+          condition: Does the header under BOUNTIES show that some bounties are still open, either as "N more open" with N above 0 or as "Take one to fill your Feed"?
           then:
             - type: instructions
-              step_description: Scroll down the board until a bounty card with a green TAKE button is in view.
+              step_description: Scroll down the board until a bounty card with a green TAKE button (not a lock plate) is in view.
             - type: instructions
               step_description: Tap that TAKE button and wait 3 seconds.
             - type: validation
-              step_description: The header under BOUNTIES now shows one more taken bounty than before the tap, for example "3 taken · 5 more open" after "2 taken · 6 more open", or "1 taken · 7 more open" after "Take one and its videos land in your Feed". No "That didn't go through" error is showing.
+              step_description: The header under BOUNTIES now shows one more taken bounty than before the tap, for example "3 taken · 5 more open" after "2 taken · 6 more open", or "1 taken · 7 more open" after "Take one to fill your Feed". No "That didn't go through" error is showing.
         - type: instructions
           step_description: Scroll to the top of the board.
         - type: validation
-          step_description: The header under BOUNTIES counts the taken bounties, such as "3 taken · 5 more open", and the top card shows a green TAKEN badge, a progress pill such as "2 of 5 ready", "All 5 ready in your Feed" or "No pregenerated videos yet", and a Swipe them button.
+          step_description: The header under BOUNTIES counts the taken bounties, such as "3 taken · 5 more open", and the top card shows a green TAKEN plate and a full-width button such as "Swipe them · 2 of 5 ready", "Swipe all 5" or "Open Feed".

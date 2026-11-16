@@ -44,9 +44,9 @@ test:
           step_type: wait
           step_description: "3"
         - type: validation
-          step_description: The Feed shows either a full-screen video card with REMAKE and POST buttons under it, or a designed empty state such as "ALL CAUGHT UP" or a message that the studio is offline. It is not blank and shows no error.
+          step_description: The Feed shows either a full-screen video card with the estimated earnings and taste score over its top edge, or a designed empty state such as "ALL CAUGHT UP" or a message that the studio is offline. It is not blank and shows no error.
         - type: validation
-          step_description: The Feed header shows the "Dry run · nothing posts" chip.
+          step_description: When a video card shows, a gold pill with a brand and a rate such as "$1.50/1K", or no pill for a non-bounty test clip, sits at its bottom left, and there are no REMAKE/POST buttons or edit chips under the video.
         - type: instructions
           step_description: Tap the You tab in the bottom tab bar.
         - type: validation

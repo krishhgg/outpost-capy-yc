@@ -34,8 +34,8 @@ export function usePayoff() {
   const drop = (id: number) => setShots(list => list.filter(x => x.id !== id));
 
   return {
-    // A bounty post's "Posting + submitting to <brand>" line is the Feed's own Sending banner, which knows the posting
-    // mode (a dry run never submits) and carries its honesty line, so the payoff adds no second toast.
+    // A bounty post's "Approved · <brand> · <mode>" pill is the Feed's own, which knows the posting mode (a dry run never
+    // submits), so the payoff adds no second toast.
     post: () => {
       play(postSound);
       add({ kind: "pop", text: "+1 APPROVED" });
