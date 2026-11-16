@@ -50,6 +50,9 @@ export function You({ device }: { device: string }) {
   const earnings = useQuery(api.earnings.summary, { deviceId: device });
   const bounties = useQuery(api.bounties.list, { deviceId: device });
   const focused = useIsFocused();
+  // Something to collect since the last Collect puts a dot on News.
+  const away = useQuery(api.away.summary, { deviceId: device });
+  const unread = !!away && away.made + away.posted + away.sales.count + away.views.to - away.views.from > 0;
   const [month, setMonth] = useState(false);
   const [allPosts, setAllPosts] = useState(false);
   if (!data) return <View style={s.fill} />;
@@ -71,10 +74,14 @@ export function You({ device }: { device: string }) {
   return (
     <View style={s.fill}>
       <Sea />
-      {/* The taste card leads, so the header carries no counters. News opens the Away recap over this tab and leaves you here. */}
+      {/* The taste card leads, so the header carries no counters. News is the only way to open the Away recap; it opens
+          over this tab and leaves you here, with a dot while there is something to collect. */}
       <WoodHeader title="YOU" right={
-        <Button label="News" size="sm" bevel="gold" feel="tap" onPress={showNews} testID="you-news"
-          accessibilityLabel="News since your last visit" />
+        <View>
+          <Button label="News" size="sm" bevel="gold" feel="tap" onPress={showNews} testID="you-news"
+            accessibilityLabel={unread ? "News since your last visit, new" : "News since your last visit"} />
+          {unread && <View style={s.newsDot} pointerEvents="none" testID="you-news-dot" />}
+        </View>
       } />
       <ScrollView style={s.flex} contentContainerStyle={{ paddingBottom: 28 }} testID="you">
         <Taste e={earnings} bounties={bounties} focused={focused} />
@@ -631,6 +638,7 @@ const s = StyleSheet.create({
   unlockNote: { color: PARCH.ink, fontSize: 18, fontFamily: FONT.semi, textAlign: "center" },
   unlockDismiss: { color: PARCH.ink, fontSize: 17, fontFamily: FONT.bold, textAlign: "center" },
   forecastLine: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi, marginBottom: 4 },
+  newsDot: { position: "absolute", top: -5, right: -5, width: 16, height: 16, backgroundColor: "#E5403A", borderWidth: 2, borderColor: INK },
   trend: { fontSize: 17, fontFamily: FONT.bold, marginTop: 8 },
   tasteNote: { color: PARCH.soft, fontSize: 16, fontFamily: FONT.semi, marginTop: 8 },
   warn: { color: "#B04A10" },

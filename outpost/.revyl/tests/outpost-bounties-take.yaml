@@ -19,11 +19,6 @@ test:
         - type: manual
           step_type: wait
           step_description: "5"
-        - type: if
-          condition: Is a "While you were away" card showing with a Collect button?
-          then:
-            - type: instructions
-              step_description: Tap Collect and wait for the card to close.
         - type: instructions
           step_description: Tap the Bounties tab at the left of the bottom tab bar.
         - type: manual
