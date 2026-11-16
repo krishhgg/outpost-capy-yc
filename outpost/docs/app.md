@@ -174,7 +174,7 @@ With no cards left, the Feed shows "ALL CAUGHT UP": the streak if today is kept,
 
 The You tab (`src/You.tsx`) shows the streak and what the posts did. It reads `you.summary`.
 
-- **Header.** Total views, estimated pending earnings and the taste score. What today needs is the streak card's chip, so the header has no line of its own.
+- **Header.** Total views, estimated pending earnings and the taste score. What today needs is the streak card's chip, so the header has no line of its own. **News** opens the Away card over the You tab (see [Away card](#away-card)).
 - **Streak card.** The streak number with a flame, a "Done today" or "Approve 1 today" chip, and this week's days (kept days show a flame, frozen days show ice, today pulses until kept).
 - **Milestones.** A path through 3, 7, 14 and 30 days with "n more days to a 7-day streak".
 - **Freezes.** How many are left ("2 freezes left"). Each covers one missed day. A new user has 2.
@@ -195,7 +195,7 @@ Opened from the gear on the Base header. It is a live log of every outside call 
 
 ## Away card
 
-`src/Away.tsx` shows "While you were away" over whichever tab is open. It checks at launch and when the app returns after more than 20 minutes in the background. It opens only if something happened since the last Collect, and at launch only if that Collect was more than 20 minutes ago.
+`src/Away.tsx` shows "While you were away" over whichever tab is open. It checks at launch and when the app returns after more than 20 minutes in the background. It opens only if something happened since the last Collect, and at launch only if that Collect was more than 20 minutes ago. The You tab's **News** button opens it at any time, as a floating card over You.
 
 The card lists, one line at a time with a tick:
 
@@ -203,7 +203,9 @@ The card lists, one line at a time with a tick:
 - sales and their amount, labeled "Test sales" for sandbox payments (the Merchant),
 - views gained (the Courier). When views are the only news they get the whole card.
 
-Tap anywhere to show every line at once. **Collect** is the only way to close it. Collect plays a chime, flies coin and eye icons into the Base's header counters, and calls `away.collect` so the next card starts from here. If videos are ready, the button reads "Collect and review n" and goes to the Feed.
+Tap anywhere to show every line at once. **Collect** is the only way to close the card that opens by itself. Collect plays a chime, flies coin and eye icons into the Base's header counters (when the Base is showing), and calls `away.collect` and `earnings.mark` so the next card starts from here. Collect leaves you on the tab you were on. If videos are ready, a **Review n in the Feed** link under it collects and then opens the Feed.
+
+Opened from News, the card also has an X that closes it without collecting. With nothing new since the last Collect its button reads **Close** and closes it without calling `away.collect` or `earnings.mark`; the score and best and worst post still show when there are any, and with no lines at all the card says "Nothing new yet".
 
 ## Home-screen widget
 

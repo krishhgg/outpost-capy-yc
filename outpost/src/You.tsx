@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useClock } from "./Feed";
+import { showNews } from "./collect";
 import { Counter, ICON, useTicker, type IconName } from "./Hud";
 import { Badge, Button, Card, HonestyLabel, NumberTicker, TierProgress, TIERS, tierFor, TYPE, VerdictBadge, money, type Tone } from "./ui";
 import type { FunctionReturnType } from "convex/server";
@@ -67,8 +68,11 @@ export function You({ device }: { device: string }) {
     <View style={s.fill}>
       <Sea />
       {/* Views stay in view here as on the Base and the Feed. The streak card's chip says what today needs, so neither the
-          streak nor that line is repeated in the header. */}
-      <WoodHeader title="YOU" below={
+          streak nor that line is repeated in the header. News opens the Away recap over this tab and leaves you here. */}
+      <WoodHeader title="YOU" right={
+        <Button label="News" size="sm" bevel="gold" feel="tap" onPress={showNews} testID="you-news"
+          accessibilityLabel="News since your last visit" />
+      } below={
         <View style={s.hud}>
           <Counter icon="eye" value={compact(totals.views)} testID="you-hud-views" label={`${totals.views} views`} />
           <PendingCounter device={device} testID="you-hud-pending" />
