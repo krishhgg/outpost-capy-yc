@@ -17,9 +17,8 @@ export function usePending() {
   return useSyncExternalStore(cb => { subs.add(cb); return () => { subs.delete(cb); }; }, () => pending);
 }
 
-// Whether the Away card is up, or may still come up: true from launch until its first check finds nothing to show,
-// and again whenever it opens. The Base holds its own moments until the card is out of the way.
-let awayUp = true;
+// Whether the Away card is up. The Base holds its own moments until the card is out of the way.
+let awayUp = false;
 const awaySubs = new Set<() => void>();
 export function setAwayUp(v: boolean) {
   if (v === awayUp) return;
