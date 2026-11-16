@@ -55,6 +55,17 @@ Nothing posts until a person swipes right. Your swipes train the agents, and rea
 
 The studio runs on a laptop: Claude writes each script, Kokoro voices it, Compound renders it in 3D, and the worker uploads it to Convex. Zernio posts approved videos to YouTube and Instagram and brings back the view counts.
 
+### How Supermemory makes the agents better
+
+Every swipe teaches the agents what you like. Supermemory is where that lesson is kept.
+
+1. You swipe a video away and say why, like "Hook too slow" or "Visuals are boring".
+2. Outpost saves the reason to your own space in Supermemory, written as a taste note: "A creator skipped one of their own short videos. Their reason: the visuals were unengaging. They want livelier visuals."
+3. Supermemory turns those notes into memories about your taste and links related ones.
+4. When the studio writes your next video, Claude gets what Supermemory learned about you along with the brand's brief. The remake fixes what you complained about, and every video after it starts from your taste.
+
+<p align="center"><img src="assets/readme/supermemory.png" alt="Supermemory memory graph of one creator's taste notes" width="100%"><br><sub><b>Supermemory</b>: one creator's taste notes as a memory graph. Each note came from a swipe and holds what Supermemory learned from it.</sub></p>
+
 ## Repo map
 
 | Path | What it is |
