@@ -19,11 +19,8 @@ test:
         - type: manual
           step_type: wait
           step_description: "5"
-        - type: if
-          condition: Is a "While you were away" card showing with a Collect button?
-          then:
-            - type: instructions
-              step_description: Tap Collect and wait for the card to close.
+        - type: validation
+          step_description: No "While you were away" card is showing. The app opened straight onto a tab.
         - type: validation
           step_description: No sign-in, sign-up or account connection screen is showing, and there is no error such as "Outpost is full right now".
         - type: instructions
@@ -51,3 +48,14 @@ test:
           step_description: Tap the You tab in the bottom tab bar.
         - type: validation
           step_description: The You screen shows a "YOU" header and a card with the day streak number and "DAY STREAK".
+        - type: instructions
+          step_description: Tap the yellow News button at the top right of the YOU header.
+        - type: manual
+          step_type: wait
+          step_description: "2"
+        - type: validation
+          step_description: A "While you were away" card floats over the You screen, with an X at its top right and a Collect or Close button. It has no "Review" link.
+        - type: instructions
+          step_description: Tap the Collect or Close button on that card and wait 3 seconds.
+        - type: validation
+          step_description: The card is gone and the You screen with the "YOU" header is still showing, not the Feed.

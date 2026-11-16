@@ -46,6 +46,9 @@ export function You({ device }: { device: string }) {
   const phoneDay = localDay(useClock(60_000));
   const data = useQuery(api.you.summary, { deviceId: device, phoneDay });
   const earnings = useQuery(api.earnings.summary, { deviceId: device });
+  // Something to collect since the last Collect puts a dot on News.
+  const away = useQuery(api.away.summary, { deviceId: device });
+  const unread = !!away && away.made + away.posted + away.sales.count + away.views.to - away.views.from > 0;
   const [month, setMonth] = useState(false);
   const [allPosts, setAllPosts] = useState(false);
   if (!data) return <View style={s.fill} />;
@@ -68,10 +71,14 @@ export function You({ device }: { device: string }) {
     <View style={s.fill}>
       <Sea />
       {/* Views stay in view here as on the Base and the Feed. The streak card's chip says what today needs, so neither the
-          streak nor that line is repeated in the header. News opens the Away recap over this tab and leaves you here. */}
+          streak nor that line is repeated in the header. News is the only way to open the Away recap; it opens over this
+          tab and leaves you here. */}
       <WoodHeader title="YOU" right={
-        <Button label="News" size="sm" bevel="gold" feel="tap" onPress={showNews} testID="you-news"
-          accessibilityLabel="News since your last visit" />
+        <View>
+          <Button label="News" size="sm" bevel="gold" feel="tap" onPress={showNews} testID="you-news"
+            accessibilityLabel={unread ? "News since your last visit, new" : "News since your last visit"} />
+          {unread && <View style={s.newsDot} pointerEvents="none" testID="you-news-dot" />}
+        </View>
       } below={
         <View style={s.hud}>
           <Counter icon="eye" value={compact(totals.views)} testID="you-hud-views" label={`${totals.views} views`} />
@@ -473,6 +480,7 @@ function Tile({ icon, label, value }: { icon: IconName; label: string; value: st
 const s = StyleSheet.create({
   fill: { flex: 1, backgroundColor: DEEP },
   hud: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  newsDot: { position: "absolute", top: -5, right: -5, width: 16, height: 16, backgroundColor: "#E5403A", borderWidth: 2, borderColor: INK },
   cardGap: { marginHorizontal: 12, marginTop: 14 },
   trend: { fontSize: 17, fontFamily: FONT.bold, marginTop: 8 },
   tasteNote: { color: PARCH.soft, fontSize: 16, fontFamily: FONT.semi, marginTop: 8 },
