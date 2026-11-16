@@ -142,6 +142,17 @@ export const cloneNewlyReady = internalMutation({
 
 export const LIBRARY_DEVICE_ID = "library-outpost-demo-pregenerated-videos-v1-000000";
 
+// The one user that owns the pregenerated library, created on first use. It stays in dryRun and never drains.
+async function libraryUser(ctx: MutationCtx) {
+  const found = await ctx.db.query("users").withIndex("by_device", q => q.eq("deviceId", LIBRARY_DEVICE_ID)).unique();
+  if (found) return found;
+  const id = await ctx.db.insert("users", {
+    deviceId: LIBRARY_DEVICE_ID, tz: "America/Los_Angeles", niche: "short videos for paid brand campaigns, each one made to its sponsor's brief",
+    freezesLeft: 0, postingMode: "dryRun", pacePerDay: 0, drainPaused: true, createdAt: Date.now(),
+  });
+  return (await ctx.db.get(id))!;
+}
+
 // Builder-only: writes the demo bounties and queues the pregenerated library, VIDEOS_PER_CAMPAIGN per bounty, owned by one
 // library user. Safe to run again: bounties upsert by (source, externalId), and a brief already queued for a bounty
 // is never queued twice. Library ranks are tiny round-robin numbers (every bounty's first video, then every
@@ -167,14 +178,7 @@ export const seedBounties = internalMutation({
       }
     }
 
-    let library = await ctx.db.query("users").withIndex("by_device", q => q.eq("deviceId", LIBRARY_DEVICE_ID)).unique();
-    if (!library) {
-      const id = await ctx.db.insert("users", {
-        deviceId: LIBRARY_DEVICE_ID, tz: "America/Los_Angeles", niche: "short videos for paid brand campaigns, each one made to its sponsor's brief",
-        freezesLeft: 0, postingMode: "dryRun", pacePerDay: 0, drainPaused: true, createdAt: now,
-      });
-      library = (await ctx.db.get(id))!;
-    }
+    const library = await libraryUser(ctx);
     const have = await ctx.db.query("videos").withIndex("by_user_status_rank", q => q.eq("userId", library._id)).collect();
 
     let queued = 0;
@@ -197,10 +201,14 @@ export const seedBounties = internalMutation({
 });
 
 // Builder-only: puts one real Whop Bounty (a bnty_ id) on the board, or updates it. Outpost submits right-swiped public
-// posts for it through the Bounties API as the demo Whop login (submit.ts). It has no library videos; a clip bounty
-// queues its source footage on Take like any other. rewardCents is the net reward per accepted submission.
+// posts for it through the Bounties API as the demo Whop login (submit.ts). rewardCents is the net reward per accepted
+// submission. For an original-mode bounty it tops the library up to `videos` (default 3, 0 to 5) queued library videos
+// (a clip bounty queues none until the studio's clip mode lands, since the studio renders every job as original), ranked after
+// the library already queued and before any user's videos, so the laptop studio renders them next and Take and sync
+// clone them like the seeded bounties' videos. They carry no per-video brief: the studio writes each one from the
+// bounty and its brief (writing the brief with claude -p first when the bounty has none), each on a new angle.
 //   npx convex run bounties:addWhopBounty '{"externalId":"bnty_...","title":"...","brand":"...","description":"...",
-//     "rewardCents":500,"url":"https://whop.com/..."}'
+//     "rewardCents":500,"url":"https://whop.com/...","videos":3}'
 export const addWhopBounty = internalMutation({
   args: {
     externalId: v.string(),
@@ -215,9 +223,12 @@ export const addWhopBounty = internalMutation({
     spotsRemaining: v.optional(v.number()),
     sourceUrls: v.optional(v.array(v.string())),
     brief: v.optional(v.any()),
+    videos: v.optional(v.number()),
   },
-  handler: async (ctx, args): Promise<Id<"bounties">> => {
+  handler: async (ctx, { videos, ...args }): Promise<{ bountyId: Id<"bounties">; queued: number; libraryVideos: number }> => {
     if (!/^bnty_\w+$/.test(args.externalId)) throw new ConvexError("externalId must be a Whop Bounty id (bnty_...)");
+    const want = videos ?? 3;
+    if (!Number.isInteger(want) || want < 0 || want > 5) throw new ConvexError("videos must be a whole number from 0 to 5");
     const fields = {
       ...args, source: "whop_bounty" as const, rewardKind: "per_submission" as const, status: "open" as const,
       rules: args.rules ?? "", goalType: args.goalType ?? "clipping", mode: args.mode ?? "original",
@@ -225,10 +236,20 @@ export const addWhopBounty = internalMutation({
     };
     const row = await ctx.db.query("bounties")
       .withIndex("by_source_external", q => q.eq("source", "whop_bounty").eq("externalId", args.externalId)).unique();
-    if (row) {
-      await ctx.db.patch(row._id, fields);
-      return row._id;
+    if (row) await ctx.db.patch(row._id, fields);
+    const bountyId = row?._id ?? await ctx.db.insert("bounties", fields);
+
+    const library = await libraryUser(ctx);
+    const all = await ctx.db.query("videos").withIndex("by_user_status_rank", q => q.eq("userId", library._id)).collect();
+    const mine = all.filter(v => v.bountyId === bountyId && v.status !== "failed").length;
+    const next = Math.max(-1, ...all.filter(v => v.status === "queued").map(v => v.rank)) + 1;
+    const now = Date.now();
+    const queued = fields.mode === "original" ? Math.max(0, want - mine) : 0;
+    for (let i = 0; i < queued; i++) {
+      await ctx.db.insert("videos", {
+        userId: library._id, bountyId, mode: fields.mode, pregenerated: true, status: "queued", rank: next + i, attempts: 0, createdAt: now,
+      });
     }
-    return ctx.db.insert("bounties", fields);
+    return { bountyId, queued, libraryVideos: mine + queued };
   },
 });

@@ -68,7 +68,7 @@ async function connect(t: ReturnType<typeof convexTest>, expiresAt = Date.now() 
 const whopBounty = (t: ReturnType<typeof convexTest>) => t.mutation(internal.bounties.addWhopBounty, {
   externalId: "bnty_test1", title: "Clip for Acme", brand: "Acme", description: "30-60 s vertical clip", rewardCents: 500,
   url: "https://whop.com/bounty/bnty_test1",
-});
+}).then(r => r.bountyId);
 
 const contentRewards = (t: ReturnType<typeof convexTest>) => t.run(ctx => ctx.db.insert("bounties", {
   source: "content_rewards", externalId: "cc01", title: "Campaign", brand: "Reach", description: "", goalType: "clipping",
@@ -432,6 +432,44 @@ describe("addWhopBounty", () => {
     await expect(t.mutation(internal.bounties.addWhopBounty, {
       externalId: "cc01", title: "x", brand: "x", description: "", rewardCents: 1, url: "https://whop.com",
     })).rejects.toThrow(/bnty_/);
+  });
+
+  test("queues library videos for the bounty, library-first, tops up instead of duplicating, and Take clones them once ready", async () => {
+    const t = convexTest(schema, modules);
+    const userTs = Date.now();
+    const seeded = await t.mutation(internal.bounties.seedBounties, {});
+    const add = (videos?: number) => t.mutation(internal.bounties.addWhopBounty, {
+      externalId: "bnty_lib", title: "Clip for Acme", brand: "Acme", description: "d", rewardCents: 500, url: "https://whop.com/b",
+      ...(videos === undefined ? {} : { videos }),
+    });
+    const first = await add();
+    expect(first).toMatchObject({ queued: 3, libraryVideos: 3 });
+    const lib = await t.run(ctx => ctx.db.query("videos").collect());
+    const mine = lib.filter(v => v.bountyId === first.bountyId);
+    const seedRanks = lib.filter(v => v.bountyId !== first.bountyId).map(v => v.rank);
+    expect(mine.map(v => [v.status, v.pregenerated, v.mode, v.userId])).toEqual(Array(3).fill(["queued", true, "original", seeded.libraryUserId]));
+    expect(Math.min(...mine.map(v => v.rank))).toBeGreaterThan(Math.max(...seedRanks));
+    expect(Math.max(...mine.map(v => v.rank))).toBeLessThan(userTs);
+    expect(new Set(mine.map(v => v.rank)).size).toBe(3);
+
+    expect(await add()).toMatchObject({ bountyId: first.bountyId, queued: 0, libraryVideos: 3 });
+    expect(await add(5)).toMatchObject({ queued: 2, libraryVideos: 5 });
+    await expect(add(6)).rejects.toThrow(/0 to 5/);
+    expect(await t.mutation(internal.bounties.addWhopBounty, {
+      externalId: "bnty_clip", title: "Clip", brand: "B", description: "d", rewardCents: 500, url: "https://whop.com/c", mode: "clip",
+    })).toMatchObject({ queued: 0, libraryVideos: 0 });
+
+    const userId = await user(t, "public", "taker");
+    await t.mutation(api.bounties.take, { deviceId: "taker", bountyId: first.bountyId });
+    expect(await t.run(ctx => ctx.db.query("videos").withIndex("by_user_status_rank", q => q.eq("userId", userId)).collect())).toHaveLength(0);
+    const storageId = await t.run(ctx => ctx.storage.store(new Blob(["x"])));
+    await t.run(async ctx => {
+      const v = (await ctx.db.query("videos").collect()).find(v => v.bountyId === first.bountyId)!;
+      await ctx.db.patch(v._id, { status: "ready", storageId, script: { hook: "h", lines: [], cta: "c", caption: "c", title: "t", angle: "a" } });
+    });
+    expect(await t.mutation(internal.bounties.cloneNewlyReady, {})).toBe(1);
+    const clones = await t.run(ctx => ctx.db.query("videos").withIndex("by_user_status_rank", q => q.eq("userId", userId)).collect());
+    expect(clones).toMatchObject([{ bountyId: first.bountyId, pregenerated: true, status: "ready" }]);
   });
 });
 
