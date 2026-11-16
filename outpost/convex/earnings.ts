@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query, type QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
-import { livePosts, userFor } from "./lib";
+import { livePosts, PLATFORMS, userFor } from "./lib";
 
 // Estimated earnings and the taste score, from real rows only: live posts and their view counts, submissions and the
 // statuses Whop gave them, and the user's swipes. Nothing here depends on the clock, so the query reruns exactly when
@@ -122,6 +122,39 @@ async function gather(ctx: QueryCtx, user: Doc<"users">) {
   return { live, submissions, items, inputs };
 }
 
+// The user's taste score as the app shows it, or null before there is one. bounties.ts gates Take on it.
+export async function tasteScoreOf(ctx: QueryCtx, user: Doc<"users">) {
+  return tasteOf((await gather(ctx, user)).inputs).score;
+}
+
+// Approved bounty videos on their way to a public post that no platform has counted yet, each estimated at the user's
+// usual views: the account baseline, or the median of their counted videos. It is what the video earns if it does as
+// well as usual, so the app labels it a forecast. Dry-run and private posts never submit, so they forecast nothing.
+async function forecastCents(ctx: QueryCtx, user: Doc<"users">, items: Map<Id<"videos">, Item>, submissions: Doc<"submissions">[],
+  bountyOf: (id: Id<"bounties">) => Promise<Doc<"bounties"> | null>) {
+  const counted = [...items.values()].filter(i => i.counted).map(i => i.views);
+  const usual = user.baselineViews ?? (counted.length >= MIN_EARLIER ? median(counted) : null);
+  const refused = new Set(submissions.filter(s => s.status === "denied" || s.status === "failed").map(s => s.videoId));
+  const waiting = new Set<Id<"videos">>();
+  for (const platform of PLATFORMS) {
+    const rows = await ctx.db.query("posts").withIndex("by_user_platform_slot", q => q.eq("userId", user._id).eq("platform", platform)).collect();
+    for (const p of rows) {
+      if (p.mode !== "public" || !["held", "queued", "publishing", "live"].includes(p.status)) continue;
+      if (items.get(p.videoId)?.counted || refused.has(p.videoId)) continue;
+      waiting.add(p.videoId);
+    }
+  }
+  let cents = 0;
+  for (const videoId of waiting) {
+    const bountyId = (await ctx.db.get(videoId))?.bountyId;
+    const bounty = bountyId ? await bountyOf(bountyId) : null;
+    if (!bounty) continue;
+    if (bounty.rewardKind === "per_submission") cents += bounty.rewardCents ?? 0;
+    else if (usual !== null) cents += estimate(bounty, usual);
+  }
+  return cents;
+}
+
 // A video's posts can carry several submissions; the one furthest along speaks for it.
 const ORDER: Status[] = ["approved", "submitted", "pending", "manual", "denied", "failed"];
 
@@ -161,6 +194,7 @@ export const summary = query({
       else pendingCents += cents;
     }
 
+    const forecast = await forecastCents(ctx, user, items, submissions, bountyOf);
     const taste = tasteOf(inputs);
     const graded = new Map(taste.graded.map(g => [g.videoId, g]));
 
@@ -178,9 +212,14 @@ export const summary = query({
     perVideo.sort((a, b) => b.liveAt - a.liveAt);
 
     // Every live video, newest first, with its verdict.
+    // What each scored video did to the score: the score now minus the score without it. A Hit lifts it, a Miss costs.
+    const effectOf = (videoId: Id<"videos">) => {
+      const without = tasteOf({ ...inputs, items: inputs.items.filter(i => i.videoId !== videoId) }).score;
+      return taste.score === null || without === null ? null : taste.score - without;
+    };
     const posts = taste.graded.slice().reverse().map(g => ({
       videoId: g.videoId, title: g.title, liveAt: g.liveAt, views: g.views, counted: g.counted, url: g.url,
-      baseline: g.baseline, ratio: g.ratio, verdict: g.verdict,
+      baseline: g.baseline, ratio: g.ratio, verdict: g.verdict, scoreDelta: g.ratio === null ? null : effectOf(g.videoId),
     }));
     // The Away card's best and worst post: graded videos by ratio, or counted ones by views before any are graded.
     const gradedPosts = posts.filter(p => p.ratio !== null).sort((a, b) => b.ratio! - a.ratio!);
@@ -192,6 +231,8 @@ export const summary = query({
       approvedCents,
       // Estimated from posts still waiting for the user to submit them on Whop.
       unsubmittedCents,
+      // Approved bounty videos not counted yet, at the user's usual views. The app adds it to pending and labels it.
+      forecastCents: forecast,
       perVideo,
       tasteScore: score ?? 0,
       // The change since the score saved at the user's last Collect (`mark`). There is no view history, so a score

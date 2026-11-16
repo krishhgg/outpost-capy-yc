@@ -1,20 +1,22 @@
 import { useEffect, useState } from "react";
 import { Dimensions, Image, Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import * as WebBrowser from "expo-web-browser";
-import Animated, { useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming } from "react-native-reanimated";
-import { router } from "expo-router";
+import { useAudioPlayer } from "expo-audio";
+import Animated, { FadeOut, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withSpring, withTiming, ZoomIn } from "react-native-reanimated";
+import { router, useIsFocused } from "expo-router";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useClock } from "./Feed";
 import { showNews } from "./collect";
 import { Counter, ICON, useTicker, type IconName } from "./Hud";
-import { Badge, Button, Card, HonestyLabel, NumberTicker, TierProgress, TIERS, tierFor, TYPE, VerdictBadge, money, type Tone } from "./ui";
+import { TIER_STEPS } from "../convex/tiers";
+import { Badge, Button, Card, COLOR, feel, HonestyLabel, NumberTicker, nextTier, ProgressBar, TierBadge, TIERS, tierFor, TYPE, VerdictBadge, money, type Tone } from "./ui";
 import type { FunctionReturnType } from "convex/server";
 import { Block, DEEP, FONT, INK, Outlined, PARCH, PixelButton, Plaque, POP, Sea, UNDER_PLAQUE, WoodHeader } from "./pixel";
 
 const { width: W } = Dimensions.get("window");
 const GAP = 6;
-const CELL = Math.floor((W - 24 - 28 - 6 - GAP * 6) / 7); // card margins, padding and outline, then the gaps
+const CELL = Math.floor((W - 32 - 28 - 6 - GAP * 6) / 7); // card margins, padding and outline, then the gaps
 const WEEK = ["S", "M", "T", "W", "T", "F", "S"];
 const GOLD = "#FFC83A";
 export const MILESTONES = [3, 7, 14, 30];
@@ -46,6 +48,8 @@ export function You({ device }: { device: string }) {
   const phoneDay = localDay(useClock(60_000));
   const data = useQuery(api.you.summary, { deviceId: device, phoneDay });
   const earnings = useQuery(api.earnings.summary, { deviceId: device });
+  const bounties = useQuery(api.bounties.list, { deviceId: device });
+  const focused = useIsFocused();
   // Something to collect since the last Collect puts a dot on News.
   const away = useQuery(api.away.summary, { deviceId: device });
   const unread = !!away && away.made + away.posted + away.sales.count + away.views.to - away.views.from > 0;
@@ -70,24 +74,17 @@ export function You({ device }: { device: string }) {
   return (
     <View style={s.fill}>
       <Sea />
-      {/* Views stay in view here as on the Base and the Feed. The streak card's chip says what today needs, so neither the
-          streak nor that line is repeated in the header. News is the only way to open the Away recap; it opens over this
-          tab and leaves you here. */}
+      {/* The taste card leads, so the header carries no counters. News is the only way to open the Away recap; it opens
+          over this tab and leaves you here, with a dot while there is something to collect. */}
       <WoodHeader title="YOU" right={
         <View>
           <Button label="News" size="sm" bevel="gold" feel="tap" onPress={showNews} testID="you-news"
             accessibilityLabel={unread ? "News since your last visit, new" : "News since your last visit"} />
           {unread && <View style={s.newsDot} pointerEvents="none" testID="you-news-dot" />}
         </View>
-      } below={
-        <View style={s.hud}>
-          <Counter icon="eye" value={compact(totals.views)} testID="you-hud-views" label={`${totals.views} views`} />
-          <PendingCounter device={device} testID="you-hud-pending" />
-          <ScoreCounter device={device} testID="you-hud-score" />
-        </View>
       } />
       <ScrollView style={s.flex} contentContainerStyle={{ paddingBottom: 28 }} testID="you">
-        <Taste e={earnings} />
+        <Taste e={earnings} bounties={bounties} focused={focused} />
         <Earnings e={earnings} device={device} />
 
         <Block style={s.card} lift={4} testID="you-streak">
@@ -215,9 +212,21 @@ export function You({ device }: { device: string }) {
 
 type Earn = FunctionReturnType<typeof api.earnings.summary>;
 type Post = Earn["posts"][number];
+type Bounty = FunctionReturnType<typeof api.bounties.list>[number];
 
 const pct = (x: number | null | undefined) => (x === null || x === undefined ? "–" : `${Math.round(x * 100)}%`);
 export const ESTIMATE = "Estimated, not guaranteed, pending Whop review.";
+
+// The taste score the user last saw on You, or the first one loaded this session (the header counters set it, so a
+// score that moves on the Feed before You ever opens still climbs there). You counts up from it on focus.
+let ackedScore: number | null = null;
+
+// "$4 / 1K views" -> 4, and back as "$4/1K". Null for a bounty paid per post.
+const rateOf = (label: string) => {
+  const m = /^\$([\d.,]+) \/ 1K views$/.exec(label);
+  return m ? Number(m[1].replace(/,/g, "")) : null;
+};
+const perK = (dollars: number) => `$${dollars}/1K`;
 
 // The taste score and estimated pending earnings as header counters, for any screen's resource bar. Both count to a new
 // value and bump. The pending figure is an estimate, so it always wears "est"; a provisional score wears "prov" instead
@@ -226,6 +235,9 @@ export const ESTIMATE = "Estimated, not guaranteed, pending Whop review.";
 export function ScoreCounter({ device, onPress, compact, testID = "hud-score" }: { device: string; onPress?: () => void; compact?: boolean; testID?: string }) {
   const t = useQuery(api.earnings.summary, { deviceId: device })?.taste;
   const n = useTicker(t?.score ?? undefined);
+  useEffect(() => {
+    if (ackedScore === null && t?.score != null) ackedScore = Math.round(t.score);
+  }, [t?.score]);
   const tier = t?.score === null || t?.score === undefined ? null : tierFor(t.score);
   return <Counter icon="star" value={!t ? "…" : n === undefined ? "–" : String(n)} testID={testID} onPress={onPress}
     tag={!tier ? undefined : t?.state === "calibrating" ? "prov" : compact ? undefined : tier.name}
@@ -233,11 +245,13 @@ export function ScoreCounter({ device, onPress, compact, testID = "hud-score" }:
       : `Taste score ${t.score}, ${tier.name}${t.state === "calibrating" ? ", provisional" : ""}`} />;
 }
 
+// Pending includes the forecast for approved clips no platform has counted yet, so it moves the moment a clip is approved.
 export function PendingCounter({ device, onPress, testID = "hud-pending" }: { device: string; onPress?: () => void; testID?: string }) {
   const e = useQuery(api.earnings.summary, { deviceId: device });
-  const n = useTicker(e?.pendingCents);
+  const total = e ? e.pendingCents + e.forecastCents : undefined;
+  const n = useTicker(total);
   return <Counter icon="coin" value={n === undefined ? "…" : money(n)} tag="est" testID={testID} onPress={onPress}
-    label={e ? `${money(e.pendingCents)} estimated pending. ${ESTIMATE}` : "Pending earnings loading"} />;
+    label={e ? `${money(e.pendingCents + e.forecastCents)} estimated pending${e.forecastCents ? `, ${money(e.forecastCents)} of it a forecast at your usual views` : ""}. ${ESTIMATE}` : "Pending earnings loading"} />;
 }
 
 // Under two days old a post's views are still climbing, so its verdict is "so far".
@@ -249,51 +263,166 @@ export function Verdict({ post }: { post: Pick<Post, "verdict" | "ratio" | "live
   return <VerdictBadge verdict={post.verdict} ratio={post.ratio} size="sm" reason={Date.now() - post.liveAt < FRESH_MS ? "so far" : undefined} />;
 }
 
-// The taste score, its tier and the way to the next one, then the three percentages it comes from as bare numbers. How
-// they're worked out is one tap away rather than printed under them. Until five posts are scored against the baseline
-// the score is provisional, and TierProgress says so once.
-function Taste({ e }: { e: Earn | undefined }) {
-  const [how, setHow] = useState(false);
-  const t = e?.taste;
-  if (!t || !e) return <Card loading testID="you-taste" style={s.cardGap} />;
+// The taste score as the hero: the number, its tier, a bar to the next tier and what that tier opens. Coming back to
+// You after the score moved, the number counts up from the last one shown here and the bar slides; crossing into a new
+// tier fills the old bar, then pops the unlock card with the bounties that just opened. The percentages, trend and how
+// it's scored sit behind Details.
+function Taste({ e, bounties, focused }: { e: Earn | undefined; bounties: Bounty[] | undefined; focused: boolean }) {
+  const [details, setDetails] = useState(false);
+  const raw = e?.taste.score;
+  const score = raw === null || raw === undefined ? null : Math.round(raw);
+  const [shown, setShown] = useState<number | null>(ackedScore ?? score);
+  // The score the bar and badge hold at while the old tier's bar fills to the end.
+  const [filling, setFilling] = useState<number | null>(null);
+  const [unlock, setUnlock] = useState<{ from: number; to: number } | null>(null);
+  const star = useAudioPlayer(require("../assets/sounds/star.wav"));
+
+  useEffect(() => {
+    if (score === null) return;
+    if (ackedScore === null) ackedScore = score;
+    if (!focused) return;
+    const from = ackedScore;
+    setShown(from);
+    if (from === score) return;
+    const crossed = tierFor(score).min > tierFor(from).min;
+    const timers = [setTimeout(() => {
+      setShown(score);
+      if (crossed) setFilling(from);
+      else ackedScore = score;
+    }, 400)];
+    if (crossed) timers.push(setTimeout(() => {
+      ackedScore = score;
+      setFilling(null);
+      setUnlock({ from, to: score });
+      feel("success");
+      star.seekTo(0).catch(() => {});
+      star.play();
+    }, 1100));
+    return () => timers.forEach(clearTimeout);
+  }, [score, focused]);
+
+  if (!e) return <Card loading testID="you-taste" style={s.cardGap} />;
+  const t = e.taste;
   const pick = t.pickiness;
   // Only a lopsided swipe habit gets a line, since that's the one worth changing.
   const extreme = pick !== null && t.seenClips >= 5 && (pick >= 0.9 || pick <= 0.1);
+  const at = filling ?? shown ?? score ?? 0;
+  const tier = tierFor(at);
+  const next = nextTier(at);
+  const fill = filling !== null ? 1 : next ? (at - tier.min) / (next.min - tier.min) : 1;
+  // What the next tier opens: the best locked bounty waiting for it, else the tier's own floor rate.
+  const nextRate = next && Math.max(...(bounties ?? []).filter(b => b.locked && b.tier.key === next.key)
+    .map(b => rateOf(b.rewardLabel) ?? 0), (TIER_STEPS.find(x => x.key === next.key)?.ratePer1kCents ?? 0) / 100);
+
   return (
-    <Card title="Taste score" style={s.cardGap} testID="you-taste">
-      {t.score === null ? (
-        <Text style={s.tasteNote} testID="you-taste-empty">Swipe 3 clips to get a score.</Text>
-      ) : (
-        <TierProgress score={t.score} testID="you-tier"
-          calibrating={t.state === "calibrating" ? { scored: t.scored, needed: t.needed } : undefined} />
-      )}
-      {e.tasteTrend !== 0 && (
-        <Text style={[s.trend, { color: e.tasteTrend > 0 ? "#2F8A2C" : "#8A3A32" }]} testID="you-trend">
-          {`${e.tasteTrend > 0 ? "▲ +" : "▼ "}${e.tasteTrend} since last visit`}
-        </Text>
-      )}
-      <View style={s.stats}>
-        <Stat label="Hit rate" value={pct(t.hitRate)} testID="you-hit-rate"
-          a11y={t.scored ? `${t.hits} of ${t.scored} beat your baseline 1.5x` : "No posts scored yet"} />
-        <Stat label="Approval" value={pct(t.approvalRate)} testID="you-approval-rate"
-          a11y={t.settledSubmissions ? `Whop approved ${t.approvedSubmissions} of ${t.settledSubmissions}` : "Waiting on Whop"} />
-        <Stat label="Pickiness" value={pct(pick)} testID="you-pickiness"
-          a11y={pick === null ? "No swipes yet" : `Approved ${t.approvedClips} of ${t.seenClips} clips`} />
-      </View>
-      {extreme && (
-        <Text style={[s.tasteNote, s.warn]} testID="you-pickiness-note">
-          {pick >= 0.9 ? "Skip the weak ones: approving everything lowers it." : "Approve the ones you'd watch."}
-        </Text>
-      )}
-      <Pressable onPress={() => setHow(h => !h)} hitSlop={8} testID="you-taste-how" accessibilityRole="button">
-        <Text style={s.monthLink}>{how ? "Hide how it's scored" : "How it's scored"}</Text>
-      </Pressable>
-      {how && (
-        <Text style={s.fine} testID="you-taste-fine">
-          {`Approval rate × views against your baseline, the median of your earlier posts${t.baselineFrom === "account" ? " (set for this account)" : ""}. A hit is 1.5x baseline, a miss under 0.8x. Approving 20–50% of clips is the sweet spot. Tiers: ${TIERS.map(x => x.name).join(", ")}.`}
-        </Text>
-      )}
-    </Card>
+    <>
+      {unlock && <Unlocked key={unlock.to} unlock={unlock} bounties={bounties} onDismiss={() => setUnlock(null)} />}
+      <View style={s.cardGap}>
+      <Card title="Taste score" testID="you-taste">
+        {score === null ? (
+          <Text style={[s.tasteNote, s.center]} testID="you-taste-empty">Swipe 3 clips to get a score.</Text>
+        ) : (
+          <View style={s.hero} testID="you-tier">
+            <View style={s.heroScore}>
+              <NumberTicker value={shown ?? score} size={52} outlined={false} sound testID="you-tier-score" />
+              <Text style={s.outOf}>/100</Text>
+            </View>
+            <View style={s.badgeRow}>
+              <TierBadge score={at} testID="you-tier-badge" />
+              {t.state === "calibrating" && <HonestyLabel kind="provisional" testID="you-taste-provisional" />}
+            </View>
+            <ProgressBar key={tier.key} value={fill} color={tier.color} height={16} style={s.heroBar} testID="you-tier-bar" />
+            <Text style={s.nextLine} numberOfLines={1} adjustsFontSizeToFit testID="you-tier-next">
+              {next ? `${next.min - at} to ${next.name} · unlocks ${perK(nextRate ?? 0)} bounties` : "Top tier"}
+            </Text>
+          </View>
+        )}
+        <Effects posts={e.posts} />
+        <Pressable onPress={() => setDetails(d => !d)} hitSlop={8} testID="you-taste-details" accessibilityRole="button">
+          <Text style={[s.monthLink, s.center]}>{details ? "Hide details" : "Details"}</Text>
+        </Pressable>
+        {details && (
+          <View testID="you-taste-more">
+            <View style={s.stats}>
+              <Stat label="Hit rate" value={pct(t.hitRate)} testID="you-hit-rate"
+                a11y={t.scored ? `${t.hits} of ${t.scored} beat your baseline 1.5x` : "No posts scored yet"} />
+              <Stat label="Approval" value={pct(t.approvalRate)} testID="you-approval-rate"
+                a11y={t.settledSubmissions ? `Whop approved ${t.approvedSubmissions} of ${t.settledSubmissions}` : "Waiting on Whop"} />
+              <Stat label="Pickiness" value={pct(pick)} testID="you-pickiness"
+                a11y={pick === null ? "No swipes yet" : `Approved ${t.approvedClips} of ${t.seenClips} clips`} />
+            </View>
+            {e.tasteTrend !== 0 && (
+              <Text style={[s.trend, s.center, { color: e.tasteTrend > 0 ? COLOR.greenDeep : COLOR.redDeep }]} testID="you-trend">
+                {`${e.tasteTrend > 0 ? "▲ +" : "▼ "}${e.tasteTrend} since last visit`}
+              </Text>
+            )}
+            {extreme && (
+              <Text style={[s.tasteNote, s.warn, s.center]} testID="you-pickiness-note">
+                {pick >= 0.9 ? "Skip the weak ones: approving everything lowers it." : "Approve the ones you'd watch."}
+              </Text>
+            )}
+            <Text style={s.fine} testID="you-taste-fine">
+              {`${t.state === "calibrating" ? `Provisional: ${t.scored} of ${t.needed} posts scored. ` : ""}Approval rate × views against your baseline, the median of your earlier posts${t.baselineFrom === "account" ? " (set for this account)" : ""}. A hit is 1.5x baseline, a miss under 0.8x. Approving 20–50% of clips is the sweet spot. Tiers: ${TIERS.map(x => x.name).join(", ")}. A tier only changes which bounties you can take; Whop sets what they pay.`}
+            </Text>
+          </View>
+        )}
+      </Card>
+    </View>
+    </>
+  );
+}
+
+// The newest Hit and the newest Miss with what each did to the score, so a verdict reads as points won or lost.
+function Effects({ posts }: { posts: Earn["posts"] }) {
+  const rows = (["hit", "miss"] as const).map(v => posts.find(p => p.verdict === v && p.scoreDelta !== null)).filter(p => !!p);
+  if (!rows.length) return null;
+  return (
+    <View style={s.effects} testID="you-effects">
+      {rows.map(p => (
+        <View key={p.videoId} style={s.effect} testID={`you-effect-${p.verdict}`}>
+          <VerdictBadge verdict={p.verdict!} ratio={p.ratio!} size="sm" />
+          <Text style={s.effectTitle} numberOfLines={1}>{p.title}</Text>
+          <Text style={[s.effectDelta, { color: p.scoreDelta! >= 0 ? COLOR.greenDeep : COLOR.redDeep }]}>
+            {p.scoreDelta! >= 0 ? `+${p.scoreDelta}` : `${p.scoreDelta}`}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// The moment a new tier lands: its badge, "UNLOCKED", and the bounties it just opened, best paying first. It stays
+// until dismissed or the next unlock replaces it.
+function Unlocked({ unlock, bounties, onDismiss }: { unlock: { from: number; to: number }; bounties: Bounty[] | undefined; onDismiss: () => void }) {
+  const from = tierFor(unlock.from).min;
+  const to = tierFor(unlock.to);
+  const opened = (bounties ?? []).filter(b => !b.locked && !b.taken && b.tier.min > from && b.tier.min <= to.min)
+    .map(b => ({ id: b.id, brand: b.brand || b.title, rate: rateOf(b.rewardLabel), label: b.rewardLabel }))
+    .sort((a, b) => (b.rate ?? 0) - (a.rate ?? 0)).slice(0, 3);
+  const toBoard = () => router.navigate("/bounties");
+  return (
+    <Animated.View entering={ZoomIn.springify().damping(10).mass(1).stiffness(180)} exiting={FadeOut} style={s.cardGap}>
+      <Block bevel="gold" lift={4} style={s.unlock} testID="you-unlock">
+        <View style={s.unlockHead} accessible accessibilityLabel={`${to.name} unlocked`}>
+          <TierBadge score={unlock.to} testID="you-unlock-tier" />
+          <Outlined size={40} width={3}>UNLOCKED</Outlined>
+        </View>
+        {opened.length > 0 ? opened.map(b => (
+          <Pressable key={b.id} onPress={toBoard} style={({ pressed }) => [s.unlockRow, pressed && { opacity: 0.7 }]}
+            testID="you-unlock-bounty" accessibilityRole="button" accessibilityLabel={`${b.brand}, ${b.label}, open`}>
+            <View>
+              <Image source={ICON.lock} style={s.unlockLock} />
+              <Image source={ICON.check} style={s.unlockCheck} />
+            </View>
+            <Text style={s.unlockText} numberOfLines={1}>{`${b.brand} · ${b.rate === null ? b.label : perK(b.rate)}`}</Text>
+          </Pressable>
+        )) : <Text style={s.unlockNote}>New bounties are open on the board.</Text>}
+        <Button label="Take it" bevel="green" feel="commit" onPress={toBoard} testID="you-unlock-take" />
+        <Pressable onPress={onDismiss} hitSlop={8} testID="you-unlock-dismiss" accessibilityRole="button">
+          <Text style={s.unlockDismiss}>Not now</Text>
+        </Pressable>
+      </Block>
+    </Animated.View>
   );
 }
 
@@ -316,14 +445,20 @@ const STATUS: Record<string, { text: string; tone: Tone }> = {
   failed: { text: "FAILED", tone: "red" },
 };
 
-// Estimated pending and approved money from bounty posts, each with its views, estimate and Whop status.
+// Estimated pending (with the forecast for approved clips not counted yet) and approved money. Only posts that need
+// the user show up front: the ones to submit on Whop. Every other bounty post is one tap away.
 function Earnings({ e, device }: { e: Earn | undefined; device: string }) {
+  const [all, setAll] = useState(false);
   const rows = e?.perVideo ?? [];
+  const todo = rows.filter(r => r.status === "manual");
+  const rest = rows.filter(r => r.status !== "manual");
   return (
-    <Card title="Earnings" style={s.cardGap} loading={!e} testID="you-earnings">
+    <View style={s.cardGap}>
+      <Card title="Earnings" loading={!e} testID="you-earnings">
       <View style={s.moneyRow}>
         <View>
-          <NumberTicker value={e?.pendingCents} format={money} size={40} outlined={false} color="#2F8A2C" testID="you-pending" />
+          <NumberTicker value={e ? e.pendingCents + e.forecastCents : undefined} format={money} size={40} outlined={false}
+            color={COLOR.greenDeep} testID="you-pending" />
           <View style={s.pendingRow}>
             <Text style={s.moneyLabel}>pending</Text>
             <HonestyLabel kind="estimated" testID="you-earnings-label" />
@@ -334,22 +469,28 @@ function Earnings({ e, device }: { e: Earn | undefined; device: string }) {
           <Text style={s.moneyLabel}>approved</Text>
         </View>
       </View>
-      {!!e?.unsubmittedCents && (
-        <Text style={s.tasteNote} testID="you-earnings-unsubmitted">{`+${money(e.unsubmittedCents)} once submitted on Whop`}</Text>
+      {!!e?.forecastCents && (
+        <Text style={s.forecastLine} testID="you-earnings-forecast">{`${money(e.forecastCents)} of it is a forecast at your usual views`}</Text>
       )}
-      {rows.length === 0 ? (
-        <Text style={[s.emptyText, s.earnEmpty]}>No bounty posts live yet.</Text>
-      ) : rows.map(r => <EarnRow key={r.videoId} r={r} device={device} />)}
+      {rows.length === 0 && <Text style={[s.emptyText, s.earnEmpty]}>No bounty posts live yet.</Text>}
+      {todo.map(r => <EarnRow key={r.videoId} r={r} device={device} compact />)}
+      {rest.length > 0 && (
+        <Pressable onPress={() => setAll(a => !a)} hitSlop={8} testID="you-earnings-toggle" accessibilityRole="button">
+          <Text style={[s.monthLink, s.center]}>{all ? "Hide posts" : `See ${rest.length} post${rest.length === 1 ? "" : "s"}`}</Text>
+        </Pressable>
+      )}
+      {all && rest.map(r => <EarnRow key={r.videoId} r={r} device={device} />)}
     </Card>
+    </View>
   );
 }
 
-// One bounty video: brand, verdict, estimate, views and where its submission stands. A manual submission carries the
-// "Submit on Whop" flow: the post URL to paste there, the campaign page, then "I submitted it". A video posted to both
-// platforms has a row per post, so the flow repeats until none is left. A submission the user reported themselves is a
-// label, not a Whop-confirmed status. A Whop Bounty submits itself; its one note line says why it is still waiting or
-// why Whop refused it (then the manual steps show).
-function EarnRow({ r, device }: { r: Earn["perVideo"][number]; device: string }) {
+// One bounty video. `compact` (a post waiting on the user) is its brand and estimate, then the "Submit on Whop" flow:
+// the campaign page full width, then copying the post link to paste there and "I submitted it". A video posted to both
+// platforms has a row per post, so the flow repeats until none is left. The full row adds its title, views and where
+// its submission stands. A submission the user reported themselves is a label, not a Whop-confirmed status. A Whop
+// Bounty submits itself; its one note line says why it is still waiting or why Whop refused it (then the steps show).
+function EarnRow({ r, device, compact: short }: { r: Earn["perVideo"][number]; device: string; compact?: boolean }) {
   const sub = useQuery(api.submit.forVideo, { deviceId: device, videoId: r.videoId });
   const mark = useMutation(api.submit.markSubmitted);
   const [busy, setBusy] = useState(false);
@@ -359,32 +500,29 @@ function EarnRow({ r, device }: { r: Earn["perVideo"][number]; device: string })
     <View style={s.earnRow} testID="you-earning">
       <View style={s.earnHead}>
         <Text style={s.brand} numberOfLines={1}>{r.brand || "Bounty"}</Text>
-        <Verdict post={r} />
+        {!short && <Verdict post={r} />}
         <Text style={s.earnCents}>{money(r.estCents)}</Text>
       </View>
-      <Pressable style={({ pressed }) => [s.earnHead, pressed && { opacity: 0.7 }]} disabled={!r.url}
-        onPress={() => r.url && Linking.openURL(r.url)} accessibilityRole={r.url ? "link" : undefined}>
-        <Text style={s.earnTitle} numberOfLines={1}>{r.title}</Text>
-        <Image source={ICON.eye} style={s.postEye} />
-        <Text style={s.earnViews}>{compact(r.views)}</Text>
-        {status === "submitted" && sub?.selfReported ? <Text style={s.selfReported} testID="you-earning-self">Submitted by you</Text>
-          : <Badge label={st?.text ?? "NOT SUBMITTED"} tone={st?.tone ?? "parch"} size="sm" />}
-      </Pressable>
-      {status === "denied" && sub?.denialReason ? <Text style={s.denied}>{`Denied: ${sub.denialReason}`}</Text> : null}
-      {sub?.auto && sub.note && (status === "pending" || status === "manual") ? <Text style={s.note} testID="you-submit-note">{sub.note}</Text> : null}
-      {/* The post link to paste on the brand's campaign, then the two steps. No box: the row's rule already sets it apart. */}
+      {!short && (
+        <Pressable style={({ pressed }) => [s.earnHead, pressed && { opacity: 0.7 }]} disabled={!r.url}
+          onPress={() => r.url && Linking.openURL(r.url)} accessibilityRole={r.url ? "link" : undefined}>
+          <Text style={s.earnTitle} numberOfLines={1}>{r.title}</Text>
+          <Image source={ICON.eye} style={s.postEye} />
+          <Text style={s.earnViews}>{compact(r.views)}</Text>
+          {status === "submitted" && sub?.selfReported ? <Text style={s.selfReported} testID="you-earning-self">Submitted by you</Text>
+            : <Badge label={st?.text ?? "NOT SUBMITTED"} tone={st?.tone ?? "parch"} size="sm" />}
+        </Pressable>
+      )}
+      {!short && status === "denied" && sub?.denialReason ? <Text style={s.denied}>{`Denied: ${sub.denialReason}`}</Text> : null}
+      {sub?.auto && sub.note && (status === "pending" || status === "manual") ? <Text style={s.note} numberOfLines={1} testID="you-submit-note">{sub.note}</Text> : null}
       {sub?.status === "manual" && (
         <View style={s.submit} testID="you-submit">
-          <View style={s.urlRow}>
-            <Text style={s.url} numberOfLines={1} selectable testID="you-submit-url">{sub.postUrl}</Text>
-            <Pressable onPress={() => Share.share({ url: sub.postUrl, message: sub.postUrl }).catch(() => {})} hitSlop={6}
-              accessibilityRole="button" accessibilityLabel="Copy or share the post link" testID="you-submit-copy">
-              <Text style={s.copy}>Copy link</Text>
-            </Pressable>
-          </View>
+          <Button label="Submit on Whop" size="md" bevel="green" testID="you-submit-whop"
+            onPress={() => WebBrowser.openBrowserAsync(sub.deepLink).catch(() => {})} />
           <View style={s.submitButtons}>
-            <Button label="Submit on Whop" size="sm" bevel="green" style={s.flex}
-              onPress={() => WebBrowser.openBrowserAsync(sub.deepLink).catch(() => {})} testID="you-submit-whop" />
+            <Button label="Copy link" size="sm" variant="secondary" feel="tap" style={s.flex} testID="you-submit-copy"
+              accessibilityLabel={`Copy or share the post link ${sub.postUrl}`}
+              onPress={() => { Share.share({ url: sub.postUrl, message: sub.postUrl }).catch(() => {}); }} />
             <Button label="I submitted it" size="sm" variant="secondary" style={s.flex} loading={busy} loadingLabel="Saving"
               onPress={() => { setBusy(true); mark({ deviceId: device, videoId: r.videoId }).finally(() => setBusy(false)); }}
               testID="you-submit-done" />
@@ -479,9 +617,28 @@ function Tile({ icon, label, value }: { icon: IconName; label: string; value: st
 
 const s = StyleSheet.create({
   fill: { flex: 1, backgroundColor: DEEP },
-  hud: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 10 },
+  cardGap: { marginHorizontal: 16, marginTop: 16 },
+  effects: { marginTop: 16, paddingTop: 8, borderTopWidth: 2, borderTopColor: PARCH.bottom, gap: 8 },
+  effect: { flexDirection: "row", alignItems: "center", gap: 8 },
+  effectTitle: { flex: 1, color: PARCH.ink, fontSize: 16, fontFamily: FONT.semi },
+  effectDelta: { fontSize: 20, fontFamily: FONT.bold },
+  center: { textAlign: "center" },
+  hero: { alignItems: "center", gap: 8 },
+  heroScore: { flexDirection: "row", alignItems: "flex-end" },
+  outOf: { color: PARCH.soft, fontSize: 20, fontFamily: FONT.bold, marginBottom: 12, marginLeft: 2 },
+  badgeRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  heroBar: { alignSelf: "stretch", marginTop: 4 },
+  nextLine: { color: PARCH.ink, fontSize: 18, fontFamily: FONT.semi, textAlign: "center" },
+  unlock: { padding: 16, gap: 10 },
+  unlockHead: { alignItems: "center", gap: 4 },
+  unlockRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: PARCH.top, borderWidth: 2, borderColor: INK, paddingHorizontal: 10, paddingVertical: 6 },
+  unlockLock: { width: 28, height: 28, opacity: 0.55 },
+  unlockCheck: { position: "absolute", right: -6, bottom: -4, width: 18, height: 18 },
+  unlockText: { flex: 1, color: PARCH.ink, fontSize: 22, fontFamily: FONT.bold },
+  unlockNote: { color: PARCH.ink, fontSize: 18, fontFamily: FONT.semi, textAlign: "center" },
+  unlockDismiss: { color: PARCH.ink, fontSize: 17, fontFamily: FONT.bold, textAlign: "center" },
+  forecastLine: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi, marginBottom: 4 },
   newsDot: { position: "absolute", top: -5, right: -5, width: 16, height: 16, backgroundColor: "#E5403A", borderWidth: 2, borderColor: INK },
-  cardGap: { marginHorizontal: 12, marginTop: 14 },
   trend: { fontSize: 17, fontFamily: FONT.bold, marginTop: 8 },
   tasteNote: { color: PARCH.soft, fontSize: 16, fontFamily: FONT.semi, marginTop: 8 },
   warn: { color: "#B04A10" },
@@ -505,12 +662,9 @@ const s = StyleSheet.create({
   denied: { color: "#8A3A32", fontSize: 15, fontFamily: FONT.semi },
   note: { color: PARCH.soft, fontSize: 14, fontFamily: FONT.semi },
   submit: { marginTop: 4, gap: 8 },
-  urlRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  url: { flex: 1, color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi },
-  copy: { color: "#B04A10", fontSize: 16, fontFamily: FONT.bold },
   submitButtons: { flexDirection: "row", gap: 8 },
   flex: { flex: 1 },
-  card: { marginHorizontal: 12, marginTop: 14, padding: 14, paddingBottom: 18 },
+  card: { marginHorizontal: 16, marginTop: 16, padding: 14, paddingBottom: 18 },
   heroRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   flame: { width: 72, height: 72 },
   heroLabel: { color: PARCH.ink, fontSize: 20, fontFamily: FONT.bold, marginTop: -12 },
@@ -560,7 +714,7 @@ const s = StyleSheet.create({
   pending: { color: PARCH.soft, fontSize: 14, fontFamily: FONT.semi },
   empty: { gap: 12, paddingTop: 4 },
   emptyText: { color: PARCH.soft, fontSize: 17, fontFamily: FONT.semi },
-  tiles: { flexDirection: "row", gap: 8, marginHorizontal: 12, marginTop: 14 },
+  tiles: { flexDirection: "row", gap: 8, marginHorizontal: 16, marginTop: 16 },
   tile: { flex: 1, alignItems: "center", paddingTop: 10, paddingBottom: 14 },
   tileIcon: { width: 28, height: 28 },
   tileValue: { color: PARCH.ink, fontSize: 37, fontFamily: FONT.bold, marginTop: 2 },
@@ -578,7 +732,7 @@ const s = StyleSheet.create({
   mileLine: { color: PARCH.ink, fontSize: 17, fontFamily: FONT.semi, marginTop: 8 },
   // The one line under the tiles sits on the water with a hard ink shadow, quieter than the tiles above it.
   footnote: {
-    alignSelf: "center", color: "#F5E6C8", fontSize: 16, fontFamily: FONT.semi, marginHorizontal: 12, marginTop: 10,
+    alignSelf: "center", color: "#F5E6C8", fontSize: 16, fontFamily: FONT.semi, marginHorizontal: 16, marginTop: 10,
     textAlign: "center", textShadowColor: INK, textShadowOffset: { width: 0, height: 1.5 }, textShadowRadius: 0,
   },
 });

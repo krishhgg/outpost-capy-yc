@@ -112,15 +112,15 @@ While the Base is on screen and the raid is live, it calls `raids.watch` every 4
 
 The Feed is a deck of the studio's videos. Swipe each one to post it or send it back.
 
-### Header strip
+### Header
 
-- Four counters: the streak, the videos ready, the taste score (no tier name, to save room; "prov" while provisional) and estimated pending earnings tagged "est". The last two open the You tab.
-- Under them, a mode tag ("Dry run · nothing posts", "Private test" or "Posting live") and one line beside it. It says "Studio offline · the laptop is asleep" when the worker's last heartbeat is more than 25 seconds old. If today isn't kept, it says what one post does, for example "Post 1 video to keep your 4-day streak" or "Post 1 video to reach a 7-day streak". Otherwise it names the studio's steps ("Studio · voicing, rendering"), the queue ("Studio · 3 queued") or "Studio · resting".
+- Over the top of the video, mirrored 16 pt in from each edge: estimated earnings on the left (pending from submitted posts plus a forecast for approved public bounty clips no platform has counted yet, at your usual views; tagged ESTIMATED, flashes the change on an approve) and the taste score with its tier on the right. Both open the You tab. In a dry run an approve adds nothing, since dry-run posts never submit.
 
 ### The deck
 
-- The top card plays its video in a gold frame, uncropped. The next two are preloaded and peek out behind it.
-- A card remade from a reason has a "Remade · shorter hook" style tag. A video made from a Scout find has a "Scout pick · $9 Whop app" style tag.
+- The top card plays its video edge to edge between the status bar and the tab bar. The next card waits behind at a slightly smaller scale and grows as the top one is dragged away.
+- One pill at the bottom left: the bounty and its rate ("Notion · $1.50/1K") or a Scout pick, with "Pregenerated for the demo" as one quiet line under it. Tapping the pill shows the studio's FORECAST score and reason, and "Remade: ..." for a remake.
+- A right-edge rail has a Remake and a Post button that throw the card like a swipe.
 - Segments along the top mark this session's swipes, gold for posted and orange for sent back. The current one fills as the video plays.
 - The first card of a session leans right once with the POST stamp showing, so the gesture is clear. Any touch cancels it.
 - Dragging past the throw point ticks once and pops the stamp before you let go.
@@ -129,8 +129,8 @@ The Feed is a deck of the studio's videos. Swipe each one to post it or send it 
 
 | Action | What happens |
 |---|---|
-| Swipe right or tap **POST** | `feed.swipe` with `right`. "+1 APPROVED" pops with a sound. Posts are scheduled for YouTube and Instagram per the posting mode |
-| Swipe left or tap **REMAKE** | Opens the reason sheet |
+| Swipe right or tap Post | `feed.swipe` with `right`. "+1 APPROVED" pops with a sound and a small "Approved · brand · mode" pill shows for 1.5 s. Posts are scheduled for YouTube and Instagram per the posting mode |
+| Swipe left or tap Remake | Opens the reason sheet |
 
 The reason sheet shows the outgoing hook on a card stamped REMAKE, then six reasons:
 
@@ -160,7 +160,7 @@ The Base's Scout bubble opens the Feed with `?find=<time>`, which brings the Sco
 
 ### Post tray
 
-When the newest approved video changes state (approved, posting, live), a tray drops over the header for about 8 seconds. It has one pill per platform: Live (tap to open the post), Posting, a time for a held post, Dry run, Skipped or Failed. A pill that turns live while you watch pops with a tick. On the Feed's first load the tray only shows for a post still going out.
+When a platform turns live for the newest approved video, a tray drops under the header for about 8 seconds with one pill per platform (Live opens the post). Other state changes don't drop it, so it stays out of the way while swiping.
 
 ### Streak banner
 
@@ -174,7 +174,7 @@ With no cards left, the Feed shows "ALL CAUGHT UP": the streak if today is kept,
 
 The You tab (`src/You.tsx`) shows the streak and what the posts did. It reads `you.summary`.
 
-- **Header.** Total views, estimated pending earnings and the taste score. What today needs is the streak card's chip, so the header has no line of its own. **News** opens the Away card over the You tab (see [Away card](#away-card)), and carries a red dot while there is something to collect.
+- **Header.** No counters: the taste card leads the tab, and what today needs is the streak card's chip. **News** opens the Away card over the You tab (see [Away card](#away-card)), and carries a red dot while there is something to collect.
 - **Streak card.** The streak number with a flame, a "Done today" or "Approve 1 today" chip, and this week's days (kept days show a flame, frozen days show ice, today pulses until kept).
 - **Milestones.** A path through 3, 7, 14 and 30 days with "n more days to a 7-day streak".
 - **Freezes.** How many are left ("2 freezes left"). Each covers one missed day. A new user has 2.

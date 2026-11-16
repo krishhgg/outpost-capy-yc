@@ -5,17 +5,25 @@ import { HonestyLabel } from "./Badge";
 import { Skeleton } from "./Loader";
 import { NumberTicker } from "./NumberTicker";
 import { ProgressBar } from "./Progress";
-import { COLOR, FONT, PARCH } from "./tokens";
+import { COLOR, FONT, PARCH, money } from "./tokens";
+import { TIER_STEPS, type TierStep } from "../../convex/tiers";
 
 // Taste tiers, renamed from the brief's Scout / Curator / Director / Tastemaker so they don't collide with the
-// village's own Scout (the Whop find) and Director (the agent who remakes videos). Same bands.
-export const TIERS = [
-  { key: "settler", name: "Settler", min: 0, bevel: "slate", icon: ICON.house, color: COLOR.slate },
-  { key: "curator", name: "Curator", min: 40, bevel: "teal", icon: ICON.glass, color: COLOR.teal },
-  { key: "showrunner", name: "Showrunner", min: 60, bevel: "orange", icon: ICON.play, color: COLOR.orange },
-  { key: "tastemaker", name: "Tastemaker", min: 80, bevel: "gold", icon: require("../../assets/base/star-lit.png") as ImageSourcePropType, color: COLOR.gold },
-] as const satisfies readonly { key: string; name: string; min: number; bevel: Bevel; icon: ImageSourcePropType; color: string }[];
+// village's own Scout (the Whop find) and Director (the agent who remakes videos). Names, bands and the bounties each
+// opens come from convex/tiers.ts, so the board and the server agree; this adds the look.
+const LOOK = {
+  settler: { bevel: "slate", icon: ICON.house, color: COLOR.slate },
+  curator: { bevel: "teal", icon: ICON.glass, color: COLOR.teal },
+  showrunner: { bevel: "orange", icon: ICON.play, color: COLOR.orange },
+  tastemaker: { bevel: "gold", icon: require("../../assets/base/star-lit.png") as ImageSourcePropType, color: COLOR.gold },
+} as const satisfies Record<TierStep["key"], { bevel: Bevel; icon: ImageSourcePropType; color: string }>;
+export const TIERS = TIER_STEPS.map(t => ({ ...t, ...LOOK[t.key] }));
 export type Tier = (typeof TIERS)[number];
+
+// What reaching a tier opens: "$4/1K bounties". Settler opens nothing extra, so it has no label.
+export function unlockLabel(tier: Pick<TierStep, "ratePer1kCents"> | null | undefined): string | null {
+  return tier?.ratePer1kCents ? `${money(tier.ratePer1kCents)}/1K bounties` : null;
+}
 
 export function tierFor(score: number): Tier {
   return [...TIERS].reverse().find(t => score >= t.min) ?? TIERS[0];
@@ -40,8 +48,9 @@ export function TierBadge({ score, size = "md", testID = "tier-badge" }: { score
 
 // Score, tier and the way to the next one. Undefined score is loading. `calibrating` shows a provisional score with
 // how many posts are scored so far ("3 of 5 posts scored"), labeled, instead of pretending it's settled.
-export function TierProgress({ score, calibrating, testID = "tier-progress" }:
-  { score: number | undefined; calibrating?: { scored: number; needed: number }; testID?: string }) {
+// `unlocks` names what the next tier opens (unlockLabel(nextTier(score))) and joins the foot line.
+export function TierProgress({ score, calibrating, unlocks, testID = "tier-progress" }:
+  { score: number | undefined; calibrating?: { scored: number; needed: number }; unlocks?: string | null; testID?: string }) {
   if (score === undefined) {
     return (
       <View style={s.wrap} testID={testID}>
@@ -65,7 +74,9 @@ export function TierProgress({ score, calibrating, testID = "tier-progress" }:
       </View>
       <ProgressBar value={fill} color={t.color} height={14} testID={`${testID}-bar`} />
       <View style={s.foot}>
-        <Text style={s.next}>{next ? `${next.min - Math.round(score)} to ${next.name}` : "Top tier. Keep your eye sharp."}</Text>
+        <Text style={s.next} numberOfLines={1} testID={`${testID}-next`}>
+          {next ? `${next.min - Math.round(score)} to ${next.name}${unlocks ? ` · unlocks ${unlocks}` : ""}` : "Top tier. Keep your eye sharp."}
+        </Text>
         {next ? <Text style={s.range}>{`${t.min}–${next.min - 1}`}</Text> : null}
       </View>
       {calibrating ? (
@@ -88,8 +99,8 @@ const s = StyleSheet.create({
   head: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   score: { flexDirection: "row", alignItems: "flex-end" },
   outOf: { color: PARCH.soft, fontSize: 18, fontFamily: FONT.bold, marginBottom: 8, marginLeft: 2 },
-  foot: { flexDirection: "row", justifyContent: "space-between" },
-  next: { color: PARCH.ink, fontSize: 16, fontFamily: FONT.semi },
+  foot: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  next: { color: PARCH.ink, fontSize: 16, fontFamily: FONT.semi, flexShrink: 1 },
   range: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi },
   calibrating: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
   calText: { color: PARCH.soft, fontSize: 15, fontFamily: FONT.semi },
