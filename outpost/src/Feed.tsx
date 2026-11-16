@@ -592,7 +592,7 @@ function Deck({ clips, done, onSwipe, active, box, behind }:
       {cur && (
         <GestureDetector gesture={pan}>
           <Animated.View style={[s.card, card, topStyle]} testID="top-card">
-            <VideoView key={top.id} player={cur} style={s.video} nativeControls={false} contentFit="cover" />
+            <VideoView key={`v${top.id}`} player={cur} style={s.video} nativeControls={false} contentFit="cover" />
             <Shade />
             <Segments key={`p${top.id}`} done={done} left={clips.length} player={cur} />
             <Caption key={top.id} clip={top} />
