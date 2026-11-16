@@ -202,7 +202,8 @@ export const seedBounties = internalMutation({
 
 // Builder-only: puts one real Whop Bounty (a bnty_ id) on the board, or updates it. Outpost submits right-swiped public
 // posts for it through the Bounties API as the demo Whop login (submit.ts). rewardCents is the net reward per accepted
-// submission. It tops the library up to `videos` (default 3, 0 to 5) queued library videos for the bounty, ranked after
+// submission. For an original-mode bounty it tops the library up to `videos` (default 3, 0 to 5) queued library videos
+// (a clip bounty queues none until the studio's clip mode lands, since the studio renders every job as original), ranked after
 // the library already queued and before any user's videos, so the laptop studio renders them next and Take and sync
 // clone them like the seeded bounties' videos. They carry no per-video brief: the studio writes each one from the
 // bounty and its brief (writing the brief with claude -p first when the bounty has none), each on a new angle.
@@ -243,7 +244,7 @@ export const addWhopBounty = internalMutation({
     const mine = all.filter(v => v.bountyId === bountyId && v.status !== "failed").length;
     const next = Math.max(-1, ...all.filter(v => v.status === "queued").map(v => v.rank)) + 1;
     const now = Date.now();
-    const queued = Math.max(0, want - mine);
+    const queued = fields.mode === "original" ? Math.max(0, want - mine) : 0;
     for (let i = 0; i < queued; i++) {
       await ctx.db.insert("videos", {
         userId: library._id, bountyId, mode: fields.mode, pregenerated: true, status: "queued", rank: next + i, attempts: 0, createdAt: now,

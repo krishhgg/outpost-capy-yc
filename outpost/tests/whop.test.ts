@@ -455,6 +455,9 @@ describe("addWhopBounty", () => {
     expect(await add()).toMatchObject({ bountyId: first.bountyId, queued: 0, libraryVideos: 3 });
     expect(await add(5)).toMatchObject({ queued: 2, libraryVideos: 5 });
     await expect(add(6)).rejects.toThrow(/0 to 5/);
+    expect(await t.mutation(internal.bounties.addWhopBounty, {
+      externalId: "bnty_clip", title: "Clip", brand: "B", description: "d", rewardCents: 500, url: "https://whop.com/c", mode: "clip",
+    })).toMatchObject({ queued: 0, libraryVideos: 0 });
 
     const userId = await user(t, "public", "taker");
     await t.mutation(api.bounties.take, { deviceId: "taker", bountyId: first.bountyId });

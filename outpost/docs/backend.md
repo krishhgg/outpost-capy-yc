@@ -188,7 +188,7 @@ One demo Whop login (Charlie's) that every user's Whop Bounty submissions go out
 
 A Whop Bounty row with no demo login, or whose call failed with a network error, 401, 408, 429 or 5xx, stays `pending` with a short `error` the You tab shows, and the next poll retries it. Any other refusal (for example one open submission per Whop account) turns it `manual` with Whop's message, so the user can still submit by hand. dryRun and private posts never create a row and never reach Whop.
 
-`bounties.addWhopBounty` (internal mutation) puts one real `bnty_` bounty on the board with `source: whop_bounty` and a flat `rewardCents` per accepted submission, upserting by its id. It also tops the library up to `videos` (default 3, 0 to 5) queued library videos for the bounty, ranked after the library already queued and before every user's videos, so the laptop studio renders them next; Take and `bounties.sync` clone them into Feeds like the seeded bounties' videos. They carry no per-video brief: the studio writes each from the bounty and its brief.
+`bounties.addWhopBounty` (internal mutation) puts one real `bnty_` bounty on the board with `source: whop_bounty` and a flat `rewardCents` per accepted submission, upserting by its id. For an original-mode bounty it also tops the library up to `videos` (default 3, 0 to 5) queued library videos (a clip bounty queues none until the studio's clip mode lands), ranked after the library already queued and before every user's videos, so the laptop studio renders them next; Take and `bounties.sync` clone them into Feeds like the seeded bounties' videos. They carry no per-video brief: the studio writes each from the bounty and its brief.
 
 ### you.ts
 
