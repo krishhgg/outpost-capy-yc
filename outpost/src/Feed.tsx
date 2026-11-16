@@ -1,9 +1,9 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { Dimensions, Image, KeyboardAvoidingView, Modal, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-  cancelAnimation, Easing, FadeInUp, FadeOut, withDelay, FadeOutUp, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming, ZoomIn,
-  type SharedValue,
+  cancelAnimation, Easing, FadeInDown, FadeInUp, FadeOut, withDelay, FadeOutUp, interpolate, runOnJS, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming, ZoomIn,
 } from "react-native-reanimated";
 import { createVideoPlayer, VideoPlayer, VideoView } from "expo-video";
 import * as Haptics from "expo-haptics";
@@ -15,21 +15,20 @@ import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import type { FunctionReturnType } from "convex/server";
 import { FindCard } from "./Scout";
-import { Block, DEEP, FONT, INK, Outlined, PARCH, PixelButton, POP, Sea, WOOD, WoodHeader } from "./pixel";
+import { Block, DEEP, FONT, INK, Outlined, PARCH, PixelButton, POP, Sea, WOOD } from "./pixel";
 import { usePayoff } from "./Payoff";
 import { Portrait } from "./Portrait";
-import { Flame, localDay, Milestones, MILESTONES, PendingCounter, PLAT, ScoreCounter } from "./You";
-import { Counter, ICON } from "./Hud";
-import { Badge, Button, Chip, COLOR, DemoNote, EmptyState, feel, HONESTY, useToast } from "./ui";
+import { Flame, localDay, Milestones, PLAT } from "./You";
+import { ICON } from "./Hud";
+import { Badge, Button, COLOR, DemoNote, EmptyState, feel, HONESTY, money, NumberTicker, tierFor, useToast, type Tone } from "./ui";
 
 const { width: W } = Dimensions.get("window");
 type Clip = FunctionReturnType<typeof api.feed.next>[number];
 type Mode = "dryRun" | "private" | "public";
 const FIND_EVERY = 3; // videos swiped between Scout cards
-const FRAME = 9; // the gold frame around a video: outline, gold, inner outline
-const OVERHANG = 28; // how far the Post and Remake buttons hang below the card
-const EDIT_ROW = 58; // room under the hanging buttons for the edit chips
-const PEEK = 7; // how much of each card waiting behind the top one shows above it
+const INSET = 16; // every overlay sits this far in from the video's edges
+const RAIL = 52; // the Post and Remake buttons down the right edge
+const BAR = 64; // the money and score row over the video's top
 type Outcome = "post" | "remake";
 type Box = { w: number; h: number };
 const GOLD = "#FFC83A";
@@ -37,12 +36,11 @@ const GOLD = "#FFC83A";
 // secret. Any touch on the deck first, or a swipe, cancels it.
 let nudged = false;
 
+// The sheet after a left swipe, hook first since it's the most common fix. "Say more" writes a note.
 const REASONS: [string, string][] = [
-  ["hook", "Hook too slow"], ["visuals", "Boring visuals"], ["voice", "Voice"],
-  ["long", "Too long"], ["topic", "Wrong topic"], ["more", "Say more"],
+  ["hook", "Hook too slow"], ["long", "Too long"], ["visuals", "Boring visuals"],
+  ["voice", "Voice"], ["topic", "Wrong topic"], ["more", "Say more"],
 ];
-// The one-tap edits under the card. Each sends the video back for a remake with the reason it maps to; Note writes one.
-const EDITS: [string, string][] = [["hook", "Punchier hook"], ["long", "Shorter"], ["visuals", "New look"]];
 
 export function useClock(ms: number) {
   const [now, setNow] = useState(Date.now());
@@ -58,15 +56,16 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
   const swipe = useMutation(api.feed.swipe);
   const find = useQuery(api.scout.next, { deviceId: device });
   const swipeFind = useMutation(api.scout.swipe);
+  const insets = useSafeAreaInsets();
   // A Scout card comes up after every few videos, while the Scout has finds left.
   const [sinceFind, setSinceFind] = useState(0);
   const [findGone, setFindGone] = useState<string | null>(null);
   const showFind = !!find && find.id !== findGone && sinceFind >= FIND_EVERY;
   useEffect(() => { if (findNow) setSinceFind(FIND_EVERY); }, [findNow]);
   const [gone, setGone] = useState<Set<string>>(new Set());
-  // The video whose remake reason is being picked, or whose note is being written from the Note chip.
-  const [asking, setAsking] = useState<{ clip: Clip; note: boolean } | null>(null);
-  // The bounty an approved video is going to, shown over the deck for a moment after the swipe lands.
+  // The video whose remake reason is being picked.
+  const [asking, setAsking] = useState<Clip | null>(null);
+  // The bounty an approved video is going to, shown as a pill for a moment after the swipe lands.
   const [sent, setSent] = useState<{ id: string; brand: string; mode: Mode } | null>(null);
   const toast = useToast();
   // This session's swipes, for the segments along the top of the video. A session starts each time the Feed comes into view.
@@ -96,30 +95,25 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
       return false;
     });
 
-  const leave = (clip: Clip, o: Outcome) => {
-    lastPost.current = o === "post";
-    setGone(g => new Set(g).add(clip.id));
-    setOutcomes(x => [...x, { id: clip.id, o }]);
-    setSinceFind(n => n + 1);
-  };
   const remake = (clip: Clip, dwellMs: number, reason: string, label: string, note?: string) =>
     send(clip, "left", dwellMs, reason, note).then(ok => { if (ok) payoff.remake(label); });
-  // A swipe, a button or an edit chip. An edit chip names its reason, so it goes straight back without the sheet.
-  const onSwipe = (clip: Clip, dir: 1 | -1, dwellMs: number, edit?: string) => {
-    leave(clip, dir > 0 ? "post" : "remake");
-    if (dir > 0) send(clip, "right", dwellMs).then(ok => {
+  // A swipe or a rail button. Right posts at once; left asks what should change.
+  const onSwipe = (clip: Clip, dir: 1 | -1, dwellMs: number) => {
+    lastPost.current = dir > 0;
+    setGone(g => new Set(g).add(clip.id));
+    setOutcomes(x => [...x, { id: clip.id, o: dir > 0 ? "post" : "remake" }]);
+    setSinceFind(n => n + 1);
+    if (dir < 0) { dwell.current = dwellMs; setAsking(clip); return; }
+    send(clip, "right", dwellMs).then(ok => {
       if (!ok) return;
       payoff.post();
       if (!clip.bounty || !status) return;
       feel("success");
       setSent({ id: clip.id, brand: clip.bounty.brand, mode: status.mode });
     });
-    else if (edit) remake(clip, dwellMs, edit, EDITS.find(([k]) => k === edit)?.[1] ?? edit);
-    else { dwell.current = dwellMs; setAsking({ clip, note: false }); }
   };
-  // The Note chip keeps the card until the note is sent, so backing out of it changes nothing.
-  const onNote = (clip: Clip, dwellMs: number) => { dwell.current = dwellMs; setAsking({ clip, note: true }); };
   const dwell = useRef(0);
+  const skip = (clip: Clip) => send(clip, "left", dwell.current).then(ok => { if (ok) payoff.skip(); });
   const swipedToday = outcomes.length > 0 || (!!you && you.todayCounts.approved + you.todayCounts.remakes > 0);
 
   const offline = !status || now - status.studio.lastSeen > 25_000;
@@ -142,19 +136,8 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
     }, 500);
     return () => clearTimeout(t);
   }, [clips.length, rows === undefined, active, offline]);
-  // A swiped card leaves the ready count at once; the server's count catches up when the swipe lands.
-  const ready = status ? Math.max(0, status.studio.ready - (rows ?? []).filter(r => gone.has(r.id)).length) : null;
-  const atRisk = !!you && !you.todayDone;
-  const line = !status ? " " : offline ? "Studio offline · the laptop is asleep"
-    : atRisk ? (you.streak === 0 ? "Post 1 video to start a streak"
-      // On a day the next post reaches a milestone, the line names it, the reward the banner is about to give.
-      : MILESTONES.includes(you.streak + 1) ? `Post 1 video to reach a ${you.streak + 1}-day streak`
-      : `Post 1 video to keep your ${you.streak}-day streak`)
-    // "Studio · voicing", not "making voicing". Each step is named once, so three videos rendering read "Studio · rendering".
-    : status.studio.making ? `Studio · ${[...new Set(status.studio.stages)].join(", ")}`
-    : status.studio.queued ? `Studio · ${status.studio.queued} queued` : "Studio · resting";
-  // The newest post drops down over the header for a few seconds whenever its state changes (approved, posting,
-  // live), then gets out of the way. Live links stay on the You tab.
+  // The newest post drops down under the header for a few seconds only when one of its platforms turns live, so it
+  // never covers the money counter during a run of swipes. Live links stay on the You tab.
   const latest = status?.recent[0];
   const sig = latest ? `${latest.videoId}:${latest.posts.map(p => `${p.platform}=${p.status}`).join(",")}` : "";
   const [trayUntil, setTrayUntil] = useState(0);
@@ -187,62 +170,30 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
     const before = new Map(vid === latest.videoId ? was.split(",").map(x => x.split("=") as [string, string]) : []);
     const turned = latest.posts.filter(p => p.status === "live" && before.has(p.platform) && before.get(p.platform) !== "live").map(p => p.platform);
     setFresh({ sig, live: turned });
+    if (turned.length === 0) return;
     if (active) turned.forEach((_, i) => ticks.current.push(setTimeout(() => {
       tick.seekTo(0).catch(() => {});
       tick.play();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }, 250 + i * 350)));
-    // On the Feed's first load the tray only drops for a post still on its way out. One that went out earlier is old news,
-    // and the tray would cover the header line that says what today's streak needs.
-    if (!vid && !latest.posts.some(p => p.status === "queued" || p.status === "publishing" || p.status === "held")) return;
     setTrayUntil(Date.now() + 8000);
   }, [sig]);
   const [box, setBox] = useState<Box | null>(null);
   return (
     <View style={s.screen}>
       <Sea />
-      {/* A slim strip instead of a titled header: the tab bar already says this is the Feed, and the video gets the room.
-          It carries the numbers a session moves: the streak, the videos left to review, the taste score and estimated
-          pending money. The mode chip sits beside the studio line under them, since four counters fill the row. */}
-      <View style={s.top}>
-        <WoodHeader title=""
-          left={
-            <View style={s.counters}>
-              <Counter icon={you?.todayDone ? "flame" : "flameoff"} value={you ? String(you.streak) : "…"} testID="feed-streak"
-                label={you ? `${you.streak} day streak${you.todayDone ? ", kept today" : ", not kept today yet"}` : "Streak loading"} />
-              <Counter icon="play" value={ready === null ? "…" : String(ready)} testID="feed-ready"
-                label={ready === null ? "Ready videos loading" : `${ready} videos ready`} />
-              <ScoreCounter device={device} compact onPress={() => router.navigate("/you")} testID="feed-score" />
-              <PendingCounter device={device} onPress={() => router.navigate("/you")} testID="feed-pending" />
-            </View>
-          }
-          below={
-            <View style={s.lineRow}>
-              {status && <ModeChip mode={status.mode} />}
-              <Text style={[s.line, s.lineText, atRisk && !offline && s.lineRisk]} numberOfLines={1} testID="studio-line">{line}</Text>
-            </View>
-          } />
-        <View style={s.drop} pointerEvents="box-none">
-          {/* The tray sits above the deck area, out of the streak banner's dimming, so it steps aside while the banner
-              shows and drops back in after it for the rest of its time. */}
-          {latest && now < trayUntil && !payoff.banner && (
-            <Animated.View entering={FadeInUp.duration(180)} exiting={FadeOutUp.duration(180)} style={s.dropIn}>
-              <Tray item={latest} fresh={fresh.sig === sig ? fresh.live : []} sig={sig} />
-            </Animated.View>
-          )}
-          {payoff.toasts}
-        </View>
-      </View>
-      <View style={s.deckArea} onLayout={e => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
+      {/* The video runs edge to edge from under the status bar to the tab bar. Everything else floats over it. */}
+      <View style={[s.deckArea, { marginTop: insets.top }]} onLayout={e => setBox({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
         {rows === undefined ? <Empty text="Connecting…" />
           : clips.length === 0 ? (!swipedToday ? <NoVideos making={status?.studio.making ?? 0} />
             : <CaughtUp approved={you?.todayCounts.approved ?? 0} remakes={you?.todayCounts.remakes ?? 0}
                 streak={you?.todayDone ? you.streak : 0} making={status?.studio.making ?? 0} stages={status?.studio.stages ?? []}
                 queued={status?.studio.queued ?? 0} offline={offline}
                 onFind={find && find.id !== findGone ? () => setSinceFind(FIND_EVERY) : undefined} />)
-          : box && <Deck clips={clips} done={outcomes.map(x => x.o)} onSwipe={onSwipe} onNote={onNote} active={active && !asking && !showFind}
-              box={box} behind={!showFind} tucked={!!latest && now < trayUntil} />}
-        {sent && <Sending key={sent.id} brand={sent.brand} mode={sent.mode} onDone={() => setSent(null)} />}
+          : box && <Deck clips={clips} done={outcomes.map(x => x.o)} onSwipe={onSwipe} active={active && !asking && !showFind}
+              box={box} behind={!showFind} />}
+        {!showFind && <TopBar device={device} />}
+        {sent && <Approved key={sent.id} brand={sent.brand} mode={sent.mode} onDone={() => setSent(null)} />}
         {showFind && find && (
           <FindCard key={find.id} find={find} onSwipe={dir => {
             setFindGone(find.id);
@@ -251,25 +202,26 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
           }} />
         )}
         {payoff.layer}
+        <View style={s.drop} pointerEvents="box-none">
+          {/* The tray steps aside while the streak banner shows and drops back in after it for the rest of its time. */}
+          {latest && now < trayUntil && !payoff.banner && (
+            <Animated.View entering={FadeInUp.duration(180)} exiting={FadeOutUp.duration(180)} style={s.dropIn}>
+              <Tray item={latest} fresh={fresh.sig === sig ? fresh.live : []} sig={sig} />
+            </Animated.View>
+          )}
+          {payoff.toasts}
+        </View>
       </View>
       <Modal visible={!!asking} transparent animationType="fade"
-        onRequestClose={() => {
-          if (asking && !asking.note) send(asking.clip, "left", dwell.current).then(ok => { if (ok) payoff.skip(); });
-          setAsking(null);
-        }}>
+        onRequestClose={() => { if (asking) skip(asking); setAsking(null); }}>
         {asking && (
           <ReasonSheet
-            hook={asking.clip.hook}
-            note={asking.note}
+            hook={asking.hook}
             onPick={(reason, note) => {
-              if (asking.note) leave(asking.clip, "remake");
-              remake(asking.clip, dwell.current, reason, reason === "more" ? "your note" : REASONS.find(([k]) => k === reason)?.[1] ?? reason, note);
+              remake(asking, dwell.current, reason, reason === "more" ? "your note" : REASONS.find(([k]) => k === reason)?.[1] ?? reason, note);
               setAsking(null);
             }}
-            onSkip={() => {
-              if (!asking.note) send(asking.clip, "left", dwell.current).then(ok => { if (ok) payoff.skip(); });
-              setAsking(null);
-            }}
+            onSkip={() => { skip(asking); setAsking(null); }}
           />
         )}
       </Modal>
@@ -278,17 +230,97 @@ export function Feed({ device, active, findNow }: { device: string; active: bool
   );
 }
 
-// Status tags are flat, a fill with a 2 pt outline, so they never look like something to press. Only buttons get a bevel.
-const TAG = { gold: "#FFC83A", slate: "#46567A", green: "#5BC44A", teal: "#2EB8A6" } as const;
-const money = (c: number) => `$${(c / 100).toFixed(c % 100 ? 2 : 0)}`;
+const TIER_TONE: Record<string, Tone> = { settler: "slate", curator: "teal", showrunner: "orange", tastemaker: "gold" };
 
-function ModeChip({ mode }: { mode: "dryRun" | "private" | "public" }) {
-  const [label, bevel] = mode === "dryRun" ? ["Dry run · nothing posts", "gold"] as const
-    : mode === "private" ? ["Private test", "slate"] as const : ["Posting live", "green"] as const;
+// The two numbers a swipe moves, mirrored across the top of the video: estimated earnings on the left, the taste score
+// on the right. The money is Whop pending plus the forecast for approved public posts not counted yet, so it ticks up
+// the moment one is approved; both parts are estimates, so it carries the ESTIMATED tag. Both open the You tab.
+function TopBar({ device }: { device: string }) {
+  const e = useQuery(api.earnings.summary, { deviceId: device });
+  const cents = e ? e.pendingCents + e.forecastCents : undefined;
+  const t = e?.taste;
+  const tier = t && t.score !== null ? tierFor(t.score) : null;
+  const go = () => { feel("tap"); router.navigate("/you"); };
   return (
-    <View style={[s.chip, { backgroundColor: TAG[bevel] }]} testID="mode-chip">
-      <Text style={[s.chipText, mode !== "dryRun" && { color: "#fff" }]}>{label}</Text>
+    <View style={s.bar} pointerEvents="box-none">
+      <Pressable onPress={go} hitSlop={8} style={s.barSide} testID="feed-pending" accessibilityRole="button"
+        accessibilityLabel={e ? `${money(cents!)} estimated: ${money(e.pendingCents)} pending on Whop plus ${money(e.forecastCents)} forecast` : "Estimated earnings loading"}>
+        <Image source={ICON.coin} style={s.barIcon} />
+        <View>
+          <NumberTicker value={cents} format={money} size={26} testID="feed-money" />
+          <Badge label={HONESTY.estimated.label} tone={HONESTY.estimated.tone} size="sm" dashed testID="feed-money-label" />
+        </View>
+      </Pressable>
+      <Pressable onPress={go} hitSlop={8} style={s.barSide} testID="feed-score" accessibilityRole="button"
+        accessibilityLabel={!t ? "Taste score loading" : !tier ? "No taste score yet"
+          : `Taste score ${t.score}, ${tier.name}${t.state === "calibrating" ? ", provisional" : ""}`}>
+        <View style={s.barEnd}>
+          {t && t.score === null ? <Outlined size={26}>–</Outlined>
+            : <NumberTicker value={t?.score ?? undefined} size={26} delta={false} testID="feed-score-value" style={s.end} />}
+          {tier ? <Badge label={t?.state === "calibrating" ? `${tier.name} · prov` : tier.name} tone={TIER_TONE[tier.key]} size="sm"
+            dashed={t?.state === "calibrating"} testID="feed-tier" style={s.end} /> : null}
+        </View>
+        <Image source={ICON.star} style={s.barIcon} />
+      </Pressable>
     </View>
+  );
+}
+
+// "$4 / 1K views" reads as "$4/1K" on the pill.
+const shortReward = (label: string) => label.replace(/\s*\/\s*/g, "/").replace(/\s*views?\b/i, "");
+
+// The one tag on the video, where TikTok puts its caption: the bounty it's for (or the Scout's pick), with the required
+// pregenerated line under it. Tapping it opens the studio's forecast and a remake's reason, so they never cover the video.
+function Caption({ clip }: { clip: Clip }) {
+  const [open, setOpen] = useState(false);
+  const more = !!clip.predicted || !!clip.remade;
+  const label = clip.bounty ? `${clip.bounty.brand} · ${shortReward(clip.bounty.rewardLabel)}`
+    : clip.scout ? `Scout pick · ${money(clip.scout.priceCents)} app` : null;
+  if (!label && !clip.pregenerated) return null;
+  return (
+    <View style={s.caption} pointerEvents="box-none">
+      {open && more ? (
+        <Animated.View entering={FadeInDown.duration(150)} style={s.panel} testID="forecast-panel">
+          {clip.predicted ? (
+            <View style={s.panelHead}>
+              <Badge label={HONESTY.forecast.label} tone={HONESTY.forecast.tone} size="sm" dashed />
+              <Text style={s.panelScore}>{`${Math.round(clip.predicted.score)}/100`}</Text>
+            </View>
+          ) : null}
+          <Text style={s.panelText} numberOfLines={3}>
+            {[clip.remade ? `Remade: ${clip.remade.label}.` : "", clip.predicted?.reason ?? ""].filter(Boolean).join(" ")}
+          </Text>
+        </Animated.View>
+      ) : null}
+      {label ? (
+        <Pressable disabled={!more} onPress={() => { feel("tap"); setOpen(o => !o); }} hitSlop={6} accessibilityRole={more ? "button" : undefined}
+          testID={clip.bounty ? "bounty-tag" : "scout-label"} accessibilityLabel={more ? `${label}. Tap for the forecast` : label}>
+          {({ pressed }) => (
+            <Block bevel={clip.bounty ? "gold" : "teal"} depth={pressed ? 1 : 2} style={s.pill}>
+              <Image source={clip.bounty ? ICON.coin : ICON.glass} style={s.pillIcon} />
+              <Text style={[s.pillLabel, !clip.bounty && { color: "#fff" }]} numberOfLines={1}>{label}</Text>
+            </Block>
+          )}
+        </Pressable>
+      ) : null}
+      {clip.pregenerated ? <Text style={s.pregen} testID="pregenerated-label">Pregenerated for the demo</Text> : null}
+    </View>
+  );
+}
+
+// The moment after a bounty video is approved: a small pill naming the bounty and what the posting mode does with it.
+// The money counter's tick is the real payoff, so this stays out of the way and fades.
+function Approved({ brand, mode, onDone }: { brand: string; mode: Mode; onDone: () => void }) {
+  useEffect(() => { const t = setTimeout(onDone, 1500); return () => clearTimeout(t); }, []);
+  const word = mode === "public" ? "Posting" : mode === "private" ? "Private test" : "Dry run";
+  return (
+    <Animated.View entering={ZoomIn.springify().damping(14).stiffness(220)} exiting={FadeOut.duration(250)} style={s.approved}
+      pointerEvents="none" testID="posting-banner" accessible accessibilityLabel={`Approved for ${brand}. ${word}`}>
+      <View style={s.approvedPill}>
+        <Image source={ICON.check} style={s.pillIcon} />
+        <Outlined size={17}>{`Approved · ${brand} · ${word}`}</Outlined>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -339,40 +371,6 @@ function NoVideos({ making }: { making: number }) {
         action={{ label: "Browse bounties", onPress: () => router.navigate("/bounties"), testID: "empty-bounties" }} />
       <DemoNote style={s.demoNote} />
     </Animated.View>
-  );
-}
-
-// The moment after a bounty video is approved: where it's going, in the words the posting mode allows. Only public
-// posts submit to the bounty, so a dry run or a private test says so instead. It carries one honesty line: the mode's
-// own, or the demo note when the post is public.
-function Sending({ brand, mode, onDone }: { brand: string; mode: Mode; onDone: () => void }) {
-  useEffect(() => { const t = setTimeout(onDone, 2600); return () => clearTimeout(t); }, []);
-  const [line, sub] = mode === "public" ? ["Posting + submitting to", null]
-    : mode === "private" ? ["Posting a private test for", "Private posts aren't submitted"]
-    : ["Approved for", "Dry run · nothing posts or submits"];
-  return (
-    <Animated.View entering={ZoomIn.springify().damping(12).mass(1).stiffness(180)} exiting={FadeOut.duration(200)} style={s.sending}
-      pointerEvents="none" testID="posting-banner" accessible accessibilityLabel={`${line} ${brand}${sub ? `. ${sub}` : ""}`}>
-      <Block bevel="green" depth={3} lift={4} style={s.sendingCard}>
-        <Outlined size={18} width={1.5}>{line}</Outlined>
-        <Outlined size={28} color={COLOR.goldPale}>{brand}</Outlined>
-        {sub ? <Text style={s.sendingSub}>{sub}</Text> : <DemoNote style={s.sendingNote} />}
-      </Block>
-    </Animated.View>
-  );
-}
-
-// The studio's 0-100 guess at how well the video meets its bounty's brief, labeled as a guess: the tag and the number,
-// so it doesn't cover the video. Tap for the reason.
-function Forecast({ score, reason }: { score: number; reason: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <Pressable onPress={() => { feel("tap"); setOpen(o => !o); }} style={s.forecast} testID="forecast-chip" accessibilityRole="button"
-      accessibilityLabel={`Forecast ${Math.round(score)} out of 100: ${reason}`}>
-      <Badge label={HONESTY.forecast.label} tone={HONESTY.forecast.tone} size="sm" dashed />
-      <Text style={s.forecastScore}>{Math.round(score)}</Text>
-      {open ? <Text style={s.forecastReason} numberOfLines={3}>{reason}</Text> : null}
-    </Pressable>
   );
 }
 
@@ -454,16 +452,11 @@ function Pill({ live, pop, sig, onPress, testID, label, children }:
   );
 }
 
-// The whole 9:16 video fits inside the deck area, so nothing on it is cropped, including the AI-made label at the
-// bottom. The card sits in a gold frame with the Post and Remake buttons hanging off its bottom edge.
-function Deck({ clips, done, onSwipe, onNote, active, box, behind, tucked }:
-  { clips: Clip[]; done: Outcome[]; onSwipe: (c: Clip, dir: 1 | -1, dwellMs: number, edit?: string) => void;
-    onNote: (c: Clip, dwellMs: number) => void; active: boolean; box: Box; behind: boolean; tucked: boolean }) {
-  // While the post tray is down, the cards waiting behind slide in behind the top one, so the tray never sits on their edges.
-  const tuck = useSharedValue(0);
-  useEffect(() => { tuck.value = withTiming(tucked ? 1 : 0, { duration: 180 }); }, [tucked]);
-  const innerW = Math.min(box.w - 24 - FRAME * 2, ((box.h - OVERHANG - EDIT_ROW - FRAME * 2) * 9) / 16);
-  const card = { width: innerW + FRAME * 2, height: (innerW * 16) / 9 + FRAME * 2, left: (box.w - innerW) / 2 - FRAME };
+// The deck: the top card fills the area edge to edge, the next one waits behind it a little smaller and grows into place
+// as the top card is dragged off.
+function Deck({ clips, done, onSwipe, active, box, behind }:
+  { clips: Clip[]; done: Outcome[]; onSwipe: (c: Clip, dir: 1 | -1, dwellMs: number) => void; active: boolean; box: Box; behind: boolean }) {
+  const card = { width: box.w, height: box.h };
   const players = useRef(new Map<string, VideoPlayer>());
   const committed = useRef<string | null>(null); // a card swiped away can't be swiped again by a second tap
   const thrown = useRef<string | null>(null); // the card a button has already thrown; a second tap can't redirect it
@@ -523,19 +516,19 @@ function Deck({ clips, done, onSwipe, onNote, active, box, behind, tucked }:
   // Clear the map too: a hot reload runs this cleanup and then reuses the ref.
   useEffect(() => () => { for (const p of players.current.values()) p.release(); players.current.clear(); }, []);
 
-  const commit = (dir: 1 | -1, edit?: string) => {
+  const commit = (dir: 1 | -1) => {
     if (!top || committed.current === top.id) return;
     committed.current = top.id;
     nudged = true;
     Haptics.impactAsync(dir > 0 ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light);
-    onSwipe(top, dir, Date.now() - shownAt.current, edit);
+    onSwipe(top, dir, Date.now() - shownAt.current);
   };
-  // The buttons and edit chips throw the card the same way a swipe does.
-  const fling = (dir: 1 | -1, edit?: string) => {
+  // The rail buttons throw the card the same way a swipe does.
+  const fling = (dir: 1 | -1) => {
     if (!top || thrown.current === top.id) return;
     thrown.current = top.id;
     nudged = true;
-    x.value = withTiming(dir * W * 1.5, { duration: 220 }, finished => { if (finished) runOnJS(commit)(dir, edit); });
+    x.value = withTiming(dir * W * 1.5, { duration: 220 }, finished => { if (finished) runOnJS(commit)(dir); });
   };
 
   // A touch means they found the card, so the nudge never plays again. It also stops a nudge that's running, so the
@@ -576,10 +569,7 @@ function Deck({ clips, done, onSwipe, onNote, active, box, behind, tucked }:
   const topStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: x.value }, { rotate: `${interpolate(x.value, [-W, W], [-10, 10])}deg` }],
   }));
-  // The cards waiting behind show their top edges above the top card. As the top card is dragged off, each one grows
-  // into the place in front of it.
-  const nextStyle = useBehind(x, card.height, 1, tuck);
-  const thirdStyle = useBehind(x, card.height, 2, tuck);
+  const nextStyle = useAnimatedStyle(() => ({ transform: [{ scale: 0.94 + 0.06 * Math.min(Math.abs(x.value) / (W * 0.5), 1) }] }));
   const postStamp = useAnimatedStyle(() => ({
     opacity: Math.max(hint.value, interpolate(x.value, [0, W * 0.25], [0, 1], "clamp")),
     transform: [{ rotate: "-10deg" }, { scale: x.value > 0 ? stampPop.value : 1 }],
@@ -593,65 +583,57 @@ function Deck({ clips, done, onSwipe, onNote, active, box, behind, tucked }:
   const cur = top && players.current.get(top.id);
   return (
     <View style={s.fill}>
-      {clips[2] && (
-        <Animated.View style={[s.card, card, thirdStyle, !behind && s.hidden]}>
-          <Block bevel="gold" depth={3} lift={4} style={s.fill}><View style={s.screenIn} /></Block>
-        </Animated.View>
-      )}
       {next && (
         <Animated.View style={[s.card, card, nextStyle, !behind && s.hidden]}>
-          <Block bevel="gold" depth={3} lift={4} style={s.fill}>
-            <View style={s.screenIn}><VideoView player={next} style={s.video} nativeControls={false} contentFit="cover" /></View>
-          </Block>
+          <VideoView player={next} style={s.video} nativeControls={false} contentFit="cover" />
+          <Shade />
         </Animated.View>
       )}
       {cur && (
         <GestureDetector gesture={pan}>
           <Animated.View style={[s.card, card, topStyle]} testID="top-card">
-            <Block bevel="gold" depth={3} lift={4} style={s.fill}>
-              <View style={s.screenIn}>
-                <VideoView key={top.id} player={cur} style={s.video} nativeControls={false} contentFit="cover" />
-                <Segments key={`p${top.id}`} done={done} left={clips.length} player={cur} />
-                {/* What the video is for and how it was made, stacked down the top-left corner under the segments: the
-                    bounty, a remake's reason, the pregenerated label (contracts.md) and the forecast as a tag and a number,
-                    its reason a tap away so it doesn't cover the video. */}
-                <View style={s.tags} pointerEvents="box-none">
-                  {top.bounty ? (
-                    <Badge label={`${top.bounty.brand} · ${top.bounty.rewardLabel}`} tone="gold" icon="coin" testID="bounty-tag" style={s.tagMax} />
-                  ) : top.scout ? (
-                    <View style={[s.badge, { backgroundColor: TAG.teal }]} testID="scout-label">
-                      <Image source={ICON.glass} style={s.badgeIcon} />
-                      <Text style={s.badgeText}>{`Scout pick · ${money(top.scout.priceCents)} Whop app`}</Text>
-                    </View>
-                  ) : null}
-                  {top.remade ? (
-                    <Badge label={`Remade: ${top.remade.label}`} tone="orange" testID="remade-label" />
-                  ) : null}
-                  {top.pregenerated ? (
-                    <Badge label="Pregenerated for the demo" size="sm" dashed testID="pregenerated-label" />
-                  ) : null}
-                  {top.predicted ? <Forecast key={top.id} score={top.predicted.score} reason={top.predicted.reason} /> : null}
-                </View>
-              </View>
-            </Block>
+            <VideoView key={top.id} player={cur} style={s.video} nativeControls={false} contentFit="cover" />
+            <Shade />
+            <Segments key={`p${top.id}`} done={done} left={clips.length} player={cur} />
+            <Caption key={top.id} clip={top} />
             <Animated.View style={[s.stamp, s.post, postStamp]}><Block bevel="green" depth={3} style={s.stampFace}><Outlined size={34}>POST</Outlined></Block></Animated.View>
             <Animated.View style={[s.stamp, s.remake, remakeStamp]}><Block bevel="orange" depth={3} style={s.stampFace}><Outlined size={34}>REMAKE</Outlined></Block></Animated.View>
           </Animated.View>
         </GestureDetector>
       )}
+      {/* Down the right edge, level with the caption, TikTok-style. Remake on top, Post under the thumb. */}
       {cur && active && (
-        <View style={[s.actions, { top: card.height - OVERHANG, left: card.left + 8, width: card.width - 16 }]} pointerEvents="box-none">
-          <PixelButton label="REMAKE" bevel="orange" size={20} onPress={() => fling(-1)} testID="remake-button" style={s.action} />
-          <PixelButton label="POST" bevel="green" size={20} onPress={() => fling(1)} testID="post-button" style={s.action} />
-        </View>
-      )}
-      {cur && active && (
-        <View style={[s.edits, { top: card.height + OVERHANG + 17 }]} pointerEvents="box-none" testID="edit-chips">
-          {EDITS.map(([key, label]) => <Chip key={key} label={label} size="md" onPress={() => fling(-1, key)} testID={`edit-${key}`} style={s.editCell} />)}
-          <Chip label="Note" size="md" onPress={() => onNote(top, Date.now() - shownAt.current)} testID="edit-note" style={s.editCell} />
+        <View style={s.rail} pointerEvents="box-none">
+          <RailButton bevel="orange" label="Remake" onPress={() => fling(-1)} testID="remake-button"><Image source={ICON.play} style={[s.railIcon, s.flip]} /></RailButton>
+          <RailButton bevel="green" label="Post" onPress={() => fling(1)} testID="post-button"><Image source={ICON.check} style={s.railIcon} /></RailButton>
         </View>
       )}
     </View>
+  );
+}
+
+function RailButton({ bevel, label, onPress, testID, children }:
+  { bevel: "green" | "orange"; label: string; onPress: () => void; testID: string; children: ReactNode }) {
+  return (
+    <Pressable onPress={() => { feel("press"); onPress(); }} hitSlop={6} testID={testID} accessibilityRole="button" accessibilityLabel={label}>
+      {({ pressed }) => (
+        <Block bevel={bevel} depth={pressed ? 2 : 4} lift={pressed ? 0 : 3} style={[s.railButton, pressed && s.sunk]}>{children}</Block>
+      )}
+    </Pressable>
+  );
+}
+
+// Stepped dark bands at the top and bottom of a card, pixel-style, so the white numbers and the caption read on any frame.
+function Shade() {
+  return (
+    <>
+      <View style={[s.shade, { top: 0 }]} pointerEvents="none">
+        {[0.5, 0.34, 0.2, 0.08].map(a => <View key={a} style={[s.band, { backgroundColor: `rgba(10,6,14,${a})` }]} />)}
+      </View>
+      <View style={[s.shade, { bottom: 0 }]} pointerEvents="none">
+        {[0.08, 0.2, 0.34, 0.5].map(a => <View key={a} style={[s.band, { backgroundColor: `rgba(10,6,14,${a})` }]} />)}
+      </View>
+    </>
   );
 }
 
@@ -688,22 +670,10 @@ function Progress({ player }: { player: VideoPlayer }) {
   return <Animated.View style={[s.progressFill, style]} testID="clip-progress" />;
 }
 
-// Where the card `depth` places behind the top one sits: smaller, and raised so PEEK points of its frame show for each
-// place. It moves up a place as the top card leaves, so the swap at the end of a swipe doesn't jump. At `tuck` 1 none of
-// it shows.
-function useBehind(x: SharedValue<number>, height: number, depth: number, tuck: SharedValue<number>) {
-  return useAnimatedStyle(() => {
-    const d = depth - Math.min(Math.abs(x.value) / (W * 0.5), 1);
-    const scale = 1 - 0.06 * d;
-    return { transform: [{ translateY: -(PEEK * d * (1 - tuck.value) + (height * (1 - scale)) / 2) }, { scale }] };
-  });
-}
-
-// The sheet names the video it's about, since the deck behind it has already moved on to the next card.
-// From the Note chip it opens on the note box, and backing out keeps the video in the Feed.
-function ReasonSheet({ hook, note: noteOnly, onPick, onSkip }:
-  { hook: string; note: boolean; onPick: (reason: string, note?: string) => void; onSkip: () => void }) {
-  const [writing, setWriting] = useState(noteOnly);
+// After a left swipe: what the studio should change, as big buttons that read in a glance. The video going back is named
+// in one line under the title, since the deck behind has already moved on. "Say more" opens a note box.
+function ReasonSheet({ hook, onPick, onSkip }: { hook: string; onPick: (reason: string, note?: string) => void; onSkip: () => void }) {
+  const [writing, setWriting] = useState(false);
   const [note, setNote] = useState("");
   return (
     // The sheet rides up with the keyboard, so "Say more" keeps its note box and send button in view.
@@ -713,16 +683,10 @@ function ReasonSheet({ hook, note: noteOnly, onPick, onSkip }:
         {/* The same wooden board as the Away card and the raid picker, so the sheet reads as a game menu. */}
         <View style={s.sheetBoard}>
           <View style={[s.sheetGrain, { top: 12 }]} /><View style={[s.sheetGrain, { top: 38 }]} />
-          <Portrait who="director" />
-          <Outlined size={22} style={s.sheetTitle}>What should the studio change?</Outlined>
+          <Outlined size={26} width={2}>What should change?</Outlined>
           <View style={s.sheetEdge} />
         </View>
-        {/* The video going back, as a small black card in the reel's own heavy type and stamped REMAKE, so it can't be
-            mixed up with the next card behind the sheet. */}
-        <View style={s.hookCard} testID="reason-hook" accessible accessibilityLabel={`Sending back ${hook}`}>
-          <Text style={s.hookText} numberOfLines={2}>{hook}</Text>
-          <Block bevel="orange" depth={2} style={s.hookStamp}><Outlined size={16}>REMAKE</Outlined></Block>
-        </View>
+        <Text style={s.sheetHook} numberOfLines={1} testID="reason-hook" accessibilityLabel={`Sending back ${hook}`}>{hook}</Text>
         {writing ? (
           <View>
             <TextInput style={s.input} autoFocus value={note} onChangeText={setNote} placeholder="Tell the studio what to change"
@@ -730,47 +694,64 @@ function ReasonSheet({ hook, note: noteOnly, onPick, onSkip }:
             <PixelButton label="Send it back" bevel="orange" size={20} disabled={!note.trim()} onPress={() => onPick("more", note.trim())} style={s.send} />
           </View>
         ) : (
-          <View style={s.chips}>
+          <View style={s.grid}>
             {REASONS.map(([key, label]) => (
-              <Pressable key={key} style={s.reasonCell} testID={`reason-${key}`} onPress={() => key === "more" ? setWriting(true) : onPick(key)} accessibilityRole="button">
+              <Pressable key={key} style={s.reasonCell} testID={`reason-${key}`} onPress={() => { feel("commit"); if (key === "more") setWriting(true); else onPick(key); }}
+                accessibilityRole="button" accessibilityLabel={label}>
                 {({ pressed }) => (
                   <View style={[s.reason, pressed && s.reasonDown]}>
-                    <Text style={s.reasonText}>{label}</Text>
+                    <Text style={s.reasonText} numberOfLines={1}>{label}</Text>
                   </View>
                 )}
               </Pressable>
             ))}
           </View>
         )}
-        <Pressable onPress={onSkip} hitSlop={8} testID="reason-skip"><Text style={s.skip}>{noteOnly ? "Keep it" : "Just skip it"}</Text></Pressable>
+        <Pressable onPress={onSkip} hitSlop={12} testID="reason-skip" accessibilityRole="button"><Text style={s.skip}>Just skip it</Text></Pressable>
       </Block>
     </KeyboardAvoidingView>
   );
 }
 
+const shadow = { textShadowColor: INK, textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 0 };
+
 const s = StyleSheet.create({
   fill: { flex: 1 },
   screen: { flex: 1, backgroundColor: DEEP },
-  top: { zIndex: 2 },
-  // Dropped lines cover the studio line and the peeking cards, never the counters a swipe just moved.
-  drop: { position: "absolute", left: 0, right: 0, bottom: -PEEK * 2, height: 60 },
-  dropIn: { position: "absolute", left: 0, right: 0, bottom: -6 }, // 6 pt below the mode chip
-  chip: { paddingHorizontal: 9, paddingVertical: 5, borderWidth: 2, borderColor: INK },
-  chipText: { color: INK, fontSize: 16, fontFamily: FONT.bold },
-  tray: { marginHorizontal: 12, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 10, paddingRight: 6, paddingTop: 7, paddingBottom: 9 },
+  deckArea: { flex: 1 },
+  // Toasts and the post tray drop in just under the money and score row.
+  drop: { position: "absolute", left: 0, right: 0, top: BAR + 8, height: 64 },
+  dropIn: { position: "absolute", left: 0, right: 0, top: 0 },
+  bar: { position: "absolute", top: 16, left: INSET, right: INSET, flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  barSide: { flexDirection: "row", alignItems: "center", gap: 8 },
+  barEnd: { alignItems: "flex-end" },
+  end: { alignSelf: "flex-end" },
+  barIcon: { width: 32, height: 32 },
+  tray: { marginHorizontal: INSET, flexDirection: "row", alignItems: "center", gap: 8, paddingLeft: 10, paddingRight: 6, paddingTop: 7, paddingBottom: 9 },
   trayTag: { color: "#B06A00", fontSize: 15, fontFamily: FONT.bold },
   trayHook: { flex: 1, color: PARCH.ink, fontSize: 16, fontFamily: FONT.semi },
-  pill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 6, paddingTop: 3, paddingBottom: 5, maxWidth: 110 },
-  hidden: { opacity: 0 },
-  pillFlat: { backgroundColor: PARCH.top, borderWidth: 2, borderColor: INK, paddingBottom: 3 },
+  pill: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 10, paddingTop: 5, paddingBottom: 7, alignSelf: "flex-start", maxWidth: "100%" },
+  pillIcon: { width: 22, height: 22 },
+  pillLabel: { color: INK, fontSize: 18, fontFamily: FONT.bold, flexShrink: 1 },
   pillMark: { width: 18, height: 18 },
   pillText: { fontSize: 15, fontFamily: FONT.bold, flexShrink: 1 },
-  counters: { flexDirection: "row", gap: 6 },
-  line: { color: "#FFD65C", fontSize: 17, fontFamily: FONT.semi, marginTop: 6 },
-  lineRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 6 },
-  lineText: { flex: 1, marginTop: 0 },
-  lineRisk: { color: "#FFB347", fontFamily: FONT.bold },
-  deckArea: { flex: 1, marginTop: 12 + PEEK * 2, marginBottom: 18 }, // room for the cards peeking above and the buttons below
+  pillFlat: { backgroundColor: PARCH.top, borderWidth: 2, borderColor: INK, paddingBottom: 3 },
+  hidden: { opacity: 0 },
+  caption: { position: "absolute", left: INSET, right: INSET + RAIL + INSET, bottom: INSET, alignItems: "flex-start", gap: 6 },
+  pregen: { color: "rgba(255,255,255,0.72)", fontSize: 13, fontFamily: FONT.semi, ...shadow },
+  panel: { alignSelf: "stretch", backgroundColor: PARCH.top, borderWidth: 2, borderColor: INK, paddingHorizontal: 10, paddingTop: 8, paddingBottom: 10, gap: 4 },
+  panelHead: { flexDirection: "row", alignItems: "center", gap: 8 },
+  panelScore: { color: INK, fontSize: 19, fontFamily: FONT.bold },
+  panelText: { color: PARCH.ink, fontSize: 15, fontFamily: FONT.semi },
+  approved: { position: "absolute", left: INSET, right: INSET, bottom: INSET + RAIL * 2 + 12 + INSET, alignItems: "center" },
+  approvedPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: COLOR.greenDeep, borderWidth: 2, borderColor: INK, paddingHorizontal: 12, paddingTop: 4, paddingBottom: 6 },
+  rail: { position: "absolute", right: INSET, bottom: INSET, gap: 12 },
+  railButton: { width: RAIL, height: RAIL, alignItems: "center", justifyContent: "center" },
+  railIcon: { width: 28, height: 28 },
+  flip: { transform: [{ scaleX: -1 }] },
+  sunk: { transform: [{ translateY: 3 }] },
+  shade: { position: "absolute", left: 0, right: 0, height: 120 },
+  band: { flex: 1 },
   caughtWrap: { flex: 1, justifyContent: "center", marginHorizontal: 24, marginBottom: 40 },
   caughtIcon: { width: 48, height: 48, marginTop: 10 },
   caughtHero: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12 },
@@ -788,50 +769,28 @@ const s = StyleSheet.create({
   caughtBtn2: { alignSelf: "stretch", marginTop: 10 },
   empty: { marginHorizontal: 28, marginTop: 120, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 22 },
   emptyText: { color: PARCH.ink, fontSize: 21, fontFamily: FONT.semi, textAlign: "center", lineHeight: 28 },
-  card: { position: "absolute", top: 0 },
-  screenIn: { flex: 1, margin: FRAME - 5, borderWidth: 2, borderColor: INK, backgroundColor: "#000", overflow: "hidden" }, // 3 outline + 4 + 2 inner = FRAME
+  card: { position: "absolute", top: 0, left: 0, borderWidth: 2, borderColor: INK, backgroundColor: "#000", overflow: "hidden" },
   video: { flex: 1 },
-  segs: { position: "absolute", left: 6, right: 6, top: 5, height: 5, flexDirection: "row", gap: 3 },
+  segs: { position: "absolute", left: INSET, right: INSET, top: 6, height: 4, flexDirection: "row", gap: 3 },
   seg: { flex: 1, backgroundColor: "rgba(255,255,255,0.3)", overflow: "hidden" },
   progressFill: { height: "100%", backgroundColor: GOLD },
-  badge: { flexDirection: "row", alignItems: "center", gap: 4, maxWidth: "100%", paddingHorizontal: 8, paddingVertical: 4, borderWidth: 2, borderColor: INK },
-  badgeIcon: { width: 20, height: 20, marginLeft: -2 },
-  badgeText: { color: INK, fontSize: 16, fontFamily: FONT.bold },
-  tags: { position: "absolute", top: 14, left: 10, right: 10, alignItems: "flex-start", gap: 5 },
-  tagMax: { maxWidth: "100%" },
-  forecast: { flexDirection: "row", alignItems: "center", gap: 6, maxWidth: "100%", backgroundColor: COLOR.violetPale, borderWidth: 2,
-    borderColor: INK, borderStyle: "dashed", paddingLeft: 3, paddingRight: 7, paddingVertical: 3 },
-  forecastScore: { color: INK, fontSize: 19, fontFamily: FONT.bold },
-  forecastReason: { flexShrink: 1, color: PARCH.ink, fontSize: 15, fontFamily: FONT.semi },
-  edits: { position: "absolute", left: 12, right: 12, flexDirection: "row", gap: 6 },
-  editCell: { flexGrow: 1 },
-  sending: { position: "absolute", left: 24, right: 24, bottom: EDIT_ROW + OVERHANG + 40, alignItems: "center" },
-  sendingCard: { alignItems: "center", paddingHorizontal: 18, paddingTop: 10, paddingBottom: 14 },
-  sendingSub: { color: INK, fontSize: 16, fontFamily: FONT.semi, marginTop: 4 },
-  sendingNote: { marginTop: 8 },
   demoNote: { marginTop: 14 },
-  stamp: { position: "absolute", top: 56 },
+  stamp: { position: "absolute", top: BAR + 48 },
   stampFace: { paddingHorizontal: 12, paddingTop: 4, paddingBottom: 8 },
-  post: { left: 22 }, // tilted -10 degrees in postStamp
-  remake: { right: 22 }, // tilted 10 degrees in remakeStamp
-  actions: { position: "absolute", flexDirection: "row", justifyContent: "space-between" },
-  action: { width: 128 },
+  post: { left: INSET + 6 }, // tilted -10 degrees in postStamp
+  remake: { right: INSET + 6 }, // tilted 10 degrees in remakeStamp
   sheetWrap: { flex: 1, backgroundColor: "rgba(20,10,30,0.97)" }, // dark enough that the next card's hook can't be read
-  sheet: { padding: 20, paddingBottom: 44, borderBottomWidth: 0 },
-  sheetBoard: { flexDirection: "row", alignItems: "center", gap: 12, marginHorizontal: -20, marginTop: -20, marginBottom: 16,
-    paddingHorizontal: 20, paddingTop: 12, paddingBottom: 18, backgroundColor: WOOD.base, overflow: "hidden" },
+  sheet: { padding: INSET, paddingBottom: 40, borderBottomWidth: 0 },
+  sheetBoard: { alignItems: "center", marginHorizontal: -INSET, marginTop: -INSET, marginBottom: 12,
+    paddingHorizontal: INSET, paddingTop: 12, paddingBottom: 18, backgroundColor: WOOD.base, overflow: "hidden" },
   sheetGrain: { position: "absolute", left: 0, right: 0, height: 2, backgroundColor: WOOD.grain },
   sheetEdge: { position: "absolute", left: 0, right: 0, bottom: 0, height: 6, borderTopWidth: 3, borderTopColor: INK, backgroundColor: WOOD.lip },
-  sheetTitle: { flex: 1 },
-  hookCard: { backgroundColor: "#141018", borderWidth: 2, borderColor: INK, paddingHorizontal: 14, paddingTop: 12, paddingBottom: 14,
-    marginBottom: 16, marginTop: 4 },
-  hookText: { color: "#F2F2F2", fontSize: 19, fontWeight: "900", letterSpacing: -0.5, lineHeight: 23, paddingRight: 70 },
-  hookStamp: { position: "absolute", right: -6, top: -12, paddingHorizontal: 7, paddingTop: 1, paddingBottom: 5, transform: [{ rotate: "8deg" }] },
-  chips: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  sheetHook: { color: PARCH.soft, fontSize: 17, fontFamily: FONT.semi, textAlign: "center", marginBottom: 14 },
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   reasonCell: { width: "48%", flexGrow: 1 },
-  reason: { backgroundColor: PARCH.top, borderWidth: 2, borderColor: INK, borderBottomWidth: 5, paddingHorizontal: 10, paddingTop: 10, paddingBottom: 9, alignItems: "center" },
+  reason: { backgroundColor: PARCH.top, borderWidth: 2, borderColor: INK, borderBottomWidth: 5, paddingHorizontal: 8, paddingTop: 14, paddingBottom: 13, alignItems: "center" },
   reasonDown: { borderBottomWidth: 2, marginTop: 3, backgroundColor: PARCH.bottom },
-  reasonText: { color: PARCH.ink, fontSize: 20, fontFamily: FONT.bold },
+  reasonText: { color: PARCH.ink, fontSize: 22, fontFamily: FONT.bold },
   input: { backgroundColor: PARCH.top, color: PARCH.ink, borderWidth: 2, borderColor: INK, padding: 14, fontSize: 20, fontFamily: FONT.regular },
   send: { marginTop: 12 },
   skip: { color: PARCH.soft, textAlign: "center", marginTop: 18, fontSize: 18, fontFamily: FONT.semi },
