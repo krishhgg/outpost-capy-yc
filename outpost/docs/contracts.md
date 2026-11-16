@@ -87,8 +87,8 @@ the library). A remake of a clone queues a normal studio job for the user; its p
 
 | Function | Kind | Args | Returns |
 |---|---|---|---|
-| `list` | query | `{ deviceId: string }` | `{ id: Id<"bounties">, title: string, brand: string, mode: "original" \| "clip", rewardLabel: string, budgetLabel: string \| null, spotsLabel: string \| null, taken: boolean, source: "whop_bounty" \| "content_rewards" }[]`: open bounties, taken first |
-| `take` | mutation | `{ deviceId: string, bountyId: Id<"bounties"> }` | `null`. Upserts `userBounties` as active and clones the bounty's ready library videos into the user's Feed. For clip bounties without library videos, schedules `internal.sources.enqueue` |
+| `list` | query | `{ deviceId: string }` | `{ id: Id<"bounties">, title: string, brand: string, mode: "original" \| "clip", rewardLabel: string, budgetLabel: string \| null, spotsLabel: string \| null, taken: boolean, source: "whop_bounty" \| "content_rewards", tier: { key, name, min }, locked: boolean }[]`: open bounties, taken first. `tier` is the taste tier Take needs; `locked` is true when the user's taste score is under it and they haven't taken the bounty |
+| `take` | mutation | `{ deviceId: string, bountyId: Id<"bounties"> }` | `null`. Throws `Reach <Tier> to take this bounty.` when the bounty is locked (see Taste tiers). Upserts `userBounties` as active and clones the bounty's ready library videos into the user's Feed. For clip bounties without library videos, schedules `internal.sources.enqueue` |
 | `drop` | mutation | `{ deviceId: string, bountyId: Id<"bounties"> }` | `null`. Marks `userBounties` dropped |
 | `sync` | internal action | `{}` | `null`. Cron, 15 min. Reads the Content Rewards public catalog (`contentrewards.com/api/campaign/campaigns` and `/campaigns/<id>`, no login) |
 
@@ -133,6 +133,19 @@ T4 adds one hook in `post.settle`: when a post goes `live` and its video has `bo
 
 T9 adds the COORDINATOR 2.4 fields (tier, calibrating count, hit rate, approval rate, pickiness, verdicts) as new
 return fields.
+
+`forecastCents`: approved bounty videos on their way to a **public** post that no platform has counted yet, each
+estimated at the user's usual views (`users.baselineViews`, else the median of their counted videos) with the same
+`estimate()` as pending; a per-submission bounty forecasts its reward. Dry-run and private posts forecast nothing,
+since they never submit. The app adds it to pending as one estimated figure and labels the forecast part.
+
+### Taste tiers (`tiers.ts`)
+
+`TIER_STEPS` is the one list of tiers: Settler 0, Curator 40, Showrunner 60, Tastemaker 80 (taste score minimums).
+`src/ui/Tier.tsx` dresses them with colors and icons. `bountyTier(b)` is the tier a bounty needs, by its rate per 1K
+views: under $2 Settler, $2 Curator, $4 Showrunner, $6 Tastemaker; per-submission bounties need none. A tier only
+gates which bounties a user can take: Whop pays users directly, so it never changes what a bounty pays. A bounty
+already taken stays taken if the score drops. No schema field: the rule is computed from `ratePer1kCents`.
 
 ### `sources.ts` (T15)
 
