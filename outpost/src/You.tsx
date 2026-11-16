@@ -517,16 +517,17 @@ function EarnRow({ r, device, compact: short }: { r: Earn["perVideo"][number]; d
       {sub?.auto && sub.note && (status === "pending" || status === "manual") ? <Text style={s.note} numberOfLines={1} testID="you-submit-note">{sub.note}</Text> : null}
       {sub?.status === "manual" && (
         <View style={s.submit} testID="you-submit">
-          <Button label="Submit on Whop" size="md" bevel="green" testID="you-submit-whop"
-            onPress={() => WebBrowser.openBrowserAsync(sub.deepLink).catch(() => {})} />
-          <View style={s.submitButtons}>
+          <Button label="Submit on Whop" size="md" bevel="green" testID="you-submit-whop" loading={sub.demo && busy}
+            onPress={() => sub.demo ? (setBusy(true), mark({ deviceId: device, videoId: r.videoId }).finally(() => setBusy(false)))
+              : WebBrowser.openBrowserAsync(sub.deepLink).catch(() => {})} />
+          {!sub.demo && <View style={s.submitButtons}>
             <Button label="Copy link" size="sm" variant="secondary" feel="tap" style={s.flex} testID="you-submit-copy"
               accessibilityLabel={`Copy or share the post link ${sub.postUrl}`}
               onPress={() => { Share.share({ url: sub.postUrl, message: sub.postUrl }).catch(() => {}); }} />
             <Button label="I submitted it" size="sm" variant="secondary" style={s.flex} loading={busy} loadingLabel="Saving"
               onPress={() => { setBusy(true); mark({ deviceId: device, videoId: r.videoId }).finally(() => setBusy(false)); }}
               testID="you-submit-done" />
-          </View>
+          </View>}
         </View>
       )}
     </View>

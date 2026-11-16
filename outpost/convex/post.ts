@@ -4,6 +4,8 @@ import { internal } from "./_generated/api";
 import { DAY_MS, logCall } from "./lib";
 
 const ZERNIO = "https://zernio.com/api/v1";
+// How long a simulated post shows as Posting before it goes Live.
+const DEMO_POST_MS = 2500;
 
 export const begin = internalMutation({
   args: { postId: v.id("posts") },
@@ -52,8 +54,9 @@ export const settle = internalMutation({
       checks: p.checks + (patch.status === "publishing" ? 1 : 0),
       ...(patch.status === "live" ? { liveAt: Date.now() } : {}),
     });
-    // A public post on a bounty video going live becomes a submission. dryRun and private posts never submit.
-    if (patch.status === "live" && p.status !== "live" && p.mode === "public" && (await ctx.db.get(p.videoId))?.bountyId) {
+    // A public post on a bounty video going live becomes a submission, and so does a simulated demo post (which never
+    // reaches Whop). dryRun and private posts never submit.
+    if (patch.status === "live" && p.status !== "live" && (p.mode === "public" || p.mode === "demo") && (await ctx.db.get(p.videoId))?.bountyId) {
       await ctx.scheduler.runAfter(0, internal.submit.forPost, { postId });
     }
   },
@@ -109,6 +112,11 @@ export const publish = internalAction({
       ctx.runMutation(internal.post.call, { ...ids, service: "zernio", op: `post ${job.platform}`, status: "skipped", ms: 0, detail });
 
     if (job.mode === "dryRun") { await skip("dry run: nothing sent"); return done("dry_run"); }
+    // Demo mode plays the whole flow without sending anything: Posting for a moment, then Live with no link.
+    if (job.mode === "demo") {
+      await skip("simulated for the demo: nothing sent");
+      return ctx.scheduler.runAfter(DEMO_POST_MS, internal.post.settle, { postId, status: "live" });
+    }
     if (job.mode === "private" && job.platform === "instagram") {
       await skip("Instagram has no private mode");
       return done("skipped", { error: "Instagram has no private mode" });

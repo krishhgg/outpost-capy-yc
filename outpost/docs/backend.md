@@ -80,6 +80,9 @@ How `publish` handles each mode:
 | `dryRun` | No request. Logged as skipped, row becomes `dry_run` | Same |
 | `private` | `visibility: "private"` | Skipped with "Instagram has no private mode" |
 | `public` | `visibility: "public"` | Posted to the feed |
+| `demo` | No request. Logged as skipped ("simulated for the demo"), Posting for 2.5 s, then `live` with no URL | Same |
+
+Demo mode exists for the staged demo and is set only with `admin:setMode`. A simulated post on a bounty video gets a `manual` submission row marked `demo`. "Submit on Whop" marks it submitted in one tap, opens nothing, and logs a skipped `whop` call. Demo posts forecast earnings like public ones. Nothing reaches Zernio or Whop.
 
 A real post:
 
@@ -225,13 +228,16 @@ Builder-only switches. Run them with `npx convex run admin:<name> '<json args>'`
 | Function | What it does |
 |---|---|
 | `users` | Lists users with id, mode, pace and pause state |
-| `setMode` | Sets `postingMode` to `dryRun`, `private` or `public` |
+| `setMode` | Sets `postingMode` to `dryRun`, `private`, `public` or `demo` |
 | `setPace` | Sets posts per day per platform, 1 to 24, and reslots held posts |
 | `setPaused` | Pauses or resumes sending. Resume reslots held posts |
 | `linkZernio` | Reads the Zernio-connected YouTube and Instagram accounts and saves them as the user's `connections` |
 | `requeueFailed` | Puts every `failed` and `making` video back in the queue |
 | `requeueReady` | Deletes a user's unwatched videos and remakes them in the current studio format |
 | `requeueVideos` | The same for chosen unwatched videos, by id. Each keeps its place in the queue and the Feed |
+| `demoPrep` | Demo prep. Clones chosen library videos to the front of a user's Feed in the given order (`videoIds`), labeled pregenerated. `bountyIds` also clones those bounties' other library videos behind them, so a Take on stage adds nothing in front. Idempotent; refuses a video the user already swiped |
+| `seedDemo` | Staged demo. Puts a seeded demo user (`demo: true`, mode `demo`, account baseline 2,400 views) on a device: a Hit and a Miss posted from two library videos, seven skipped clips, score 59. A real user on that device is parked as `parked:<deviceId>`. Running it again resets the demo user |
+| `unseedDemo` | Moves the demo user to `demo:<deviceId>` and brings the parked user back |
 | `wipeVideos` | Development reset. Deletes all videos, swipes, posts, notes, taste and day counts, then refills |
 | `rebuildDays` | Rebuilds the daily counts from swipes and finished videos |
 

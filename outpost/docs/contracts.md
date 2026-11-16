@@ -26,6 +26,7 @@ New optional fields on existing tables:
 | `users` | `phone` | `string` |
 | | `tasteScore` | `number` |
 | | `baselineViews` | `number` |
+| | `demo` | `boolean`: a seeded demo user. `videos`, `swipes`, `posts` and `submissions` carry the same optional field for staged or simulated rows |
 | `videos` | `bountyId` | `Id<"bounties">` |
 | | `mode` | `"original" \| "clip"` |
 | | `clip` | `{ sourceUrl: string, startS: number, endS: number, hook: string, captionStyle: string }` |

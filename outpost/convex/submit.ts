@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { internalAction, internalMutation, internalQuery, mutation, query, type ActionCtx, type QueryCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import { ownVideo, userFor } from "./lib";
+import { logCall, ownVideo, userFor } from "./lib";
 import { WHOP_API, accessToken } from "./whopAuth";
 
 // Scheduled from post.settle when a public post on a bounty video goes live; dryRun and private posts never get here.
@@ -28,14 +28,24 @@ export const record = internalMutation({
   args: { postId: v.id("posts") },
   handler: async (ctx, { postId }): Promise<Id<"submissions"> | null> => {
     const post = await ctx.db.get(postId);
-    if (!post || post.status !== "live" || post.mode !== "public" || !post.url) return null;
+    if (!post || post.status !== "live") return null;
+    const demo = post.mode === "demo";
+    const url = post.url ?? "";
+    if (!demo && (post.mode !== "public" || !url)) return null;
     if (await ctx.db.query("submissions").withIndex("by_post", q => q.eq("postId", postId)).first()) return null;
     const video = await ctx.db.get(post.videoId);
     const bounty = video?.bountyId && await ctx.db.get(video.bountyId);
     if (!video || !bounty) return null;
+    // A demo post has no link and never reaches Whop: its row waits for the one-tap simulated submit.
+    if (demo) {
+      await ctx.db.insert("submissions", {
+        userId: post.userId, bountyId: bounty._id, videoId: video._id, postId, url: "", status: "manual", checks: 0, demo: true,
+      });
+      return null;
+    }
     const auto = bounty.source === "whop_bounty";
     const id = await ctx.db.insert("submissions", {
-      userId: post.userId, bountyId: bounty._id, videoId: video._id, postId, url: post.url, status: auto ? "pending" : "manual", checks: 0,
+      userId: post.userId, bountyId: bounty._id, videoId: video._id, postId, url, status: auto ? "pending" : "manual", checks: 0,
     });
     return auto ? id : null;
   },
@@ -212,6 +222,7 @@ export const forVideo = query({
     selfReported: boolean;
     auto: boolean;
     note: string | null;
+    demo: boolean;
   } | null> => {
     await ownVideo(ctx, await userFor(ctx, deviceId), videoId);
     const s = await current(ctx, videoId);
@@ -220,7 +231,7 @@ export const forVideo = query({
     return {
       status: s.status, deepLink: bounty.url, denialReason: s.denialReason ?? null,
       postUrl: s.url, brand: bounty.brand, selfReported: s.status === "submitted" && !s.externalId,
-      auto: bounty.source === "whop_bounty", note: s.error ?? null,
+      auto: bounty.source === "whop_bounty" && !s.demo, note: s.error ?? null, demo: s.demo === true,
     };
   },
 });
@@ -231,7 +242,16 @@ export const markSubmitted = mutation({
   handler: async (ctx, { deviceId, videoId }) => {
     await ownVideo(ctx, await userFor(ctx, deviceId), videoId);
     const s = await current(ctx, videoId);
-    if (s?.status === "manual") await ctx.db.patch(s._id, { status: "submitted", submittedAt: Date.now() });
+    if (s?.status !== "manual") return null;
+    await ctx.db.patch(s._id, { status: "submitted", submittedAt: Date.now() });
+    if (!s.demo) return null;
+    // A simulated submit is one tap for the video, so its other platform's row goes with it.
+    let next = await current(ctx, videoId);
+    while (next?.status === "manual" && next.demo) {
+      await ctx.db.patch(next._id, { status: "submitted", submittedAt: Date.now() });
+      next = await current(ctx, videoId);
+    }
+    await logCall(ctx, { userId: s.userId, videoId, service: "whop", op: "submit", status: "skipped", ms: 0, detail: "simulated for the demo: nothing sent to Whop" });
     return null;
   },
 });

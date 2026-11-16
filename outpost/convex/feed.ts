@@ -172,6 +172,7 @@ export const swipe = mutation({
         const slotAt = await slotFor(ctx, user, platform, now);
         const postId = await ctx.db.insert("posts", {
           userId: user._id, videoId, platform, status: "held", mode: user.postingMode, views: 0, slotAt, checks: 0,
+          ...(user.postingMode === "demo" ? { demo: true } : {}),
         });
         // While paused the row stays held; `reslot` places it after the queue resumes.
         if (!user.drainPaused) await place(ctx, postId, slotAt, now);

@@ -24,7 +24,7 @@ import { Badge, Button, COLOR, DemoNote, EmptyState, feel, HONESTY, money, Numbe
 
 const { width: W } = Dimensions.get("window");
 type Clip = FunctionReturnType<typeof api.feed.next>[number];
-type Mode = "dryRun" | "private" | "public";
+type Mode = "dryRun" | "private" | "public" | "demo";
 const FIND_EVERY = 3; // videos swiped between Scout cards
 const INSET = 16; // every overlay sits this far in from the video's edges
 const RAIL = 52; // the Post and Remake buttons down the right edge
@@ -312,7 +312,7 @@ function Caption({ clip }: { clip: Clip }) {
 // The money counter's tick is the real payoff, so this stays out of the way and fades.
 function Approved({ brand, mode, onDone }: { brand: string; mode: Mode; onDone: () => void }) {
   useEffect(() => { const t = setTimeout(onDone, 1500); return () => clearTimeout(t); }, []);
-  const word = mode === "public" ? "Posting" : mode === "private" ? "Private test" : "Dry run";
+  const word = mode === "public" || mode === "demo" ? "Posting" : mode === "private" ? "Private test" : "Dry run";
   return (
     <Animated.View entering={ZoomIn.springify().damping(14).stiffness(220)} exiting={FadeOut.duration(250)} style={s.approved}
       pointerEvents="none" testID="posting-banner" accessible accessibilityLabel={`Approved for ${brand}. ${word}`}>

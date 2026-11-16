@@ -127,7 +127,7 @@ export async function tasteScoreOf(ctx: QueryCtx, user: Doc<"users">) {
   return tasteOf((await gather(ctx, user)).inputs).score;
 }
 
-// Approved bounty videos on their way to a public post that no platform has counted yet, each estimated at the user's
+// Approved bounty videos on their way to a public (or simulated demo) post that no platform has counted yet, each estimated at the user's
 // usual views: the account baseline, or the median of their counted videos. It is what the video earns if it does as
 // well as usual, so the app labels it a forecast. Dry-run and private posts never submit, so they forecast nothing.
 async function forecastCents(ctx: QueryCtx, user: Doc<"users">, items: Map<Id<"videos">, Item>, submissions: Doc<"submissions">[],
@@ -139,7 +139,7 @@ async function forecastCents(ctx: QueryCtx, user: Doc<"users">, items: Map<Id<"v
   for (const platform of PLATFORMS) {
     const rows = await ctx.db.query("posts").withIndex("by_user_platform_slot", q => q.eq("userId", user._id).eq("platform", platform)).collect();
     for (const p of rows) {
-      if (p.mode !== "public" || !["held", "queued", "publishing", "live"].includes(p.status)) continue;
+      if ((p.mode !== "public" && p.mode !== "demo") || !["held", "queued", "publishing", "live"].includes(p.status)) continue;
       if (items.get(p.videoId)?.counted || refused.has(p.videoId)) continue;
       waiting.add(p.videoId);
     }
