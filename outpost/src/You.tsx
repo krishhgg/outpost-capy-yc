@@ -310,7 +310,8 @@ function Taste({ e, bounties, focused }: { e: Earn | undefined; bounties: Bounty
   return (
     <>
       {unlock && <Unlocked key={unlock.to} unlock={unlock} bounties={bounties} onDismiss={() => setUnlock(null)} />}
-      <Card title="Taste score" style={s.cardGap} testID="you-taste">
+      <View style={s.cardGap}>
+      <Card title="Taste score" testID="you-taste">
         {score === null ? (
           <Text style={[s.tasteNote, s.center]} testID="you-taste-empty">Swipe 3 clips to get a score.</Text>
         ) : (
@@ -358,6 +359,7 @@ function Taste({ e, bounties, focused }: { e: Earn | undefined; bounties: Bounty
           </View>
         )}
       </Card>
+    </View>
     </>
   );
 }
@@ -424,7 +426,8 @@ function Earnings({ e, device }: { e: Earn | undefined; device: string }) {
   const todo = rows.filter(r => r.status === "manual");
   const rest = rows.filter(r => r.status !== "manual");
   return (
-    <Card title="Earnings" style={s.cardGap} loading={!e} testID="you-earnings">
+    <View style={s.cardGap}>
+      <Card title="Earnings" loading={!e} testID="you-earnings">
       <View style={s.moneyRow}>
         <View>
           <NumberTicker value={e ? e.pendingCents + e.forecastCents : undefined} format={money} size={40} outlined={false}
@@ -451,6 +454,7 @@ function Earnings({ e, device }: { e: Earn | undefined; device: string }) {
       )}
       {all && rest.map(r => <EarnRow key={r.videoId} r={r} device={device} />)}
     </Card>
+    </View>
   );
 }
 
