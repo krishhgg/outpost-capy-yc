@@ -4,6 +4,7 @@ import type { Doc } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { brief, platform, postingMode } from "./schema";
 import { bumpDay, dayOf, refill } from "./lib";
+import { cloneInto, libraryVideos } from "./bounties";
 
 // Builder-only switches. Run them from the dashboard or `npx convex run admin:<name>`.
 // No phone call can reach these, so no phone can turn on public posting.
@@ -129,6 +130,30 @@ export const queueBriefs = internalMutation({
       await ctx.db.insert("videos", { userId, status: "queued", rank: top + i, attempts: 0, createdAt: now, brief: b });
     }
     return briefs.length;
+  },
+});
+
+// Demo prep: puts chosen library videos at the front of a user's Feed in the given order, as labeled pregenerated clones.
+// bountyIds also clones the rest of those bounties' library videos behind them, so a Take on stage adds nothing in front.
+export const demoPrep = internalMutation({
+  args: { userId: v.id("users"), videoIds: v.array(v.id("videos")), bountyIds: v.optional(v.array(v.id("bounties"))) },
+  handler: async (ctx, { userId, videoIds, bountyIds = [] }) => {
+    const picked: Doc<"videos">[] = [];
+    for (const id of videoIds) {
+      const video = await ctx.db.get(id);
+      if (!video?.pregenerated || video.sourceVideoId || video.status !== "ready") throw new Error(`${id} is not a ready library video`);
+      picked.push(video);
+    }
+    const rest = (await libraryVideos(ctx)).filter(v => v.bountyId && bountyIds.includes(v.bountyId) && !videoIds.includes(v._id));
+    await cloneInto(ctx, userId, [...picked, ...rest]);
+    const ready = await ctx.db.query("videos").withIndex("by_user_status_rank", q => q.eq("userId", userId).eq("status", "ready")).collect();
+    const front = Math.min(Date.now(), ...ready.map(v => v.rank));
+    for (const [i, source] of picked.entries()) {
+      const clone = ready.find(v => v.sourceVideoId === source._id);
+      if (!clone) throw new Error(`${source._id} was already swiped by this user`);
+      await ctx.db.patch(clone._id, { rank: front - picked.length + i });
+    }
+    return picked.length;
   },
 });
 

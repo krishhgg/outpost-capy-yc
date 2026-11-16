@@ -232,6 +232,7 @@ Builder-only switches. Run them with `npx convex run admin:<name> '<json args>'`
 | `requeueFailed` | Puts every `failed` and `making` video back in the queue |
 | `requeueReady` | Deletes a user's unwatched videos and remakes them in the current studio format |
 | `requeueVideos` | The same for chosen unwatched videos, by id. Each keeps its place in the queue and the Feed |
+| `demoPrep` | Demo prep. Clones chosen library videos to the front of a user's Feed in the given order (`videoIds`), labeled pregenerated. `bountyIds` also clones those bounties' other library videos behind them, so a Take on stage adds nothing in front. Idempotent; refuses a video the user already swiped |
 | `wipeVideos` | Development reset. Deletes all videos, swipes, posts, notes, taste and day counts, then refills |
 | `rebuildDays` | Rebuilds the daily counts from swipes and finished videos |
 
