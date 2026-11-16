@@ -212,9 +212,14 @@ export const summary = query({
     perVideo.sort((a, b) => b.liveAt - a.liveAt);
 
     // Every live video, newest first, with its verdict.
+    // What each scored video did to the score: the score now minus the score without it. A Hit lifts it, a Miss costs.
+    const effectOf = (videoId: Id<"videos">) => {
+      const without = tasteOf({ ...inputs, items: inputs.items.filter(i => i.videoId !== videoId) }).score;
+      return taste.score === null || without === null ? null : taste.score - without;
+    };
     const posts = taste.graded.slice().reverse().map(g => ({
       videoId: g.videoId, title: g.title, liveAt: g.liveAt, views: g.views, counted: g.counted, url: g.url,
-      baseline: g.baseline, ratio: g.ratio, verdict: g.verdict,
+      baseline: g.baseline, ratio: g.ratio, verdict: g.verdict, scoreDelta: g.ratio === null ? null : effectOf(g.videoId),
     }));
     // The Away card's best and worst post: graded videos by ratio, or counted ones by views before any are graded.
     const gradedPosts = posts.filter(p => p.ratio !== null).sort((a, b) => b.ratio! - a.ratio!);

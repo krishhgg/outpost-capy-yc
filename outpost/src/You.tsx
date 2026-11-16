@@ -330,6 +330,7 @@ function Taste({ e, bounties, focused }: { e: Earn | undefined; bounties: Bounty
             </Text>
           </View>
         )}
+        <Effects posts={e.posts} />
         <Pressable onPress={() => setDetails(d => !d)} hitSlop={8} testID="you-taste-details" accessibilityRole="button">
           <Text style={[s.monthLink, s.center]}>{details ? "Hide details" : "Details"}</Text>
         </Pressable>
@@ -361,6 +362,25 @@ function Taste({ e, bounties, focused }: { e: Earn | undefined; bounties: Bounty
       </Card>
     </View>
     </>
+  );
+}
+
+// The newest Hit and the newest Miss with what each did to the score, so a verdict reads as points won or lost.
+function Effects({ posts }: { posts: Earn["posts"] }) {
+  const rows = (["hit", "miss"] as const).map(v => posts.find(p => p.verdict === v && p.scoreDelta !== null)).filter(p => !!p);
+  if (!rows.length) return null;
+  return (
+    <View style={s.effects} testID="you-effects">
+      {rows.map(p => (
+        <View key={p.videoId} style={s.effect} testID={`you-effect-${p.verdict}`}>
+          <VerdictBadge verdict={p.verdict!} ratio={p.ratio!} size="sm" />
+          <Text style={s.effectTitle} numberOfLines={1}>{p.title}</Text>
+          <Text style={[s.effectDelta, { color: p.scoreDelta! >= 0 ? COLOR.greenDeep : COLOR.redDeep }]}>
+            {p.scoreDelta! >= 0 ? `+${p.scoreDelta}` : `${p.scoreDelta}`}
+          </Text>
+        </View>
+      ))}
+    </View>
   );
 }
 
@@ -591,6 +611,10 @@ function Tile({ icon, label, value }: { icon: IconName; label: string; value: st
 const s = StyleSheet.create({
   fill: { flex: 1, backgroundColor: DEEP },
   cardGap: { marginHorizontal: 16, marginTop: 16 },
+  effects: { marginTop: 16, paddingTop: 8, borderTopWidth: 2, borderTopColor: PARCH.bottom, gap: 8 },
+  effect: { flexDirection: "row", alignItems: "center", gap: 8 },
+  effectTitle: { flex: 1, color: PARCH.ink, fontSize: 16, fontFamily: FONT.semi },
+  effectDelta: { fontSize: 20, fontFamily: FONT.bold },
   center: { textAlign: "center" },
   hero: { alignItems: "center", gap: 8 },
   heroScore: { flexDirection: "row", alignItems: "flex-end" },

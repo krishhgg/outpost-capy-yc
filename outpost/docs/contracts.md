@@ -134,6 +134,8 @@ T4 adds one hook in `post.settle`: when a post goes `live` and its video has `bo
 T9 adds the COORDINATOR 2.4 fields (tier, calibrating count, hit rate, approval rate, pickiness, verdicts) as new
 return fields.
 
+Each `posts` row carries `scoreDelta`: the taste score now minus the score without that video (null until it is scored), so a Hit shows the points it won and a Miss the points it cost.
+
 `forecastCents`: approved bounty videos on their way to a **public** post that no platform has counted yet, each
 estimated at the user's usual views (`users.baselineViews`, else the median of their counted videos) with the same
 `estimate()` as pending; a per-submission bounty forecasts its reward. Dry-run and private posts forecast nothing,

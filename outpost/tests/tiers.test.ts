@@ -69,6 +69,23 @@ describe("tier-locked bounties", () => {
   });
 });
 
+describe("score effects", () => {
+  test("a Hit lifts the score and a Miss costs it", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await user(t, "public", 1000);
+    await swipes(t, userId, ["right", "left", "left"]);
+    const b = await bounty(t, "b", 100);
+    const hit = await approved(t, userId, b, "public", { status: "live", views: 3000, viewsAt: 1 });
+    const miss = await approved(t, userId, b, "public", { status: "live", views: 100, viewsAt: 1 });
+    const { posts } = await t.query(api.earnings.summary, { deviceId: "dev-1" });
+    const byId = new Map(posts.map(p => [p.videoId, p]));
+    expect(byId.get(hit)).toMatchObject({ verdict: "hit" });
+    expect(byId.get(miss)).toMatchObject({ verdict: "miss" });
+    expect(byId.get(hit)!.scoreDelta!).toBeGreaterThan(0);
+    expect(byId.get(miss)!.scoreDelta!).toBeLessThan(0);
+  });
+});
+
 describe("forecast for approved bounty videos", () => {
   test("a public approval forecasts at the user's usual views until a platform counts it", async () => {
     const t = convexTest(schema, modules);
