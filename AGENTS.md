@@ -22,7 +22,7 @@ planned feature as working.**
 | Feature | Status today | Where |
 |---|---|---|
 | Full-screen swipe feed (right = post, left = send back) | Built | `src/Feed.tsx`, `convex/feed.ts` |
-| Posting | Built via Zernio to YouTube + Instagram, paced, `dryRun` / `private` / `public` modes. Brief wants TikTok/Reels/Shorts via an aggregator | `convex/post.ts`, `convex/pace.ts` |
+| Posting | Built via Zernio to YouTube + Instagram, paced, `dryRun` / `private` / `public` modes, plus a `demo` mode for the staged demo that simulates posting and the Whop submit with no outside call (`admin:seedDemo` seeds its labeled history). Brief wants TikTok/Reels/Shorts via an aggregator | `convex/post.ts`, `convex/pace.ts` |
 | Views polling | Built: cron reads Zernio analytics every 20 min | `convex/views.ts`, `convex/crons.ts` |
 | Bounty board (Whop Content Rewards campaigns) | Built: seeded Content Rewards campaigns plus Whop Bounties, Take clones pregenerated videos into the Feed | `convex/bounties.ts`, `src/Bounties.tsx` |
 | Tier-locked bounties | Built: a bounty's $/1K sets the taste tier Take needs ($2 Curator, $4 Showrunner, $6 Tastemaker); locked cards show the tier, Take refuses them, and crossing into a tier plays an unlock moment on You and Bounties. Gates access only; Whop pays directly | `convex/tiers.ts`, `convex/bounties.ts`, `src/Bounties.tsx`, `src/You.tsx` |

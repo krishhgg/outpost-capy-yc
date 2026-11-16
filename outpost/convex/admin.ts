@@ -1,10 +1,11 @@
 import { v } from "convex/values";
 import { internalAction, internalMutation, internalQuery, type MutationCtx } from "./_generated/server";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { brief, platform, postingMode } from "./schema";
-import { bumpDay, dayOf, refill } from "./lib";
+import { DAY_MS, bumpDay, dayOf, refill } from "./lib";
 import { cloneInto, libraryVideos } from "./bounties";
+import { tasteScoreOf } from "./earnings";
 
 // Builder-only switches. Run them from the dashboard or `npx convex run admin:<name>`.
 // No phone call can reach these, so no phone can turn on public posting.
@@ -154,6 +155,116 @@ export const demoPrep = internalMutation({
       await ctx.db.patch(clone._id, { rank: front - picked.length + i });
     }
     return picked.length;
+  },
+});
+
+// The staged demo's history, all marked demo. Graded against an account baseline of 2,400 views, the Hit (5,200) and the
+// Miss (900) leave the score at 59, Curator, still calibrating. Seven skipped clips put approvals at 2 of 9, so on stage
+// one rejection then one approval moves pickiness to 3 of 11 and the score to 61, Showrunner. A 2,400 baseline also
+// clears every bounty's 1,000-view minimum (relay.fast's is 2,000), so an approval forecasts a readable amount.
+const DEMO = {
+  baselineViews: 2400,
+  hit: { daysAgo: 2.5, views: { youtube: 1300, instagram: 3900 } },
+  miss: { daysAgo: 3.5, views: { youtube: 260, instagram: 640 } },
+  skipped: 7,
+};
+
+// Seeds the staged demo user on a device. A real user already on that device is parked under "parked:<deviceId>" with
+// every row it has, and comes back with unseedDemo. Running it again on a demo user resets it, so the demo can be
+// rehearsed and reseeded. hitVideoId and missVideoId are library videos to show as the posted Hit and Miss.
+export const seedDemo = internalMutation({
+  args: { deviceId: v.string(), hitVideoId: v.id("videos"), missVideoId: v.id("videos") },
+  handler: async (ctx, { deviceId, hitVideoId, missVideoId }) => {
+    const now = Date.now();
+    const existing = await ctx.db.query("users").withIndex("by_device", q => q.eq("deviceId", deviceId)).unique();
+    if (existing && !existing.demo) await ctx.db.patch(existing._id, { deviceId: `parked:${deviceId}` });
+    const fields = {
+      deviceId, demo: true, postingMode: "demo" as const, baselineViews: DEMO.baselineViews, pacePerDay: 12, drainPaused: false,
+      niche: "short videos for paid brand campaigns", tz: existing?.tz ?? "America/Los_Angeles", freezesLeft: 2, createdAt: now - 7 * DAY_MS,
+      // No Scout search, so no Scout card lands between the demo's clips.
+      scoutAt: now,
+    };
+    let userId = existing?.demo ? existing._id : null;
+    if (userId) {
+      await clearHistory(ctx, userId);
+      await ctx.db.patch(userId, { ...fields, seen: undefined, tasteScore: undefined });
+    } else {
+      userId = await ctx.db.insert("users", fields);
+    }
+
+    let totalViews = 0;
+    for (const [id, seed] of [[missVideoId, DEMO.miss], [hitVideoId, DEMO.hit]] as const) {
+      const lib = await ctx.db.get(id);
+      if (!lib?.pregenerated || lib.sourceVideoId || lib.status !== "ready" || !lib.bountyId) throw new Error(`${id} is not a ready library video`);
+      const at = now - seed.daysAgo * DAY_MS;
+      const videoId = await ctx.db.insert("videos", {
+        userId, status: "right", rank: at, attempts: 0, createdAt: at, readyAt: at, bountyId: lib.bountyId, mode: lib.mode,
+        script: lib.script, storageId: lib.storageId, durationS: lib.durationS, predicted: lib.predicted,
+        pregenerated: true, sourceVideoId: lib._id, demo: true,
+      });
+      await swipe(ctx, userId, videoId, "right", at, fields.tz);
+      await ctx.db.insert("userBounties", { userId, bountyId: lib.bountyId, status: "active", takenAt: at });
+      for (const platform of ["youtube", "instagram"] as const) {
+        const views = seed.views[platform];
+        totalViews += views;
+        const postId = await ctx.db.insert("posts", {
+          userId, videoId, platform, status: "live", mode: "demo", views, viewsAt: now, slotAt: at, liveAt: at, checks: 0, demo: true,
+        });
+        await ctx.db.insert("submissions", {
+          userId, bountyId: lib.bountyId, videoId, postId, url: "", status: "submitted", submittedAt: at, checks: 0, demo: true,
+        });
+      }
+    }
+    for (let i = 0; i < DEMO.skipped; i++) {
+      const at = now - (4 - i / DEMO.skipped) * DAY_MS;
+      const videoId = await ctx.db.insert("videos", { userId, status: "left", rank: at, attempts: 0, createdAt: at, demo: true });
+      await swipe(ctx, userId, videoId, "left", at, fields.tz);
+    }
+
+    const user = (await ctx.db.get(userId))!;
+    const score = await tasteScoreOf(ctx, user);
+    // The score the user "last saw", and no Away card until something new happens.
+    await ctx.db.patch(userId, { tasteScore: score ?? undefined, seen: { at: now, views: totalViews } });
+    return { userId, parked: existing && !existing.demo ? existing._id : null, score };
+  },
+});
+
+async function swipe(ctx: MutationCtx, userId: Id<"users">, videoId: Id<"videos">, dir: "right" | "left", at: number, tz: string) {
+  const day = dayOf(at, tz);
+  await ctx.db.insert("swipes", { userId, videoId, dir, dwellMs: 4000, day, at, demo: true });
+  await bumpDay(ctx, userId, day, dir === "right" ? "approved" : "skipped");
+}
+
+// Deletes a demo user's videos, swipes, posts, submissions, taken bounties, daily counts, notes and generations. Clones
+// share their library video's file, so only a demo user's own studio files are deleted.
+async function clearHistory(ctx: MutationCtx, userId: Id<"users">) {
+  for (const r of await ctx.db.query("videos").withIndex("by_user_status_rank", q => q.eq("userId", userId)).collect()) {
+    if (r.storageId && !r.pregenerated && !r.sourceVideoId) await ctx.storage.delete(r.storageId);
+    await ctx.db.delete(r._id);
+  }
+  const byUser = [
+    ctx.db.query("swipes").withIndex("by_user_day", q => q.eq("userId", userId)),
+    ctx.db.query("days").withIndex("by_user_day", q => q.eq("userId", userId)),
+    ctx.db.query("submissions").withIndex("by_user", q => q.eq("userId", userId)),
+    ctx.db.query("userBounties").withIndex("by_user", q => q.eq("userId", userId)),
+    ctx.db.query("tasteNotes").withIndex("by_user", q => q.eq("userId", userId)),
+    ctx.db.query("generations").withIndex("by_user", q => q.eq("userId", userId)),
+    ...(["youtube", "instagram", "tiktok"] as const).map(p => ctx.db.query("posts").withIndex("by_user_platform_slot", q => q.eq("userId", userId).eq("platform", p))),
+  ];
+  for (const q of byUser) for (const r of await q.collect()) await ctx.db.delete(r._id);
+}
+
+// Undoes seedDemo on a device: the demo user moves to "demo:<deviceId>" and the parked real user comes back.
+export const unseedDemo = internalMutation({
+  args: { deviceId: v.string() },
+  handler: async (ctx, { deviceId }) => {
+    const byDevice = (id: string) => ctx.db.query("users").withIndex("by_device", q => q.eq("deviceId", id)).unique();
+    const demo = await byDevice(deviceId);
+    const parked = await byDevice(`parked:${deviceId}`);
+    if (!demo?.demo || !parked) throw new Error("no seeded demo user with a parked user on this device");
+    await ctx.db.patch(demo._id, { deviceId: `demo:${deviceId}` });
+    await ctx.db.patch(parked._id, { deviceId });
+    return parked._id;
   },
 });
 
