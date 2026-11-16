@@ -413,7 +413,7 @@ describe("Content Rewards stays manual", () => {
     expect(seen).toHaveLength(0);
     expect(await t.query(api.submit.forVideo, { deviceId: "dev-public", videoId })).toEqual({
       status: "manual", deepLink: "https://contentrewards.com/c/campaigns/cc01", denialReason: null,
-      postUrl: "https://youtube.com/shorts/abc", brand: "Reach", selfReported: false, auto: false, note: null,
+      postUrl: "https://youtube.com/shorts/abc", brand: "Reach", selfReported: false, auto: false, note: null, demo: false,
     });
     await t.mutation(api.submit.markSubmitted, { deviceId: "dev-public", videoId });
     expect(await t.query(api.submit.forVideo, { deviceId: "dev-public", videoId })).toMatchObject({ status: "submitted", selfReported: true });

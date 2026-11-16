@@ -2,7 +2,8 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export const platform = v.union(v.literal("youtube"), v.literal("instagram"), v.literal("tiktok"));
-export const postingMode = v.union(v.literal("dryRun"), v.literal("private"), v.literal("public"));
+// demo simulates posting for the staged demo: the app runs as if it posted, and nothing reaches Zernio or Whop.
+export const postingMode = v.union(v.literal("dryRun"), v.literal("private"), v.literal("public"), v.literal("demo"));
 
 // A reel's beats are its lines. Older videos have three plain lines and none of the optional fields.
 export const script = v.object({
@@ -49,6 +50,8 @@ export default defineSchema({
     phone: v.optional(v.string()),
     tasteScore: v.optional(v.number()),
     baselineViews: v.optional(v.number()),
+    // A seeded demo user (admin:seedDemo). Its history is staged, never real, and so is every row below marked demo.
+    demo: v.optional(v.boolean()),
   }).index("by_device", ["deviceId"]),
 
   connections: defineTable({
@@ -94,6 +97,7 @@ export default defineSchema({
     // Made ahead of time for the demo library. A clone shares its library video's storage file and never deletes it.
     pregenerated: v.optional(v.boolean()),
     sourceVideoId: v.optional(v.id("videos")),
+    demo: v.optional(v.boolean()),
   })
     .index("by_user_status_rank", ["userId", "status", "rank"])
     .index("by_status", ["status"])
@@ -128,6 +132,7 @@ export default defineSchema({
     dwellMs: v.number(),
     day: v.string(),
     at: v.number(),
+    demo: v.optional(v.boolean()),
   }).index("by_user_day", ["userId", "day"]),
 
   // One row per user per local day, bumped as things happen. The You tab reads these.
@@ -178,6 +183,8 @@ export default defineSchema({
     liveAt: v.optional(v.number()),
     checks: v.number(),
     error: v.optional(v.string()),
+    // Seeded demo history, or a post simulated in demo mode: nothing was sent.
+    demo: v.optional(v.boolean()),
   })
     .index("by_user_platform_slot", ["userId", "platform", "slotAt"])
     .index("by_video", ["videoId"])
@@ -299,6 +306,8 @@ export default defineSchema({
     submittedAt: v.optional(v.number()),
     resolvedAt: v.optional(v.number()),
     checks: v.number(),
+    // Seeded or simulated for the demo: never sent to Whop.
+    demo: v.optional(v.boolean()),
   }).index("by_post", ["postId"]).index("by_status", ["status"]).index("by_user", ["userId"]),
 
   // Server-only Whop OAuth tokens (whopAuth.ts): one row, the demo Whop login every user submits as. No public function,

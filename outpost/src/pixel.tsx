@@ -132,7 +132,7 @@ const s = StyleSheet.create({
   woodSub: { color: "#FFD65C", fontSize: 17, fontFamily: FONT.semi, marginTop: 2 },
   shrink: { flexShrink: 1 },
   plaque: {
-    alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, marginLeft: 22, marginBottom: -16,
+    alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 8, marginBottom: -16,
     zIndex: 2, backgroundColor: WOOD.base, borderWidth: 3, borderColor: INK, paddingHorizontal: 12, paddingVertical: 2,
     overflow: "hidden", boxShadow: `3px 3px 0px ${INK}`,
   },

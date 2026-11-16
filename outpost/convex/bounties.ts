@@ -5,6 +5,8 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { CATALOG_READ_AT, SEED_BOUNTIES, VIDEOS_PER_CAMPAIGN } from "./bountySeed";
 import { userFor } from "./lib";
+import { tasteScoreOf } from "./earnings";
+import { bountyTier, type TierStep } from "./tiers";
 
 type BountyCard = {
   id: Id<"bounties">;
@@ -21,6 +23,8 @@ type BountyCard = {
   progress: { ready: number; total: number };
   makes: string; // what Outpost makes for it, from the brief
   url: string; // the public campaign page
+  tier: { key: TierStep["key"]; name: string; min: number }; // the taste tier Take needs
+  locked: boolean; // the user's taste score is under that tier and they haven't taken it
 };
 
 const usd = (cents: number, digits = 2) =>
@@ -67,8 +71,10 @@ export const list = query({
       .filter(r => r.status === "active").map(r => r.bountyId));
     const library = (await libraryVideos(ctx)).filter(v => v.status !== "failed");
     const open = await ctx.db.query("bounties").withIndex("by_status", q => q.eq("status", "open")).collect();
+    const score = (await tasteScoreOf(ctx, user)) ?? 0;
     const cards = open.map(b => {
       const made = library.filter(v => v.bountyId === b._id);
+      const { key, name, min } = bountyTier(b);
       return {
         id: b._id, title: b.title, brand: b.brand, mode: b.mode, rewardLabel: rewardLabel(b),
         budgetLabel: b.budgetCents == null ? null : usd(Math.max(0, b.budgetCents - (b.paidOutCents ?? 0)), 0) + " left",
@@ -78,6 +84,8 @@ export const list = query({
         progress: { ready: made.filter(v => v.status === "ready").length, total: made.length },
         makes: typeof b.brief?.format === "string" ? b.brief.format : "",
         url: b.url,
+        tier: { key, name, min },
+        locked: !taken.has(b._id) && score < min,
       };
     });
     return cards.sort((a, b) => Number(b.taken) - Number(a.taken));
@@ -94,6 +102,10 @@ export const take = mutation({
     if (!bounty || bounty.status !== "open") throw new ConvexError("This bounty is closed.");
     const row = await ctx.db.query("userBounties")
       .withIndex("by_user_bounty", q => q.eq("userId", user._id).eq("bountyId", bountyId)).unique();
+    const tier = bountyTier(bounty);
+    if (row?.status !== "active" && ((await tasteScoreOf(ctx, user)) ?? 0) < tier.min) {
+      throw new ConvexError(`Reach ${tier.name} to take this bounty.`);
+    }
     if (!row) await ctx.db.insert("userBounties", { userId: user._id, bountyId, status: "active", takenAt: Date.now() });
     else if (row.status !== "active") await ctx.db.patch(row._id, { status: "active", takenAt: Date.now() });
     const library = (await libraryVideos(ctx)).filter(v => v.bountyId === bountyId);

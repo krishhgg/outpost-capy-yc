@@ -22,14 +22,15 @@ planned feature as working.**
 | Feature | Status today | Where |
 |---|---|---|
 | Full-screen swipe feed (right = post, left = send back) | Built | `src/Feed.tsx`, `convex/feed.ts` |
-| Posting | Built via Zernio to YouTube + Instagram, paced, `dryRun` / `private` / `public` modes. Brief wants TikTok/Reels/Shorts via an aggregator | `convex/post.ts`, `convex/pace.ts` |
+| Posting | Built via Zernio to YouTube + Instagram, paced, `dryRun` / `private` / `public` modes, plus a `demo` mode for the staged demo that simulates posting and the Whop submit with no outside call (`admin:seedDemo` seeds its labeled history). Brief wants TikTok/Reels/Shorts via an aggregator | `convex/post.ts`, `convex/pace.ts` |
 | Views polling | Built: cron reads Zernio analytics every 20 min | `convex/views.ts`, `convex/crons.ts` |
-| Bounty board (Whop Content Rewards campaigns) | Planned. Today's Scout searches Whop *products*, not campaigns | `convex/scout.ts` |
+| Bounty board (Whop Content Rewards campaigns) | Built: seeded Content Rewards campaigns plus Whop Bounties, Take clones pregenerated videos into the Feed | `convex/bounties.ts`, `src/Bounties.tsx` |
+| Tier-locked bounties | Built: a bounty's $/1K sets the taste tier Take needs ($2 Curator, $4 Showrunner, $6 Tastemaker); locked cards show the tier, Take refuses them, and crossing into a tier plays an unlock moment on You and Bounties. Gates access only; Whop pays directly | `convex/tiers.ts`, `convex/bounties.ts`, `src/Bounties.tsx`, `src/You.tsx` |
 | Whop join + submit post URL | Whop Bounties: built, auto-submit as one demo Whop login via OAuth, review status polled. Content Rewards: one-tap manual submit (no creator API) | `convex/whopAuth.ts`, `convex/submit.ts` |
 | Clip engine (cut brand footage into 9:16 clips) | Planned. Today's studio makes original reels | |
-| Director edit chips | Partial: left-swipe reasons ("Hook too slow", "Too long"...) queue a full remake. One-tap param tweak + fast re-render is planned | `convex/feed.ts` (`REASONS`) |
-| Scoreboard | Partial: total and per-video views, streak, You tab. No pending earnings or Whop review status | `convex/you.ts`, `src/You.tsx` |
-| Taste score (approval rate x performance) | Planned. "Taste" today means Supermemory notes from left-swipe reasons | `convex/memory.ts` |
+| Director edit chips | Partial: the left-swipe reason sheet ("Hook too slow", "Too long"...) queues a full remake. One-tap param tweak + fast re-render is planned | `convex/feed.ts` (`REASONS`), `src/Feed.tsx` |
+| Scoreboard | Built: estimated pending (live submitted posts, plus a labeled forecast for approved public clips not counted yet at the user's usual views), approved $, Whop submission status and Submit on You; the Feed header shows the estimate and taste score | `convex/earnings.ts`, `src/You.tsx`, `src/Feed.tsx` |
+| Taste score (approval rate x performance) | Built: provisional from pickiness until 5 posts are scored against the user's baseline, with tiers Settler/Curator/Showrunner/Tastemaker | `convex/earnings.ts`, `src/ui/Tier.tsx` |
 | iMessage agent | Planned. Nothing built | |
 | On-stage generation | Built for the demo: suggestion prompts on `/create` play a staged sequence, then clone a pregenerated library video into the Feed (labeled). `/generations` shows staged and real studio progress | `convex/generate.ts`, `src/Create.tsx`, `src/Generations.tsx` |
 | Studio (claude -p script + Kokoro voice + Compound render) | Built: today's video pipeline, Convex job queue to MP4 upload. Starting point for the clip engine | `studio/`, `convex/studio.ts` |
