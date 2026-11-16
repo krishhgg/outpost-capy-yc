@@ -270,7 +270,7 @@ function TopBar({ device }: { device: string }) {
 const shortReward = (label: string) => label.replace(/\s*\/\s*/g, "/").replace(/\s*views?\b/i, "");
 
 // The one tag on the video, where TikTok puts its caption: the bounty it's for (or the Scout's pick), with the required
-// pregenerated line under it. Tapping it opens the studio's forecast and a remake's reason, so they never cover the video.
+// pregenerated line over it, so the pill shares its bottom edge with the Post button. Tapping it opens the studio's forecast and a remake's reason, so they never cover the video.
 function Caption({ clip }: { clip: Clip }) {
   const [open, setOpen] = useState(false);
   const more = !!clip.predicted || !!clip.remade;
@@ -292,6 +292,7 @@ function Caption({ clip }: { clip: Clip }) {
           </Text>
         </Animated.View>
       ) : null}
+      {clip.pregenerated ? <Text style={s.pregen} testID="pregenerated-label">Pregenerated for the demo</Text> : null}
       {label ? (
         <Pressable disabled={!more} onPress={() => { feel("tap"); setOpen(o => !o); }} hitSlop={6} accessibilityRole={more ? "button" : undefined}
           testID={clip.bounty ? "bounty-tag" : "scout-label"} accessibilityLabel={more ? `${label}. Tap for the forecast` : label}>
@@ -303,7 +304,6 @@ function Caption({ clip }: { clip: Clip }) {
           )}
         </Pressable>
       ) : null}
-      {clip.pregenerated ? <Text style={s.pregen} testID="pregenerated-label">Pregenerated for the demo</Text> : null}
     </View>
   );
 }

@@ -76,11 +76,11 @@ export function Bounties({ device }: { device: string }) {
     });
   };
 
-  // Taken first, then the best open bounty, then the best locked one so the next tier is in view, then the rest.
+  // The best open bounty, then the best locked one so the next tier is in view, then the rest, with taken ones last.
   const byRate = (a: Bounty, b: Bounty) => rateOf(b) - rateOf(a);
   const open = (list ?? []).filter(b => !b.taken && !b.locked).sort(byRate);
   const locked = (list ?? []).filter(b => !b.taken && b.locked).sort(byRate);
-  const ordered = [...(list ?? []).filter(b => b.taken), ...open.slice(0, 1), ...locked.slice(0, 1), ...open.slice(1), ...locked.slice(1)];
+  const ordered = [...open.slice(0, 1), ...locked.slice(0, 1), ...open.slice(1), ...locked.slice(1), ...(list ?? []).filter(b => b.taken)];
 
   const taken = list?.filter(b => b.taken).length ?? 0;
   const sub = !list ? "Checking the board…"
@@ -172,7 +172,7 @@ function BountyCard({ b, failed, unlocked, onTake }:
   return (
     <Animated.View layout={LinearTransition.springify().damping(16)} entering={FadeIn.duration(220)} style={s.slot}>
       <Animated.View style={popStyle}>
-        <Plaque title={b.brand} style={s.plaque} />
+        <Plaque title={b.brand} />
         <Card style={[UNDER_PLAQUE, s.card, b.locked && s.lockedCard]} testID={`bounty-card-${b.id}`}>
           <View style={s.row}>
             <View style={[s.half, b.locked && s.muted]} accessible accessibilityLabel={`Reward ${b.rewardLabel}`} testID={`bounty-reward-${b.id}`}>
@@ -264,7 +264,6 @@ const s = StyleSheet.create({
   headerTier: { alignSelf: "center" },
   content: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 32 },
   slot: { marginTop: 16 },
-  plaque: { marginLeft: 0 },
   card: { gap: 12 },
   lockedCard: { backgroundColor: "#DDD3C0" },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
