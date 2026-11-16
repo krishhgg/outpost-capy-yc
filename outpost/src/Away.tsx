@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { AppState, Image, Modal, Pressable, StyleSheet, Text, View, type HostInstance } from "react-native";
+import { Image, Modal, Pressable, StyleSheet, Text, View, type HostInstance } from "react-native";
 import Animated, { Easing, FadeInDown, useAnimatedStyle, useSharedValue, withDelay, withTiming } from "react-native-reanimated";
 import * as Haptics from "expo-haptics";
 import { useAudioPlayer } from "expo-audio";
-import { router, usePathname } from "expo-router";
+import { usePathname } from "expo-router";
 import { useConvex, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { api } from "../convex/_generated/api";
@@ -21,7 +21,6 @@ type Summary = FunctionReturnType<typeof api.away.summary>;
 // The taste side of the card: the score when the user last collected and now, and the best and worst post.
 type Taste = FunctionReturnType<typeof api.earnings.summary>["away"];
 
-const AWAY_MS = 20 * 60_000; // shorter breaks go straight to the app
 const COUNT_MS = 600;
 const STEP_MS = 420; // between the lines landing one by one
 const GOLD = "#FFC83A";
@@ -57,47 +56,24 @@ function useCountUp(from: number, to: number, skip: boolean) {
   return n;
 }
 
-// Checks at launch, and when the app returns after more than 20 minutes in the background. Each check asks the
-// server for a fresh summary, and the screen opens only if something happened. The You tab's News button opens it on
-// demand, news or not. It sits above the tabs, so it opens over whichever tab is showing, and it never leaves that tab
-// unless "Review n" is tapped.
+// Opens only from the You tab's News button, with a fresh summary of what happened since the last Collect, or nothing.
+// It never opens by itself and never leaves the tab it opened over.
 export function Away() {
   const device = useDevice();
   const convex = useConvex();
   const collect = useMutation(api.away.collect);
   const mark = useMutation(api.earnings.mark);
-  const status = useQuery(api.feed.status, device ? { deviceId: device } : "skip");
   // Lives here rather than in the sheet, so the chime keeps ringing after the sheet closes.
   const chime = useAudioPlayer(require("../assets/sounds/collect.wav"));
   const [shown, setShown] = useState<Summary | null>(null);
   const [taste, setTaste] = useState<Taste | null>(null);
-  const [asked, setAsked] = useState(false);
 
   useEffect(() => {
     if (!device) return;
-    let leftAt = 0;
-    const check = (why: "launch" | "back" | "asked") => Promise.all([
+    return onNews(() => Promise.all([
       convex.query(api.away.summary, { deviceId: device }),
       convex.query(api.earnings.summary, { deviceId: device }).then(e => e.away ?? null).catch(() => null),
-    ]).then(([d, t]) => {
-      const news = d.made + d.posted + d.sales.count + (d.views.to - d.views.from);
-      // At launch the app can't know when it was last open, so it uses the last Collect instead.
-      if (why === "asked" || (news > 0 && (why === "back" || Date.now() - d.since > AWAY_MS))) {
-        setAsked(why === "asked");
-        setTaste(t);
-        setShown(d);
-      } else if (why === "launch") setAwayUp(false);
-    }).catch(() => { if (why === "launch") setAwayUp(false); });
-    check("launch");
-    const off = onNews(() => check("asked"));
-    const sub = AppState.addEventListener("change", s => {
-      if (s === "background") leftAt = Date.now();
-      else if (s === "active" && leftAt) {
-        if (Date.now() - leftAt > AWAY_MS) check("back");
-        leftAt = 0;
-      }
-    });
-    return () => { sub.remove(); off(); };
+    ]).then(([d, t]) => { setTaste(t); setShown(d); }).catch(() => {}));
   }, [convex, device]);
 
   // While the card is open, the Base's counters leave out what it is about to give.
@@ -110,8 +86,6 @@ export function Away() {
   const onBase = usePathname() === "/";
 
   if (!shown || !device) return device ? <TierWatch device={device} /> : null;
-  // Videos waiting in the Feed, offered as a link under Collect rather than where Collect goes.
-  const ready = status?.studio.ready ?? 0;
   const collectNow = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     chime.seekTo(0).catch(() => {});
@@ -119,12 +93,11 @@ export function Away() {
     collect({ deviceId: device, at: shown.at, views: shown.views.to }).catch(() => {});
     mark({ deviceId: device }).catch(() => {});
   };
-  const finish = (review: boolean) => {
+  const finish = () => {
     setShown(null);
     setAwayUp(false);
-    if (review) router.navigate("/feed");
   };
-  return <Sheet s={shown} taste={taste} ready={ready} asked={asked} onBase={onBase} onCollect={collectNow} onDone={finish} />;
+  return <Sheet s={shown} taste={taste} onBase={onBase} onCollect={collectNow} onDone={finish} />;
 }
 
 // A tier reached while the app is open gets its moment. The first score after launch only sets the mark, so opening
@@ -177,10 +150,10 @@ function PostsLine({ t }: { t: Taste }) {
 // A run of icons from a line of the card to a header counter. Each landing gives the counter its share.
 type Leg = { icon: IconName; key: "views" | "cents"; amount: number; from: Point; to: Point; n: number };
 
-// `asked` is the News button's card: it has a close button, and with nothing new since the last Collect its button only
-// closes it, so opening News never moves the Collect point or the taste mark.
-function Sheet({ s, taste, ready, asked, onBase, onCollect, onDone }:
-  { s: Summary; taste: Taste | null; ready: number; asked: boolean; onBase: boolean; onCollect: () => void; onDone: (review: boolean) => void }) {
+// With nothing new since the last Collect the button only closes the card, so opening News never moves the Collect point
+// or the taste mark.
+function Sheet({ s, taste, onBase, onCollect, onDone }:
+  { s: Summary; taste: Taste | null; onBase: boolean; onCollect: () => void; onDone: () => void }) {
   const tick = useAudioPlayer(require("../assets/sounds/tick.wav"));
   const [skip, setSkip] = useState(false);
   const gained = s.views.to - s.views.from;
@@ -219,11 +192,11 @@ function Sheet({ s, taste, ready, asked, onBase, onCollect, onDone }:
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const pressed = useRef(false);
-  const press = async (review: boolean) => {
+  const press = async () => {
     if (pressed.current) return;
     pressed.current = true;
     setSkip(true);
-    if (!fresh) return onDone(review);
+    if (!fresh) return onDone();
     onCollect();
     const [eye, coin, v, c] = onBase
       ? await Promise.all([centerOf(targets.get("hud-views")), centerOf(targets.get("hud-vault")), centerOf(viewsAt.current), centerOf(salesAt.current)])
@@ -231,7 +204,7 @@ function Sheet({ s, taste, ready, asked, onBase, onCollect, onDone }:
     const next: Leg[] = [];
     if (eye && v && gained > 0) next.push({ icon: "eye", key: "views", amount: gained, from: v, to: eye, n: Math.min(8, gained) });
     if (coin && c && s.sales.netCents > 0) next.push({ icon: "coin", key: "cents", amount: s.sales.netCents, from: c, to: coin, n: Math.min(6, s.sales.count + 3) });
-    if (!next.length) return onDone(review);
+    if (!next.length) return onDone();
     setLegs(next);
     fade.value = withTiming(0, { duration: LAUNCH_MS });
     let last = 0;
@@ -247,7 +220,7 @@ function Sheet({ s, taste, ready, asked, onBase, onCollect, onDone }:
         }, at));
       }
     }
-    timers.current.push(setTimeout(() => onDone(review), last + SETTLE_MS));
+    timers.current.push(setTimeout(onDone, last + SETTLE_MS));
   };
   const dim = useAnimatedStyle(() => ({ opacity: fade.value }));
 
@@ -262,16 +235,14 @@ function Sheet({ s, taste, ready, asked, onBase, onCollect, onDone }:
               <Outlined size={24} width={2}>While you were away</Outlined>
               <Text style={st.since}>Since {since(s.since)}</Text>
               <View style={st.boardEdge} />
-              {asked && (
-                <Pressable onPress={() => { if (!pressed.current) { pressed.current = true; onDone(false); } }} hitSlop={10}
-                  style={st.close} testID="away-close" accessibilityRole="button" accessibilityLabel="Close">
-                  {({ pressed: down }) => (
-                    <Block bevel="orange" depth={down ? 1 : 3} style={[st.closeFace, down && { transform: [{ translateY: 2 }] }]}>
-                      <Outlined size={20}>X</Outlined>
-                    </Block>
-                  )}
-                </Pressable>
-              )}
+              <Pressable onPress={() => { if (!pressed.current) { pressed.current = true; onDone(); } }} hitSlop={10}
+                style={st.close} testID="away-close" accessibilityRole="button" accessibilityLabel="Close">
+                {({ pressed: down }) => (
+                  <Block bevel="orange" depth={down ? 1 : 3} style={[st.closeFace, down && { transform: [{ translateY: 2 }] }]}>
+                    <Outlined size={20}>X</Outlined>
+                  </Block>
+                )}
+              </Pressable>
             </View>
             <View style={st.body}>
               {scoreRow && (
@@ -308,12 +279,7 @@ function Sheet({ s, taste, ready, asked, onBase, onCollect, onDone }:
 
               {rows === 0 && <Text style={st.quiet} testID="away-quiet">Nothing new yet</Text>}
 
-              <PixelButton label={fresh ? "Collect" : "Close"} size={24} onPress={() => press(false)} testID="away-collect" style={st.collect} />
-              {ready > 0 && (
-                <Pressable onPress={() => press(true)} hitSlop={10} style={st.reviewWrap} testID="away-review" accessibilityRole="button">
-                  {({ pressed: down }) => <Text style={[st.review, down && { opacity: 0.6 }]}>{`Review ${ready} in the Feed`}</Text>}
-                </Pressable>
-              )}
+              <PixelButton label={fresh ? "Collect" : "Close"} size={24} onPress={press} testID="away-collect" style={st.collect} />
             </View>
           </Block>
         </Animated.View>
@@ -406,8 +372,6 @@ const st = StyleSheet.create({
   heroEye: { width: 40, height: 40, marginBottom: 2 },
   heroBody: { alignItems: "center" },
   collect: { marginTop: 20 },
-  reviewWrap: { alignSelf: "center", marginTop: 14 },
-  review: { color: "#B04A10", fontSize: 18, fontFamily: FONT.bold, textDecorationLine: "underline" },
   quiet: { color: PARCH.soft, fontSize: 18, fontFamily: FONT.semi, textAlign: "center", paddingVertical: 8 },
   close: { position: "absolute", right: 14, top: 14 },
   closeFace: { width: 38, height: 38, alignItems: "center", justifyContent: "center" },
